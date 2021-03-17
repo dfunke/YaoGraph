@@ -12,7 +12,7 @@ int main() {
     constexpr tBox BOUNDS{{0, 0},
                           {1, 1}};
     constexpr tIndex minN = 1e3;
-    constexpr tIndex maxN = 1e4;
+    constexpr tIndex maxN = 1e6;
 
     std::cout << "n del yao theta" << std::endl;
     for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3*pow(10, floor(log10(nPoints)))) {
