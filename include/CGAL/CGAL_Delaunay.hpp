@@ -9,7 +9,7 @@
 
 #include "Types.hpp"
 
-class Delaunay2D {
+class CGAL_Delaunay2D {
 
 public:
     using K = CGAL::Exact_predicates_inexact_constructions_kernel;

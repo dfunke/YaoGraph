@@ -9,7 +9,7 @@
 
 #include "Types.hpp"
 
-class Yao2D {
+class CGAL_Yao2D {
 
 public:
     using K = CGAL::Exact_predicates_inexact_constructions_kernel;

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <array>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <limits>
 
 using tCoord = float;
-using tDim = short;
+using tDim = unsigned short;
 using tIndex = std::size_t;
 
 constexpr tDim D = 2;
@@ -20,3 +20,20 @@ struct tBox {
     tPoint low;
     tPoint high;
 };
+
+template<tDim K>
+struct tYaoVertex {
+
+    tYaoVertex() {
+        for (tDim i = 0; i < neighbor.size(); ++i) {
+            neighbor[i] = tIndex(-1);
+            distance[i] = std::numeric_limits<tCoord>::max();
+        }
+    }
+
+    std::array<tIndex, K> neighbor;
+    std::array<tCoord, K> distance;
+};
+
+template<typename V>
+using tYaoGraph = std::vector<V>;

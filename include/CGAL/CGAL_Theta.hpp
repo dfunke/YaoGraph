@@ -9,7 +9,7 @@
 
 #include "Types.hpp"
 
-class Theta2D {
+class CGAL_Theta2D {
 
 public:
     using K = CGAL::Exact_predicates_inexact_constructions_kernel;
