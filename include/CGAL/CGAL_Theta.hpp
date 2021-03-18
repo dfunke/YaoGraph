@@ -9,6 +9,7 @@
 
 #include "Types.hpp"
 
+template <tDim Cones>
 class CGAL_Theta2D {
 
 public:
@@ -20,7 +21,6 @@ public:
             boost::undirectedS,
             Point>;
     using Theta = CGAL::Construct_theta_graph_2<K, Graph>;
-    static constexpr tDim Cones = 6;
 
 public:
 

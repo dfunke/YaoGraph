@@ -9,6 +9,7 @@
 
 #include "Types.hpp"
 
+template <tDim Cones>
 class CGAL_Yao2D {
 
 public:
@@ -20,7 +21,6 @@ public:
             boost::undirectedS,
             Point>;
     using Yao = CGAL::Construct_yao_graph_2<K, Graph>;
-    static constexpr tDim Cones = 6;
 
 public:
 
