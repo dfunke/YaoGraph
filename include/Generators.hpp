@@ -28,7 +28,7 @@ class Uniform : public Generator<Uniform> {
     friend class Generator<Uniform>;
 
 public:
-    Uniform() : dist(0, std::nextafter(1, std::numeric_limits<tCoord>::max())) {}
+    Uniform() : dist(0, std::nextafter(1, std::numeric_limits<tFloat>::max())) {}
 
     tPoints generate(const tIndex n, const tBox &bounds) {
         tPoints points;
@@ -36,7 +36,7 @@ public:
 
         for (tIndex i = 0; i < n; ++i) {
 
-            tPoint p;
+            tFloatVector p;
             for (tDim d = 0; d < D; ++d) {
                 p[d] = bounds.low[d] + (bounds.high[d] - bounds.low[d]) * rand();
             }
@@ -48,5 +48,5 @@ public:
     }
 
 private:
-    std::uniform_real_distribution<tCoord> dist;
+    std::uniform_real_distribution<tFloat> dist;
 };

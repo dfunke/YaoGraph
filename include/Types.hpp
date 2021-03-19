@@ -4,21 +4,23 @@
 #include <unordered_set>
 #include <vector>
 #include <limits>
+#include <type_traits>
 
-using tCoord = float;
+using tFloat = float;
 using tDim = unsigned short;
 using tIndex = std::size_t;
 
 constexpr tDim D = 2;
 constexpr int SEED = 1986;
 
-using tPoint = std::array<tCoord, D>;
-using tPoints = std::vector<tPoint>;
+using tFloatVector = std::array<tFloat, D>;
+using tIndexVector = std::array<tIndex, D>;
+using tPoints = std::vector<tFloatVector>;
 using tPointSet = std::unordered_set<tIndex>;
 
 struct tBox {
-    tPoint low;
-    tPoint high;
+    tFloatVector low;
+    tFloatVector high;
 };
 
 template<tDim K>
@@ -27,12 +29,12 @@ struct tYaoVertex {
     tYaoVertex() {
         for (tDim i = 0; i < neighbor.size(); ++i) {
             neighbor[i] = tIndex(-1);
-            distance[i] = std::numeric_limits<tCoord>::max();
+            distance[i] = std::numeric_limits<tFloat>::max();
         }
     }
 
     std::array<tIndex, K> neighbor;
-    std::array<tCoord, K> distance;
+    std::array<tFloat, K> distance;
 };
 
 template<typename V>

@@ -30,12 +30,21 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${MARCH} -pedantic -Wall -Wextra")
 
 add_executable(GeoGraph main.cpp)
 
-option(BUILD_CGAL "Build CGAL algorithms for comparision" OFF)
-if (BUILD_CGAL)
-    add_compile_definitions(BUILD_CGAL)
+option(WITH_CGAL "Build CGAL algorithms for comparision" OFF)
+if (WITH_CGAL)
+    add_compile_definitions(WITH_CGAL)
     find_package(CGAL)
     include_directories(SYSTEM ${CGAL_INCLUDE_DIRS} ${INCLUDE_DIRECTORIES})
     target_link_libraries(GeoGraph ${CGAL_LIBRARIES})
+endif ()
+
+option(WITH_CAIRO "Build with Cairo for drawing" OFF)
+if (WITH_CAIRO)
+    add_compile_definitions(WITH_CAIRO)
+    find_package(Cairomm REQUIRED)
+    include_directories(SYSTEM "/usr/local/include" ${INCLUDE_DIRECTORIES})
+    include_directories(SYSTEM ${Cairomm_INCLUDE_DIRS} ${INCLUDE_DIRECTORIES})
+    target_link_libraries(GeoGraph ${Cairomm_LIBRARIES})
 endif ()
 
 

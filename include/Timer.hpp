@@ -16,10 +16,10 @@ public:
         T obj;
 
         auto t1 = std::chrono::high_resolution_clock::now();
-        obj(args...);
+        auto res = obj(args...);
         auto t2 = std::chrono::high_resolution_clock::now();
 
-        return std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        return std::make_tuple(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(), res);
     }
 
 };

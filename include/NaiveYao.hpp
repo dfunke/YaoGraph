@@ -23,7 +23,7 @@ public:
                 if(i == j) continue;
 
                 auto d = distance2(points[i], points[j]);
-                auto sec = atan2P(points[i], points[j]) / K;
+                tDim sec = std::floor(atan2P(points[i], points[j]) / (2 * M_PI / K));
 
                 if(d < g[i].distance[sec]){
                     g[i].neighbor[sec] = j;

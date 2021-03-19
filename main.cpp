@@ -5,8 +5,13 @@
 #include "Timer.hpp"
 
 #include "NaiveYao.hpp"
+#include "GridYao.hpp"
 
-#ifdef BUILD_CGAL
+#ifdef WITH_CAIRO
+#include "Painter.hpp"
+#endif
+
+#ifdef WITH_CGAL
 #include "CGAL/CGAL_Delaunay.hpp"
 #include "CGAL/CGAL_Yao.hpp"
 #include "CGAL/CGAL_Theta.hpp"
@@ -20,24 +25,36 @@ int main() {
     constexpr tIndex maxN = 1e4;
     constexpr tDim Cones = 6;
 
-    std::cout << "n naive cgal_del cgal_yao cgal_theta" << std::endl;
+    std::cout << "n naive grid";
+#ifdef WITH_CGAL
+    std::cout << " cgal_del cgal_yao cgal_theta";
+#endif
+    std::cout << std::endl;
+
     for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
         Uniform uni;
         auto points = uni.generate(nPoints, BOUNDS);
 
         auto naive = Timer<NaiveYao<Cones>>::time(points);
+        auto grid = Timer<GridYao<Cones>>::time(points, BOUNDS);
 
-#ifdef BUILD_CGAL
+        checkGraph(std::get<1>(grid), std::get<1>(naive));
+
+#ifdef WITH_CGAL
         auto del = Timer<CGAL_Delaunay2D>::time(points);
         auto yao = Timer<CGAL_Yao2D<Cones>>::time(points);
         auto theta = Timer<CGAL_Theta2D<Cones>>::time(points);
-#else
-        int del = 0;
-        int yao = 0;
-        int theta = 0;
 #endif
 
-        std::cout << nPoints << " " << naive << " " << del << " " << yao << " " << theta << std::endl;
+        std::cout << nPoints
+                  << " " << std::get<0>(naive)
+                  << " " << std::get<0>(grid)
+                  #ifdef WITH_CGAL
+                  << " " << std::get<0>(del)
+                  << " " << std::get<0>(yao)
+                  << " " << std::get<0>(theta)
+                  #endif
+                  << std::endl;
 
     }
 
