@@ -151,6 +151,8 @@ private:
     void visitGridCell(const tIndex &point, const tIndexVector &cell,
                        tGraph &graph, const Grid &grid, const tPoints &points) const {
 
+        auto &vertex = graph[point];
+
         for (const auto &p : grid[cell]) {
 
             if (p == point) continue;
@@ -158,9 +160,9 @@ private:
             auto d = distance2(points[point], points[p]);
             tDim sec = std::floor(atan2P(points[point], points[p]) / (2 * M_PI / K));
 
-            if (d < graph[point].distance[sec]) {
-                graph[point].neighbor[sec] = p;
-                graph[point].distance[sec] = d;
+            if (d < vertex.distance[sec]) {
+                vertex.neighbor[sec] = p;
+                vertex.distance[sec] = d;
             }
 
         }
