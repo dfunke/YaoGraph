@@ -7,7 +7,7 @@
 #include "Types.hpp"
 #include "Predicates.hpp"
 
-template<tDim K, tIndex nCells = 25 * 25>
+template<tDim K>
 class GridYao {
 
 private:
@@ -15,7 +15,7 @@ private:
     class Grid {
 
     private:
-        friend class GridYao<K, nCells>;
+        friend class GridYao<K>;
 
         using tGridCell = std::vector<tIndex>;
         using tGrid = std::vector<tGridCell>;
@@ -88,9 +88,9 @@ public:
     using tVertex = tYaoVertex<K>;
     using tGraph = tYaoGraph<tVertex>;
 
-    tGraph operator()(const tPoints &points, const tBox &bounds) const {
+    tGraph operator()(const tPoints &points, const tBox &bounds, const tIndex &cellOcc) const {
         tGraph graph(points.size());
-        Grid grid(bounds, nCells);
+        Grid grid(bounds, points.size() / cellOcc);
         grid.buildGrid(points);
 
         for (tIndex i = 0; i < points.size(); ++i) {
@@ -116,7 +116,7 @@ private:
                 return false;
             } else {
                 // we found a neighbor for given search radius, can we find a closer one still
-                if (v.distance[k] > std::pow((radius-1) * minLength, 2)) {
+                if (v.distance[k] > std::pow((radius - 1) * minLength, 2)) {
                     // found neighbor is further away than any point for next cell radius could be
                     return false;
                 }
