@@ -6,6 +6,7 @@
 
 #include "NaiveYao.hpp"
 #include "GridYao.hpp"
+#include "SweepLine.hpp"
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
@@ -38,6 +39,7 @@ int main() {
 
         auto naive = Timer<NaiveYao<Cones>>::time(points);
         auto grid = Timer<GridYao<Cones>>::time(points, BOUNDS, cellOcc);
+        auto sl = Timer<SweepLine<Cones>>::time(points);
 
         checkGraph(std::get<1>(grid), std::get<1>(naive));
 
