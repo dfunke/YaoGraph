@@ -133,6 +133,10 @@ public:
         tFloat lowerPhi = k * 2 * M_PI / K;
         tFloat upperPhi = (k + 1) * 2 * M_PI / K;
 
+        drawCone(apex, lowerPhi, upperPhi, length);
+    }
+
+    void drawCone(const tFloatVector &apex, const tFloat &lowerPhi, const tFloat &upperPhi, const tFloat length = 1) {
         drawLine(apex, apex + tFloatVector({length * std::cos(lowerPhi),
                                             length * std::sin(lowerPhi)}));
         drawLine(apex, apex + tFloatVector({length * std::cos(upperPhi),
