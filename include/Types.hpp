@@ -10,6 +10,9 @@ using tFloat = float;
 using tDim = unsigned short;
 using tIndex = std::size_t;
 
+constexpr tDim X = 0;
+constexpr tDim Y = 1;
+
 constexpr tDim D = 2;
 constexpr int SEED = 1986;
 
