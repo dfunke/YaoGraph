@@ -90,7 +90,7 @@ public:
 
     tGraph operator()(const tPoints &points, const tBox &bounds, const tIndex &cellOcc) const {
         tGraph graph(points.size());
-        Grid grid(bounds, points.size() / cellOcc);
+        Grid grid(bounds, std::ceil(points.size() / static_cast<tFloat>(cellOcc)));
         grid.buildGrid(points);
 
         for (tIndex i = 0; i < points.size(); ++i) {
