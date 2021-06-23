@@ -47,4 +47,6 @@ if (WITH_CAIRO)
     target_link_libraries(GeoGraph ${Cairomm_LIBRARIES})
 endif ()
 
+add_subdirectory(test)
+
 
