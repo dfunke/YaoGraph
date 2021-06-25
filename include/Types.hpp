@@ -24,6 +24,17 @@ using tPointSet = std::unordered_set<tIndex>;
 struct tBox {
     tFloatVector low;
     tFloatVector high;
+
+    bool contains(const tFloatVector &p) const {
+        assert(p.size() == low.size());
+        for (tDim d = 0; d < p.size(); ++d) {
+            if (p[d] < low[d] || high[d] < p[d]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 };
 
 template<tDim K>
