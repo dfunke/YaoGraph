@@ -244,8 +244,10 @@ private:
             auto p = pq.top().second;
             std::cout << idx << ": (" << p.pos[X] << ", " << p.pos[Y] << ") key: " << pq.top().first << std::endl;
 
+#ifdef WITH_CAIRO
             basePainter.draw(p.pos, idx);
             sl.draw(p.pos, basePainter);
+#endif
 
             switch (p.type) {
                 case Event::Type::Input: {
@@ -270,10 +272,10 @@ private:
                     }
 
                     // create new rays and insert them into SL
-                    auto itBln = sl.rays.insert(itBr, Ray({p.pos, lTheta + M_PI,
+                    auto itBln = sl.rays.insert(itBr, Ray({p.pos, lTheta + tFloat(M_PI),
                                                            itBl != sl.rays.end() ? itBl->rightRegion : tIndex(-1),
                                                            p.idx}));
-                    auto itBrn = sl.rays.insert(itBr, Ray({p.pos, uTheta + M_PI, p.idx,
+                    auto itBrn = sl.rays.insert(itBr, Ray({p.pos, uTheta + tFloat(M_PI), p.idx,
                                                            itBr != sl.rays.end() ? itBr->leftRegion : tIndex(-1)}));
 
                     // insert intersection points into PQ
@@ -327,8 +329,8 @@ private:
                         } catch (std::domain_error &e) {}
                     }
 
-                    Ray rL({p.pos, lTheta + M_PI, itBl->leftRegion, itBr->rightRegion});
-                    Ray rR({p.pos, uTheta + M_PI, itBl->leftRegion, itBr->rightRegion});
+                    Ray rL({p.pos, lTheta + tFloat(M_PI), itBl->leftRegion, itBr->rightRegion});
+                    Ray rR({p.pos, uTheta + tFloat(M_PI), itBl->leftRegion, itBr->rightRegion});
 
                     // bisector line between A and B
                     auto pL = points[itBl->leftRegion];
@@ -398,7 +400,9 @@ private:
             ++idx;
         }
 
+#ifdef WITH_CAIRO
         basePainter.save("01_points_" + std::to_string(k));
+#endif
     }
 
 };
