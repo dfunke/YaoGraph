@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include <type_traits>
+#include <cassert>
 
 using tFloat = float;
 using tDim = unsigned short;
