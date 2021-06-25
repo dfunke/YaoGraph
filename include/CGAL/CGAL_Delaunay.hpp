@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Delaunay_triangulation_2.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
 #include "Types.hpp"
 
@@ -17,7 +17,6 @@ public:
     using Point = DT::Point;
 
 public:
-
     auto operator()(const tPoints &points) {
 
         DT dt;
@@ -30,7 +29,5 @@ public:
                   boost::make_transform_iterator(points.end(), transform));
 
         return dt;
-
     }
-
 };

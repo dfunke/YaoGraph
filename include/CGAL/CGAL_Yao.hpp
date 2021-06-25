@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Construct_yao_graph_2.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
 #include "Types.hpp"
 
-template <tDim Cones>
+template<tDim Cones>
 class CGAL_Yao2D {
 
 public:
@@ -17,13 +17,12 @@ public:
     using Point = K::Point_2;
     using Direction = K::Direction_2;
     using Graph = boost::adjacency_list<boost::listS,
-            boost::vecS,
-            boost::undirectedS,
-            Point>;
+                                        boost::vecS,
+                                        boost::undirectedS,
+                                        Point>;
     using Yao = CGAL::Construct_yao_graph_2<K, Graph>;
 
 public:
-
     auto operator()(const tPoints &points) {
 
         Yao yao(Cones);
@@ -38,7 +37,5 @@ public:
             g);
 
         return g;
-
     }
-
 };

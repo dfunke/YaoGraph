@@ -4,14 +4,13 @@
 
 #pragma once
 
-#include "Types.hpp"
 #include "Predicates.hpp"
+#include "Types.hpp"
 
 template<tDim K>
 class GridYao {
 
 private:
-
     class Grid {
 
     private:
@@ -21,7 +20,6 @@ private:
         using tGrid = std::vector<tGridCell>;
 
     public:
-
         Grid(const tBox &_bounds, const tIndex _nCells) : bounds(_bounds) {
             numCellsPerDim = std::ceil(std::sqrt(_nCells));
             numCells = numCellsPerDim * numCellsPerDim;
@@ -105,7 +103,6 @@ public:
     }
 
 private:
-
     bool isFinalized(const tVertex &v, const tIndex &radius, const tFloatVector &cellSize) const {
 
         auto minLength = *std::min_element(cellSize.begin(), cellSize.end());
@@ -164,9 +161,6 @@ private:
                 vertex.neighbor[sec] = p;
                 vertex.distance[sec] = d;
             }
-
         }
-
     }
-
 };

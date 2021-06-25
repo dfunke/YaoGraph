@@ -10,7 +10,6 @@ template<typename T>
 class Timer {
 
 public:
-
     template<typename... Args>
     static auto time(Args... args) {
         T obj;
@@ -21,5 +20,4 @@ public:
 
         return std::make_tuple(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(), res);
     }
-
 };

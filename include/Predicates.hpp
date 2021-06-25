@@ -5,11 +5,11 @@
 #include "Types.hpp"
 
 tFloat dot(const tFloatVector &a, const tFloatVector &b) {
-  tFloat dot = 0;
-  for (tDim d = 0; d < a.size(); ++d) {
-    dot += a[d] * b[d];
-  }
-  return dot;
+    tFloat dot = 0;
+    for (tDim d = 0; d < a.size(); ++d) {
+        dot += a[d] * b[d];
+    }
+    return dot;
 }
 
 tFloat distance2(const tFloatVector &a, const tFloatVector &b) {
@@ -34,8 +34,8 @@ tFloat atan2P(const tFloatVector &a, const tFloatVector &b) {
 }
 
 template<typename TA, typename TB, std::size_t D,
-        typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
-        typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
+         typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
+         typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
 auto operator+(const std::array<TA, D> &a, const std::array<TB, D> &b) {
     auto result = a;
     for (tDim d = 0; d < a.size(); ++d) {
@@ -45,36 +45,36 @@ auto operator+(const std::array<TA, D> &a, const std::array<TB, D> &b) {
 }
 
 template<typename TA, typename TB, std::size_t D,
-    typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
-    typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
+         typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
+         typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
 auto operator*(const std::array<TA, D> &a, const std::array<TB, D> &b) {
-  auto result = a;
-  for (tDim d = 0; d < a.size(); ++d) {
-    result[d] *= b[d];
-  }
-  return result;
+    auto result = a;
+    for (tDim d = 0; d < a.size(); ++d) {
+        result[d] *= b[d];
+    }
+    return result;
 }
 
 template<typename TA, typename TB, std::size_t D,
-    typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
-    typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
+         typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
+         typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
 auto operator-(const std::array<TA, D> &a, const std::array<TB, D> &b) {
-  auto result = a;
-  for (tDim d = 0; d < a.size(); ++d) {
-    result[d] -= b[d];
-  }
-  return result;
+    auto result = a;
+    for (tDim d = 0; d < a.size(); ++d) {
+        result[d] -= b[d];
+    }
+    return result;
 }
 
 template<typename TA, typename TB, std::size_t D,
-    typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
-    typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
+         typename = typename std::enable_if<std::is_arithmetic<TA>::value, TA>::type,
+         typename = typename std::enable_if<std::is_arithmetic<TB>::value, TB>::type>
 auto operator*(const TA &a, const std::array<TB, D> &b) {
-  auto result = b;
-  for (tDim d = 0; d < b.size(); ++d) {
-    result[d] *= a;
-  }
-  return result;
+    auto result = b;
+    for (tDim d = 0; d < b.size(); ++d) {
+        result[d] *= a;
+    }
+    return result;
 }
 
 template<tDim K>

@@ -2,8 +2,8 @@
 
 #include <cairomm/cairomm.h>
 
-#include "Types.hpp"
 #include "Predicates.hpp"
+#include "Types.hpp"
 
 #if (CAIROMM_MAJOR_VERSION == 1 and CAIROMM_MINOR_VERSION >= 16)
 #define MY_CAIRO_FORMAT Cairo::ImageSurface::Format::ARGB32
@@ -18,12 +18,11 @@
 class Painter {
 
 public:
-
     Painter(const tBox &_bounds, uint _resolution) {
         bounds = _bounds;
 
         for (uint d = 0; d < 2; ++d) {
-            img.low[d] = 0; // image starts at 0
+            img.low[d] = 0;// image starts at 0
             img.high[d] = img.low[d] + (bounds.high[d] - bounds.low[d]) * _resolution;
         }
 
@@ -158,7 +157,6 @@ public:
                               translateLength(cellSize[0], 0),
                               translateLength(cellSize[1], 1));
             }
-
         }
 
         cr->stroke();
@@ -195,7 +193,6 @@ public:
     }
 
 private:
-
     float imgDim(const uint dim) {
         return img.high[dim] - img.low[dim];
     }

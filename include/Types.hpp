@@ -1,11 +1,11 @@
 #pragma once
 
 #include <array>
-#include <unordered_set>
-#include <vector>
+#include <cassert>
 #include <limits>
 #include <type_traits>
-#include <cassert>
+#include <unordered_set>
+#include <vector>
 
 using tFloat = float;
 using tDim = unsigned short;

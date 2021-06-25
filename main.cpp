@@ -1,11 +1,11 @@
 #include <iostream>
 
-#include "Types.hpp"
 #include "Generators.hpp"
 #include "Timer.hpp"
+#include "Types.hpp"
 
-#include "NaiveYao.hpp"
 #include "GridYao.hpp"
+#include "NaiveYao.hpp"
 #include "SweepLine.hpp"
 
 #ifdef WITH_CAIRO
@@ -14,8 +14,8 @@
 
 #ifdef WITH_CGAL
 #include "CGAL/CGAL_Delaunay.hpp"
-#include "CGAL/CGAL_Yao.hpp"
 #include "CGAL/CGAL_Theta.hpp"
+#include "CGAL/CGAL_Yao.hpp"
 #endif
 
 int main() {
@@ -101,13 +101,12 @@ int main() {
         std::cout << nPoints
                   << " " << std::get<0>(naive)
                   << " " << std::get<0>(grid)
-                  #ifdef WITH_CGAL
+#ifdef WITH_CGAL
                   << " " << std::get<0>(del)
                   << " " << std::get<0>(yao)
                   << " " << std::get<0>(theta)
-                  #endif
+#endif
                   << std::endl;
-
     }
 
     return 0;
