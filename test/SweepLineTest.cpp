@@ -14,5 +14,5 @@ TEST(SweepLineTest, Ordering) { // 12/2/2020 -> 737761
     auto points = uni.generate(nPoints, BOUNDS);
 
     SweepLine<K> sl;
-    sl(points);
+    sl(points, BOUNDS);
 }
