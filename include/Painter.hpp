@@ -186,6 +186,14 @@ public:
         }
     }
 
+    void setDash() {
+        cr->set_dash(std::vector<double>({2, 2}), 0);
+    }
+
+    void unsetDash() {
+        cr->unset_dash();
+    }
+
 private:
 
     float imgDim(const uint dim) {
