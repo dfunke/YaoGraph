@@ -85,21 +85,23 @@ public:
         cr->fill();
     }
 
-    void draw(const tFloatVector &point, const tIndex &idx) {
+    void draw(const tFloatVector &point, const tIndex &idx, bool label = true) {
         cr->arc(translatePoint(point[0], 0),
                 translatePoint(point[1], 1), 5, 0, 2 * M_PI);
         cr->fill();
 
-        cr->move_to(translatePoint(point[0], 0) + 7,
-                    translatePoint(point[1], 1) + 7);
-        cr->set_font_size(10);
-        cr->show_text(std::to_string(idx));
-        cr->set_font_size(FONT_SIZE);
+        if (label) {
+            cr->move_to(translatePoint(point[0], 0) + 7,
+                        translatePoint(point[1], 1) + 7);
+            cr->set_font_size(10);
+            cr->show_text(std::to_string(idx));
+            cr->set_font_size(FONT_SIZE);
+        }
     }
 
-    void draw(const tPoints &points) {
+    void draw(const tPoints &points, bool label = true) {
         for (tIndex i = 0; i < points.size(); ++i) {
-            draw(points[i], i);
+            draw(points[i], i, label);
         }
     }
 

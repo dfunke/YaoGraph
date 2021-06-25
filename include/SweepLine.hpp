@@ -26,9 +26,6 @@ struct Ray {
     // extension of ray with another ray
     std::unique_ptr<Ray> ext;// initialized with nullptr
 
-    Ray(const tFloatVector &p_, const tFloat &angle_)
-        : p(p_), angle(angle_), leftRegion(tIndex(-1)), rightRegion(tIndex(-1)) {}
-
     Ray(const tFloatVector &p_, const tFloat &angle_, const tIndex &lr,
         const tIndex &rr)
         : p(p_), angle(angle_), leftRegion(lr), rightRegion(rr) {}
@@ -38,8 +35,9 @@ struct Ray {
         : p(p_), angle(angle_), leftRegion(lr), rightRegion(rr),
           ext(std::make_unique<Ray>(ext_)) {
 
-        // the starting point of the lower ray must be on the upper ray
-        assert(ext->p[Y] == std::tan(angle) * (ext->p[X] - p[X]) + p[Y]);
+        // the starting point of the lower ray must be on the upper rayl;
+        std::cout << "exp: " << ext->p[Y] << "\nis:  " << std::tan(angle) * (ext->p[X] - p[X]) + p[Y] << std::endl;
+        assert(std::abs(ext->p[Y] - (std::tan(angle) * (ext->p[X] - p[X]) + p[Y])) < 0.001);//TODO make more meaningful
         assert(leftRegion == ext->leftRegion);
         assert(rightRegion == ext->rightRegion);
     }
@@ -129,8 +127,7 @@ private:
             if (distance2(ua.p, is) < distance2(ua.p, ua.ext->p)) {
                 return is;
             }
-        } catch (std::domain_error &e) {
-        }
+        } catch (std::domain_error &e) {}
 
         // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
         return isRR(*ua.ext, b, bounds);
@@ -147,8 +144,7 @@ private:
                 distance2(ub.p, is) < distance2(ub.p, ub.ext->p)) {
                 return is;
             }
-        } catch (std::domain_error &e) {
-        }
+        } catch (std::domain_error &e) {}
 
         try {
             // check for intersection of main ray of ua and lower ray of ub
@@ -157,8 +153,7 @@ private:
             if (distance2(ua.p, is) < distance2(ua.p, ua.ext->p)) {
                 return is;
             }
-        } catch (std::domain_error &e) {
-        }
+        } catch (std::domain_error &e) {}
 
         try {
             // check for intersection of lower ray of ua and main ray of ub
@@ -167,8 +162,7 @@ private:
             if (distance2(ub.p, is) < distance2(ub.p, ub.ext->p)) {
                 return is;
             }
-        } catch (std::domain_error &e) {
-        }
+        } catch (std::domain_error &e) {}
 
         // check for intersection of lower rays of ua and ub
         return isRR(*ua.ext, *ub.ext, bounds);
@@ -322,6 +316,7 @@ private:
 
 #ifdef WITH_CAIRO
         Painter basePainter(bounds, 1000);
+        basePainter.draw(points, false);
 #endif
         tIndex idx = 0;
         while (!pq.empty()) {
@@ -332,7 +327,15 @@ private:
 
 #ifdef WITH_CAIRO
             basePainter.draw(p.pos, idx);
-            sl.draw(p.pos, basePainter);
+
+            Painter stepPainter(basePainter);
+
+            stepPainter.setColor(1, 0, 0);
+            stepPainter.draw(p.pos, idx);
+
+            stepPainter.setColor(0, 0, 0);
+            sl.draw(p.pos, stepPainter);
+            stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
 #endif
 
             switch (p.type) {
@@ -355,8 +358,7 @@ private:
                         try {
                             auto is = itBl->intersection(*itBr, bounds);
                             delPQ.push({sl.prj(is), Event({is})});
-                        } catch (std::domain_error &e) {
-                        }
+                        } catch (std::domain_error &e) {}
                     }
 
                     // create new rays and insert them into SL
@@ -373,16 +375,14 @@ private:
                         try {
                             auto is = itBl->intersection(*itBln, bounds);
                             pq.push({sl.prj(is), Event({is, itBl, itBln})});
-                        } catch (std::domain_error &e) {
-                        }
+                        } catch (std::domain_error &e) {}
                     }
 
                     if (itBr != sl.end()) {
                         try {
                             auto is = itBr->intersection(*itBrn, bounds);
                             pq.push({sl.prj(is), Event({is, itBrn, itBr})});
-                        } catch (std::domain_error &e) {
-                        }
+                        } catch (std::domain_error &e) {}
                     }
 
                     break;
@@ -408,8 +408,7 @@ private:
                             auto itBll = std::prev(itBl);
                             auto is = itBl->intersection(*itBll, bounds);
                             delPQ.push({sl.prj(is), Event({is})});
-                        } catch (std::domain_error &e) {
-                        }
+                        } catch (std::domain_error &e) {}
                     }
 
                     if (itBr != sl.end()) {
@@ -419,8 +418,7 @@ private:
                                 auto is = itBr->intersection(*itBrr, bounds);
                                 delPQ.push({sl.prj(is), Event({is})});
                             }
-                        } catch (std::domain_error &e) {
-                        }
+                        } catch (std::domain_error &e) {}
                     }
 
                     Ray rL({p.pos, lTheta + tFloat(M_PI), itBl->leftRegion,
@@ -450,8 +448,7 @@ private:
                     try {
                         pBsR = Bs.intersection(rR, bounds);
                         BsR = true;
-                    } catch (std::domain_error &e) {
-                    }
+                    } catch (std::domain_error &e) {}
 
                     // remove old Rays from list
                     sl.erase(itBl);
@@ -500,8 +497,7 @@ private:
                             auto itL = std::prev(itBn);
                             auto is = itBn->intersection(*itL, bounds);
                             pq.push({sl.prj(is), Event({is, itL, itBn})});
-                        } catch (std::domain_error &e) {
-                        }
+                        } catch (std::domain_error &e) {}
                     }
 
                     auto itR = std::next(itBn);
@@ -509,8 +505,7 @@ private:
                         try {
                             auto is = itBn->intersection(*itR, bounds);
                             pq.push({sl.prj(is), Event({is, itBn, itR})});
-                        } catch (std::domain_error &e) {
-                        }
+                        } catch (std::domain_error &e) {}
                     }
 
                     break;
@@ -530,9 +525,5 @@ private:
             pq.pop();
             ++idx;
         }
-
-#ifdef WITH_CAIRO
-        basePainter.save("01_points_" + std::to_string(k));
-#endif
     }
 };
