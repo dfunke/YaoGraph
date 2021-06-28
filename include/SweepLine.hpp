@@ -462,10 +462,12 @@ private:
                     auto itBl = cPoint.leftRay;
                     auto itBr = cPoint.rightRay;
 
+#ifdef WITH_CAIRO
                     stepPainter.setColor(BOUND);
                     itBl->draw(stepPainter);
                     itBr->draw(stepPainter);
                     stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
+#endif
 
                     assert(std::next(itBl) == itBr);
                     assert(itBl == std::prev(itBr));
@@ -511,15 +513,16 @@ private:
                     aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO check angle orientation
                     Ray Bs({pMid, aBs, itBl->leftRegion, itBr->rightRegion});
 
+#ifdef WITH_CAIRO
                     stepPainter.setColor(IS);
                     rL.draw(stepPainter);
                     rR.draw(stepPainter);
                     stepPainter.drawLine(pL, pR);
                     stepPainter.drawSquare(pMid);
                     Bs.draw(stepPainter);
+#endif
 
-                    std::cout
-                            << "left ray: " << rL << std::endl;
+                    std::cout << "left ray: " << rL << std::endl;
                     std::cout << "right ray: " << rR << std::endl;
                     std::cout << "bisector: " << Bs << std::endl;
 
@@ -542,6 +545,7 @@ private:
                         }
                     } catch (std::domain_error &e) {}
 
+#ifdef WITH_CAIRO
                     if (BsL) {
                         stepPainter.setColor(IS);
                         stepPainter.draw(pBsL, 0);
@@ -551,6 +555,7 @@ private:
                         stepPainter.setColor(IS);
                         stepPainter.draw(pBsR, 1);
                     }
+#endif
 
                     // check whether rays have extension before deletion: delete delete event
                     if (itBl->ext) {
@@ -567,9 +572,11 @@ private:
                     auto itInsertPos = sl.erase(itBr);
                     auto itBn = sl.end();
 
+#ifdef WITH_CAIRO
                     basePainter.drawSquare(cPoint.pos);
                     basePainter.drawLine(itBl->p, cPoint.pos);
                     basePainter.drawLine(itBr->p, cPoint.pos);
+#endif
 
                     if (!BsL && !BsR) {
                         std::cout << idx << " case a) no intersection" << std::endl;
@@ -635,7 +642,9 @@ private:
                         } catch (std::domain_error &e) {}
                     }
 
+#ifdef WITH_CAIRO
                     stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
+#endif
 
                     break;
                 }
@@ -659,7 +668,9 @@ private:
                     assert(itB != sl.end());
                     assert(itB->ext);
 
+#ifdef WITH_CAIRO
                     basePainter.drawLine(itB->p, itB->ext->p);
+#endif
 
                     *itB = *(itB->ext);
                     // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
