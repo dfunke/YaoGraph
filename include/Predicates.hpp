@@ -101,6 +101,12 @@ std::ostream &operator<<(std::ostream &os, const tYaoVertex<K> &v) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const tFloatVector &v) {
+    os << "(" << v[X] << ", " << v[Y] << ")";
+
+    return os;
+}
+
 template<typename YaoGraph>
 bool checkGraph(const YaoGraph &is, const YaoGraph &exp) {
 
