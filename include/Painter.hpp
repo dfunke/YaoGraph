@@ -74,6 +74,10 @@ public:
         cs->write_to_png(file + ".png");
     }
 
+    void setColor(const std::array<float, 3> &c) {
+        setColor(c[0], c[1], c[2]);
+    }
+
     void setColor(float r, float g, float b,
                   float alpha = 1) {
         cr->set_source_rgba(r, g, b, alpha);
@@ -82,6 +86,12 @@ public:
     void draw(const tFloatVector &point) {
         cr->arc(translatePoint(point[0], 0),
                 translatePoint(point[1], 1), 5, 0, 2 * M_PI);
+        cr->fill();
+    }
+
+    void drawSquare(const tFloatVector &point) {
+        cr->rectangle(translatePoint(point[0], 0) - 5,
+                      translatePoint(point[1], 1) - 5, 10, 10);
         cr->fill();
     }
 
