@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "SweepLine.hpp"
 #include "Generators.hpp"
+#include "SweepLine.hpp"
+#include "NaiveYao.hpp"
 
 TEST(SweepLineTest, Ordering) { // 12/2/2020 -> 737761
     constexpr tBox BOUNDS{{0, 0},
@@ -14,5 +15,11 @@ TEST(SweepLineTest, Ordering) { // 12/2/2020 -> 737761
     auto points = uni.generate(nPoints, BOUNDS);
 
     SweepLine<K> sl;
-    sl(points, BOUNDS);
+    auto is = sl(points, BOUNDS);
+
+    NaiveYao<K> nav;
+    auto exp = nav(points);
+
+    ASSERT_TRUE(checkGraph(is, exp));
+
 }
