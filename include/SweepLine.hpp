@@ -70,8 +70,7 @@ struct Ray {
         // we only consider main ray, when the starting point of lower ray is
         // swept, this ray will be replaced by it
 
-        return std::signbit((std::cos(angle) - p[X] * (x[Y] - p[Y]) -
-                             (std::sin(angle) - p[Y]) * (x[X] - p[X])));
+        return (((p[X] + std::cos(angle)) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + std::sin(angle)) - p[Y]) * (x[X] - p[X])) > 0;
     }
 
     tFloatVector intersection(const Ray &b, const tBox &bounds) const {
@@ -90,6 +89,19 @@ public:
             return isUR(b, a, bounds);
         }
     }
+
+#ifdef WITH_CAIRO
+
+    void draw(Painter &painter) const {
+        if (!ext) {
+            painter.drawLine(p, {p[X] + std::cos(angle), p[Y] + std::sin(angle)});
+        } else {
+            painter.drawLine(p, ext->p);
+            painter.drawLine(ext->p, {ext->p[X] + std::cos(ext->angle), ext->p[Y] + std::sin(ext->angle)});
+        }
+    }
+
+#endif
 
 private:
     static tFloatVector isRR(const Ray &a, const Ray &b, const tBox &bounds) {
@@ -169,6 +181,29 @@ private:
     }
 };
 
+std::ostream &operator<<(std::ostream &os, const Ray &r) {
+    os << "p: " << r.p << " angle: " << r.angle << " boundary: "
+       << (r.leftRegion != tIndex(-1) ? std::to_string(r.leftRegion) : "INF") << "/"
+       << (r.rightRegion != tIndex(-1) ? std::to_string(r.rightRegion) : "INF");
+    if (r.ext) {
+        os << " extension: " << *r.ext;
+    }
+
+    return os;
+}
+
+std::string to_string(const Ray &r) {
+    std::stringstream os;
+    os << "p: " << r.p << " angle: " << r.angle << " boundary: "
+       << (r.leftRegion != tIndex(-1) ? std::to_string(r.leftRegion) : "INF") << "/"
+       << (r.rightRegion != tIndex(-1) ? std::to_string(r.rightRegion) : "INF");
+    if (r.ext) {
+        os << " extension: " << *r.ext;
+    }
+
+    return os.str();
+}
+
 struct SweeplineDS {
 
     using tRays = std::list<Ray>;
@@ -200,7 +235,7 @@ struct SweeplineDS {
     }
 
     tFloat prj(const tFloatVector &p) {
-        return -(p[X] * slDirVector[X] + p[Y] * slDirVector[Y]) /
+        return (p[X] * slDirVector[X] + p[Y] * slDirVector[Y]) /
                dot(slDirVector, slDirVector);
     }
 
@@ -230,13 +265,7 @@ struct SweeplineDS {
 
         // draw rays
         for (const auto &r : slRays) {
-            if (!r.ext) {
-                painter.drawLine(
-                        r.p, {r.p[X] + std::cos(r.angle), r.p[Y] + std::sin(r.angle)});
-            } else {
-                painter.drawLine(r.p, r.ext->p);
-                painter.drawLine(r.ext->p, {r.ext->p[X] + std::cos(r.ext->angle), r.ext->p[Y] + std::sin(r.ext->angle)});
-            }
+            r.draw(painter);
         }
     }
 
@@ -297,7 +326,7 @@ private:
 
         using pqItem = std::pair<tFloat, Event>;
         auto pqCmp = [](const pqItem &a, const pqItem &b) {
-            return a.first < b.first;
+            return a.first > b.first;
         };
 
         tFloat lTheta = k * (2 * M_PI / K);
@@ -305,83 +334,110 @@ private:
 
         SweeplineDS sl(M_PI + .5 * (lTheta + uTheta));
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> pq(pqCmp);
-        std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> delPQ(
-                pqCmp);
+        std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> delPQ(pqCmp);
 
         for (tIndex i = 0; i < points.size(); ++i) {
-            // std::cout << i << ": " << points[i][X] << ", " << points[i][Y]  << "
-            // prj: " << sl.prj(points[i]) << std::endl;
             pq.push({sl.prj(points[i]), Event({points[i], i})});
         }
 
 #ifdef WITH_CAIRO
+
+        constexpr std::array<float, 3> BASE = {0, 0, 0};
+        constexpr std::array<float, 3> SL = {0, 0, 1};
+        constexpr std::array<float, 3> POINT = {1, 0, 0};
+        constexpr std::array<float, 3> IS = {0, 1, 0};
+        constexpr std::array<float, 3> BOUND = {0, 1, 1};
+
         Painter basePainter(bounds, 1000);
-        basePainter.draw(points, false);
+        basePainter.setColor(BASE);
+        basePainter.draw(points, true);
 #endif
         tIndex idx = 0;
         while (!pq.empty()) {
 
-            auto p = pq.top().second;
-            std::cout << idx << ": (" << p.pos[X] << ", " << p.pos[Y]
-                      << ") key: " << pq.top().first << std::endl;
+            auto cKey = pq.top().first;
+            auto cPoint = pq.top().second;
+            pq.pop();
+
+            std::cout << idx << ": " << cPoint.idx << " (" << cPoint.pos[X] << ", " << cPoint.pos[Y]
+                      << "): key: " << cKey << std::endl;
 
 #ifdef WITH_CAIRO
-            basePainter.draw(p.pos, idx);
+            //basePainter.draw(cPoint.pos, idx);
 
             Painter stepPainter(basePainter);
 
-            stepPainter.setColor(1, 0, 0);
-            stepPainter.draw(p.pos, idx);
+            stepPainter.setColor(POINT);
+            stepPainter.draw(cPoint.pos, idx, false);
 
-            stepPainter.setColor(0, 0, 0);
-            sl.draw(p.pos, stepPainter);
+            stepPainter.setColor(SL);
+            sl.draw(cPoint.pos, stepPainter);
             stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
 #endif
 
-            switch (p.type) {
+            switch (cPoint.type) {
                 case Event::Type::Input: {
 
-                    auto itBr = sl.find(p.pos);// right ray
+                    std::cout << idx << " type: input point" << std::endl;
+
+                    auto itBr = sl.find(cPoint.pos);// right ray
                     auto itBl =
                             (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
+                    assert(itBl->leftOf(cPoint.pos));
+
+                    std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
+                    std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
 
                     // add graph edge
                     if (itBr != sl.end() && itBr->leftRegion != tIndex(-1)) {
                         assert(itBl->rightRegion == itBr->leftRegion);
 
-                        graph[p.idx].neighbor[k] = itBr->leftRegion;
-                        graph[p.idx].distance[k] = distance2(p.pos, points[itBr->leftRegion]);
+                        graph[cPoint.idx].neighbor[k] = itBr->leftRegion;
+                        graph[cPoint.idx].distance[k] = distance2(cPoint.pos, points[itBr->leftRegion]);
+
+                        std::cout << idx << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion
+                                  << ") w: " << distance2(cPoint.pos, points[itBr->leftRegion]) << std::endl;
                     }
 
-                    // check if Bl and Br intersect
-                    if (itBl != sl.end() && itBr != sl.end()) {
+                    // check if Bl and Br intersect, check only required if they don't originate from same point
+                    if (itBl != sl.end() && itBr != sl.end() && itBl->p != itBr->p) {
                         try {
                             auto is = itBl->intersection(*itBr, bounds);
                             delPQ.push({sl.prj(is), Event({is})});
+                            std::cout << idx << " deleted intersection point at " << is << " key: " << sl.prj(is) << std::endl;
                         } catch (std::domain_error &e) {}
                     }
 
                     // create new rays and insert them into SL
                     auto itBln = sl.insert(
                             itBr,
-                            Ray({p.pos, lTheta + tFloat(M_PI),
-                                 itBl != sl.end() ? itBl->rightRegion : tIndex(-1), p.idx}));
+                            Ray({cPoint.pos, lTheta + tFloat(M_PI),
+                                 itBl != sl.end() ? itBl->rightRegion : tIndex(-1), cPoint.idx}));
                     auto itBrn = sl.insert(
-                            itBr, Ray({p.pos, uTheta + tFloat(M_PI), p.idx,
+                            itBr, Ray({cPoint.pos, uTheta + tFloat(M_PI), cPoint.idx,
                                        itBr != sl.end() ? itBr->leftRegion : tIndex(-1)}));
+
+                    std::cout << idx << " left ray " << *itBln << std::endl;
+                    std::cout << idx << " right ray " << *itBrn << std::endl;
 
                     // insert intersection points into PQ
                     if (itBl != sl.end()) {
                         try {
                             auto is = itBl->intersection(*itBln, bounds);
-                            pq.push({sl.prj(is), Event({is, itBl, itBln})});
+                            if (sl.prj(is) > cKey) {
+                                pq.push({sl.prj(is), Event({is, itBl, itBln})});
+                                std::cout << idx << " added left intersection point at " << is << " key: " << sl.prj(is) << std::endl;
+                            }
                         } catch (std::domain_error &e) {}
                     }
 
                     if (itBr != sl.end()) {
                         try {
-                            auto is = itBr->intersection(*itBrn, bounds);
-                            pq.push({sl.prj(is), Event({is, itBrn, itBr})});
+                            auto is = itBrn->intersection(*itBr, bounds);
+                            if (sl.prj(is) > cKey) {
+                                pq.push({sl.prj(is), Event({is, itBrn, itBr})});
+                                std::cout << idx << " added right intersection point at " << is << " key: " << sl.prj(is) << std::endl;
+                            }
                         } catch (std::domain_error &e) {}
                     }
 
@@ -390,49 +446,82 @@ private:
 
                 case Event::Type::Intersection: {
 
-                    // check whehter IS is deleted
-                    if (!delPQ.empty() && delPQ.top().second.pos == p.pos) {
+                    std::cout << idx << " type: intersection point" << std::endl;
+
+                    // check for point that are not processed on delPQ
+                    while (!delPQ.empty() && delPQ.top().first < cKey) {
                         delPQ.pop();
+                    }
+
+                    if (!delPQ.empty() && delPQ.top().second.pos == cPoint.pos) {
+                        delPQ.pop();
+                        std::cout << idx << " previously deleted" << std::endl;
                         break;
                     }
 
-                    auto itBl = p.leftRay;
-                    auto itBr = p.rightRay;
+                    auto itBl = cPoint.leftRay;
+                    auto itBr = cPoint.rightRay;
+
+                    stepPainter.setColor(BOUND);
+                    itBl->draw(stepPainter);
+                    itBr->draw(stepPainter);
+                    stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
 
                     assert(std::next(itBl) == itBr);
                     assert(itBl == std::prev(itBr));
+
+                    std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
+                    std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
 
                     // delete intersection points from PQ
                     if (itBl != sl.begin()) {
                         try {
                             auto itBll = std::prev(itBl);
-                            auto is = itBl->intersection(*itBll, bounds);
-                            delPQ.push({sl.prj(is), Event({is})});
+
+                            if (itBl->p != itBll->p) {
+                                auto is = itBll->intersection(*itBl, bounds);
+                                delPQ.push({sl.prj(is), Event({is})});
+                                std::cout << idx << " deleted left intersection point at " << is << " key: " << sl.prj(is) << std::endl;
+                            }
                         } catch (std::domain_error &e) {}
                     }
 
                     if (itBr != sl.end()) {
                         try {
                             auto itBrr = std::next(itBr);
-                            if (itBrr != sl.end()) {
+
+                            if (itBrr != sl.end() && itBr->p != itBrr->p) {
                                 auto is = itBr->intersection(*itBrr, bounds);
                                 delPQ.push({sl.prj(is), Event({is})});
+                                std::cout << idx << " deleted right intersection point at " << is << " key: " << sl.prj(is) << std::endl;
                             }
                         } catch (std::domain_error &e) {}
                     }
 
-                    Ray rL({p.pos, lTheta + tFloat(M_PI), itBl->leftRegion,
+                    Ray rL({cPoint.pos, lTheta + tFloat(M_PI), itBl->leftRegion,
                             itBr->rightRegion});
-                    Ray rR({p.pos, uTheta + tFloat(M_PI), itBl->leftRegion,
+                    Ray rR({cPoint.pos, uTheta + tFloat(M_PI), itBl->leftRegion,
                             itBr->rightRegion});
 
                     // bisector line between A and B
                     auto pL = points[itBl->leftRegion];
                     auto pR = points[itBr->rightRegion];
                     auto pMid = 0.5 * (pL + pR);
-                    tFloat aBs = std::atan2(pR[Y] - pL[Y], pR[X] - pL[X]) +
-                                 M_PI_2;// TODO check angle orientation
+                    tFloat aBs = std::atan2(pR[Y] - pL[Y], pR[X] - pL[X]);
+                    aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO check angle orientation
                     Ray Bs({pMid, aBs, itBl->leftRegion, itBr->rightRegion});
+
+                    stepPainter.setColor(IS);
+                    rL.draw(stepPainter);
+                    rR.draw(stepPainter);
+                    stepPainter.drawLine(pL, pR);
+                    stepPainter.drawSquare(pMid);
+                    Bs.draw(stepPainter);
+
+                    std::cout
+                            << "left ray: " << rL << std::endl;
+                    std::cout << "right ray: " << rR << std::endl;
+                    std::cout << "bisector: " << Bs << std::endl;
 
                     // check for intersections of Bln, Blr and BS
                     bool BsL = false;
@@ -441,21 +530,49 @@ private:
                     tFloatVector pBsR;
                     try {
                         pBsL = Bs.intersection(rL, bounds);
-                        BsL = true;
-                    } catch (std::domain_error &e) {
-                    }
+                        if (sl.prj(pBsL) >= cKey) {// check whether IS is before SL
+                            BsL = true;
+                        }
+                    } catch (std::domain_error &e) {}
 
                     try {
                         pBsR = Bs.intersection(rR, bounds);
-                        BsR = true;
+                        if (sl.prj(pBsR) >= cKey) {// check whether IS is before SL
+                            BsR = true;
+                        }
                     } catch (std::domain_error &e) {}
+
+                    if (BsL) {
+                        stepPainter.setColor(IS);
+                        stepPainter.draw(pBsL, 0);
+                    }
+
+                    if (BsR) {
+                        stepPainter.setColor(IS);
+                        stepPainter.draw(pBsR, 1);
+                    }
+
+                    // check whether rays have extension before deletion: delete delete event
+                    if (itBl->ext) {
+                        delPQ.push({sl.prj(itBl->ext->p), Event({itBl->ext->p})});
+                        std::cout << idx << " deleted Deletion event " << itBl->ext->p << " key: " << sl.prj(itBl->ext->p) << std::endl;
+                    }
+                    if (itBr->ext) {
+                        delPQ.push({sl.prj(itBr->ext->p), Event({itBr->ext->p})});
+                        std::cout << idx << " deleted Deletion event " << itBr->ext->p << " key: " << sl.prj(itBr->ext->p) << std::endl;
+                    }
 
                     // remove old Rays from list
                     sl.erase(itBl);
                     auto itInsertPos = sl.erase(itBr);
                     auto itBn = sl.end();
 
+                    basePainter.drawSquare(cPoint.pos);
+                    basePainter.drawLine(itBl->p, cPoint.pos);
+                    basePainter.drawLine(itBr->p, cPoint.pos);
+
                     if (!BsL && !BsR) {
+                        std::cout << idx << " case a) no intersection" << std::endl;
                         // bisector intersects no ray from P
                         if (sl.prj(pR) < sl.prj(pL)) {
                             // right point is further from v -> right ray becomes border
@@ -468,12 +585,14 @@ private:
                         if (BsL && BsR) {
                             // bisector intersects both rays - > must be in same point v
                             assert(pBsL == pBsR);
-                            assert(pBsL == p.pos);
-                            assert(pBsR == p.pos);
+                            assert(pBsL == cPoint.pos);
+                            assert(pBsR == cPoint.pos);
+                            std::cout << idx << " case c) both intersect" << std::endl;
                             // boundary originates at v with bisector angle
-                            itBn = sl.insert(itInsertPos, Ray({p.pos, aBs, itBl->leftRegion,
+                            itBn = sl.insert(itInsertPos, Ray({cPoint.pos, aBs, itBl->leftRegion,
                                                                itBr->rightRegion}));
                         } else {
+                            std::cout << idx << " case b) one intersection" << std::endl;
                             if (BsL) {
                                 // bisector intersects left ray
                                 itBn = sl.insert(itInsertPos,
@@ -491,12 +610,17 @@ private:
                     }
                     assert(itBn != sl.end());// some boundary was inserted into SL
 
+                    std::cout << "found boundary: " << *itBn << std::endl;
+
                     // insert intersection points into PQ
                     if (itBn != sl.begin()) {
                         try {
                             auto itL = std::prev(itBn);
-                            auto is = itBn->intersection(*itL, bounds);
-                            pq.push({sl.prj(is), Event({is, itL, itBn})});
+                            auto is = itL->intersection(*itBn, bounds);
+                            if (sl.prj(is) > cKey) {// only consider point if not yet swept
+                                pq.push({sl.prj(is), Event({is, itL, itBn})});
+                                std::cout << idx << " added left intersection point at " << is << " key: " << sl.prj(is) << std::endl;
+                            }
                         } catch (std::domain_error &e) {}
                     }
 
@@ -504,16 +628,39 @@ private:
                     if (itR != sl.end()) {
                         try {
                             auto is = itBn->intersection(*itR, bounds);
-                            pq.push({sl.prj(is), Event({is, itBn, itR})});
+                            if (sl.prj(is) > cKey) {// only consider point if not yet swept
+                                pq.push({sl.prj(is), Event({is, itBn, itR})});
+                                std::cout << idx << " added right intersection point at " << is << " key: " << sl.prj(is) << std::endl;
+                            }
                         } catch (std::domain_error &e) {}
                     }
+
+                    stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
 
                     break;
                 }
 
                 case Event::Type::Deletion: {
 
-                    auto itB = p.leftRay;// we store the ray to be deleted as left ray
+                    std::cout << idx << " type: deletion point" << std::endl;
+
+                    // check for point that are not processed on delPQ
+                    while (!delPQ.empty() && delPQ.top().first < cKey) {
+                        delPQ.pop();
+                    }
+
+                    if (!delPQ.empty() && delPQ.top().second.pos == cPoint.pos) {
+                        delPQ.pop();
+                        std::cout << idx << " previously deleted" << std::endl;
+                        break;
+                    }
+
+                    auto itB = cPoint.leftRay;// we store the ray to be deleted as left ray
+                    assert(itB != sl.end());
+                    assert(itB->ext);
+
+                    basePainter.drawLine(itB->p, itB->ext->p);
+
                     *itB = *(itB->ext);
                     // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
                     // all intersections processed after this point will be with lower ray
@@ -522,8 +669,9 @@ private:
                 }
             }
 
-            pq.pop();
             ++idx;
+
+            std::cout << std::endl;
         }
     }
 };
