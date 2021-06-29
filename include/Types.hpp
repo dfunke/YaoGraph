@@ -20,7 +20,7 @@ constexpr int SEED = 1986;
 using tFloatVector = std::array<tFloat, D>;
 using tIndexVector = std::array<tIndex, D>;
 using tPoints = std::vector<tFloatVector>;
-using tPointSet = std::unordered_set<tIndex>;
+using tIndexSet = std::unordered_set<tIndex>;
 
 struct tBox {
     tFloatVector low;

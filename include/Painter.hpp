@@ -115,7 +115,7 @@ public:
         }
     }
 
-    void draw(const tPointSet &pointSet, const tPoints &points) {
+    void draw(const tIndexSet &pointSet, const tPoints &points) {
         for (const auto &p : pointSet) {
             draw(points[p], p);
         }
