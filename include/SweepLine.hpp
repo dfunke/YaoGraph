@@ -6,6 +6,7 @@
 
 #include <list>
 #include <queue>
+#include <memory>
 #include <sstream>
 
 #include "Predicates.hpp"
