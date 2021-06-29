@@ -344,10 +344,10 @@ private:
 #ifdef WITH_CAIRO
 
         constexpr std::array<float, 3> BASE = {0, 0, 0};
-        constexpr std::array<float, 3> SL = {0, 0, 1};
-        constexpr std::array<float, 3> POINT = {1, 0, 0};
-        constexpr std::array<float, 3> IS = {0, 1, 0};
-        constexpr std::array<float, 3> BOUND = {0, 1, 1};
+        [[maybe_unused]] constexpr std::array<float, 3> SL = {0, 0, 1};
+        [[maybe_unused]] constexpr std::array<float, 3> POINT = {1, 0, 0};
+        [[maybe_unused]] constexpr std::array<float, 3> IS = {0, 1, 0};
+        [[maybe_unused]] constexpr std::array<float, 3> BOUND = {0, 1, 1};
 
         Painter basePainter(bounds, 1000);
         basePainter.setColor(BASE);
@@ -363,7 +363,7 @@ private:
             std::cout << idx << ": " << cPoint.idx << " (" << cPoint.pos[X] << ", " << cPoint.pos[Y]
                       << "): key: " << cKey << std::endl;
 
-#ifdef WITH_CAIRO
+#if defined(WITH_CAIRO) && defined(PAINT_STEPS)
             //basePainter.draw(cPoint.pos, idx);
 
             Painter stepPainter(basePainter);
@@ -463,7 +463,7 @@ private:
                     auto itBl = cPoint.leftRay;
                     auto itBr = cPoint.rightRay;
 
-#ifdef WITH_CAIRO
+#if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     stepPainter.setColor(BOUND);
                     itBl->draw(stepPainter);
                     itBr->draw(stepPainter);
@@ -514,7 +514,7 @@ private:
                     aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO check angle orientation
                     Ray Bs({pMid, aBs, itBl->leftRegion, itBr->rightRegion});
 
-#ifdef WITH_CAIRO
+#if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     stepPainter.setColor(IS);
                     rL.draw(stepPainter);
                     rR.draw(stepPainter);
@@ -546,7 +546,7 @@ private:
                         }
                     } catch (std::domain_error &e) {}
 
-#ifdef WITH_CAIRO
+#if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     if (BsL) {
                         stepPainter.setColor(IS);
                         stepPainter.draw(pBsL, 0);
@@ -643,7 +643,7 @@ private:
                         } catch (std::domain_error &e) {}
                     }
 
-#ifdef WITH_CAIRO
+#if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
 #endif
 
@@ -685,5 +685,9 @@ private:
 
             std::cout << std::endl;
         }
+
+#ifdef WITH_CAIRO
+        basePainter.save("img_k" + std::to_string(k));
+#endif
     }
 };
