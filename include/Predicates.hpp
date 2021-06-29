@@ -24,8 +24,21 @@ tFloat distance(const tFloatVector &a, const tFloatVector &b) {
     return std::sqrt(distance2(a, b));
 }
 
+template<typename F>
+struct MaxError;
+
+template<>
+struct MaxError<float> {
+    static constexpr float value = 1e-10;
+};
+
+template<>
+struct MaxError<double> {
+    static constexpr double value = 1e-25;
+};
+
 bool approxEQ(const tFloatVector &a, const tFloatVector &b) {
-    return distance2(a, b) < 0.001;//TODO: use more meaningful test
+    return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
 }
 
 tFloat atan2P(const tFloat &y, const tFloat &x) {
