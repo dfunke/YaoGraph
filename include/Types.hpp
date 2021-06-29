@@ -7,7 +7,7 @@
 #include <unordered_set>
 #include <vector>
 
-using tFloat = float;
+using tFloat = double;
 using tDim = unsigned short;
 using tIndex = std::size_t;
 
