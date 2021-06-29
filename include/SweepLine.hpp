@@ -37,6 +37,9 @@ struct Ray {
         : p(p_), angle(angle_), leftRegion(lr), rightRegion(rr),
           ext(std::make_unique<Ray>(ext_)) {
 
+        // the starting points of upper and lower ray should be different
+        assert(!approxEQ(p, ext->p));
+
         // the starting point of the lower ray must be on the upper rayl;
         assert(approxEQ(ext->p, {ext->p[X], std::tan(angle) * (ext->p[X] - p[X]) + p[Y]}));
         assert(leftRegion == ext->leftRegion);
@@ -603,16 +606,24 @@ private:
                             std::cout << idx << " case b) one intersection" << std::endl;
                             if (BsL) {
                                 // bisector intersects left ray
-                                itBn = sl.insert(itInsertPos,
-                                                 Ray({rL, Ray({pBsL, aBs, itBl->leftRegion,
-                                                               itBr->rightRegion})}));
-                                pq.push({sl.prj(pBsL), Event({pBsL, itBn})});
+                                if (!approxEQ(rL.p, pBsL)) {
+                                    itBn = sl.insert(itInsertPos,
+                                                     Ray({rL, Ray({pBsL, aBs, itBl->leftRegion,
+                                                                   itBr->rightRegion})}));
+                                    pq.push({sl.prj(pBsL), Event({pBsL, itBn})});
+                                } else {// if they are almost equal immediately use bisector ray
+                                    itBn = sl.insert(itInsertPos, Ray({pBsL, aBs, itBl->leftRegion, itBr->rightRegion}));
+                                }
                             } else {
                                 // bisector intersects right ray
-                                itBn = sl.insert(itInsertPos,
-                                                 Ray({rR, Ray({pBsR, aBs, itBl->leftRegion,
-                                                               itBr->rightRegion})}));
-                                pq.push({sl.prj(pBsR), Event({pBsR, itBn})});
+                                if (!approxEQ(rR.p, pBsR)) {
+                                    itBn = sl.insert(itInsertPos,
+                                                     Ray({rR, Ray({pBsR, aBs, itBl->leftRegion,
+                                                                   itBr->rightRegion})}));
+                                    pq.push({sl.prj(pBsR), Event({pBsR, itBn})});
+                                } else {// if they are almost equal immediately use bisector ray
+                                    itBn = sl.insert(itInsertPos, Ray({pBsR, aBs, itBl->leftRegion, itBr->rightRegion}));
+                                }
                             }
                         }
                     }
