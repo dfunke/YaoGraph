@@ -5,8 +5,8 @@
 #pragma once
 
 #include <list>
-#include <queue>
 #include <memory>
+#include <queue>
 #include <sstream>
 
 #include "Predicates.hpp"
@@ -38,8 +38,7 @@ struct Ray {
           ext(std::make_unique<Ray>(ext_)) {
 
         // the starting point of the lower ray must be on the upper rayl;
-        std::cout << "exp: " << ext->p[Y] << "\nis:  " << std::tan(angle) * (ext->p[X] - p[X]) + p[Y] << std::endl;
-        assert(std::abs(ext->p[Y] - (std::tan(angle) * (ext->p[X] - p[X]) + p[Y])) < 0.001);//TODO make more meaningful
+        assert(approxEQ(ext->p, {ext->p[X], std::tan(angle) * (ext->p[X] - p[X]) + p[Y]}));
         assert(leftRegion == ext->leftRegion);
         assert(rightRegion == ext->rightRegion);
     }
@@ -524,9 +523,9 @@ private:
                     Bs.draw(stepPainter);
 #endif
 
-                    std::cout << "left ray: " << rL << std::endl;
-                    std::cout << "right ray: " << rR << std::endl;
-                    std::cout << "bisector: " << Bs << std::endl;
+                    std::cout << idx << " left ray: " << rL << std::endl;
+                    std::cout << idx << " right ray: " << rR << std::endl;
+                    std::cout << idx << " bisector: " << Bs << std::endl;
 
                     // check for intersections of Bln, Blr and BS
                     bool BsL = false;
@@ -593,9 +592,9 @@ private:
                     } else {
                         if (BsL && BsR) {
                             // bisector intersects both rays - > must be in same point v
-                            assert(pBsL == pBsR);
-                            assert(pBsL == cPoint.pos);
-                            assert(pBsR == cPoint.pos);
+                            assert(approxEQ(pBsL, pBsR));
+                            assert(approxEQ(pBsL, cPoint.pos));
+                            assert(approxEQ(pBsR, cPoint.pos));
                             std::cout << idx << " case c) both intersect" << std::endl;
                             // boundary originates at v with bisector angle
                             itBn = sl.insert(itInsertPos, Ray({cPoint.pos, aBs, itBl->leftRegion,

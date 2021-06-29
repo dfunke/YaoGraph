@@ -24,6 +24,10 @@ tFloat distance(const tFloatVector &a, const tFloatVector &b) {
     return std::sqrt(distance2(a, b));
 }
 
+bool approxEQ(const tFloatVector &a, const tFloatVector &b) {
+    return distance2(a, b) < 0.001;//TODO: use more meaningful test
+}
+
 tFloat atan2P(const tFloat &y, const tFloat &x) {
     auto rad = std::atan2(y, x);
     return rad >= 0 ? rad : 2 * M_PI + rad;
