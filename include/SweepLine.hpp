@@ -384,7 +384,7 @@ private:
                     auto itBr = sl.find(cPoint.pos);// right ray
                     auto itBl =
                             (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
-                    assert(itBl->leftOf(cPoint.pos));
+                    assert(itBl == sl.end() || itBl->leftOf(cPoint.pos));
 
                     std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
                     std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;

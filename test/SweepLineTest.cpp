@@ -7,7 +7,7 @@
 TEST(SweepLineTest, Ordering) { // 12/2/2020 -> 737761
     constexpr tBox BOUNDS{{0, 0},
                           {1, 1}};
-    constexpr tIndex nPoints = 10;
+    constexpr tIndex nPoints = 1e2;
     constexpr tDim K = 6;
 
 
