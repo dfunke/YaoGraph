@@ -125,31 +125,32 @@ std::ostream &operator<<(std::ostream &os, const tFloatVector &v) {
 }
 
 template<typename YaoGraph>
-bool checkGraph(const YaoGraph &is, const YaoGraph &exp) {
+std::tuple<bool, tIndexSet> checkGraph(const YaoGraph &is, const YaoGraph &exp) {
 
     bool valid = true;
+    tIndexSet invalidVertices;
 
     if (is.size() != exp.size()) {
         valid = false;
         std::cerr << "size error: is " << is.size() << " exp " << exp.size() << std::endl;
     }
 
-    tIndex invalidVertices = 0;
     for (tIndex i = 0; i < is.size(); ++i) {
         if (is[i] != exp[i]) {
             valid = false;
-            ++invalidVertices;
+            invalidVertices.insert(i);
+
             std::cerr << "vertex error " << i << ":\n\tis:  " << is[i] << "\n\texp: " << exp[i] << std::endl;
         }
     }
 
     if (!valid) {
         std::cerr << "graph not valid";
-        if (invalidVertices) {
-            std::cerr << " - " << invalidVertices << "/" << is.size() << " vertices invalid";
+        if (!invalidVertices.empty()) {
+            std::cerr << " - " << invalidVertices.size() << "/" << is.size() << " vertices invalid";
         }
         std::cerr << std::endl;
     }
 
-    return valid;
+    return {valid, invalidVertices};
 }
