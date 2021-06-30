@@ -571,16 +571,16 @@ private:
                         std::cout << idx << " deleted Deletion event " << itBr->ext->p << " key: " << sl.prj(itBr->ext->p) << std::endl;
                     }
 
-                    // remove old Rays from list
-                    sl.erase(itBl);
-                    auto itInsertPos = sl.erase(itBr);
-                    auto itBn = sl.end();
-
 #ifdef WITH_CAIRO
                     basePainter.drawSquare(cPoint.pos);
                     basePainter.drawLine(itBl->p, cPoint.pos);
                     basePainter.drawLine(itBr->p, cPoint.pos);
 #endif
+
+                    // remove old Rays from list
+                    sl.erase(itBl);
+                    auto itInsertPos = sl.erase(itBr);
+                    auto itBn = sl.end();
 
                     if (!BsL && !BsR) {
                         std::cout << idx << " case a) no intersection" << std::endl;
@@ -600,29 +600,29 @@ private:
                             assert(approxEQ(pBsR, cPoint.pos));
                             std::cout << idx << " case c) both intersect" << std::endl;
                             // boundary originates at v with bisector angle
-                            itBn = sl.insert(itInsertPos, Ray({cPoint.pos, aBs, itBl->leftRegion,
-                                                               itBr->rightRegion}));
+                            Bs.p = cPoint.pos;
+                            itBn = sl.insert(itInsertPos, Bs);
                         } else {
                             std::cout << idx << " case b) one intersection" << std::endl;
                             if (BsL) {
                                 // bisector intersects left ray
+                                // boundary to intersection point, then ray with bisector angle
+                                Bs.p = pBsL;
                                 if (!approxEQ(rL.p, pBsL)) {
-                                    itBn = sl.insert(itInsertPos,
-                                                     Ray({rL, Ray({pBsL, aBs, itBl->leftRegion,
-                                                                   itBr->rightRegion})}));
+                                    itBn = sl.insert(itInsertPos, Ray({rL, Bs}));
                                     pq.push({sl.prj(pBsL), Event({pBsL, itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
-                                    itBn = sl.insert(itInsertPos, Ray({pBsL, aBs, itBl->leftRegion, itBr->rightRegion}));
+                                    itBn = sl.insert(itInsertPos, Bs);
                                 }
                             } else {
                                 // bisector intersects right ray
+                                // boundary to intersection point, then ray with bisector angle
+                                Bs.p = pBsR;
                                 if (!approxEQ(rR.p, pBsR)) {
-                                    itBn = sl.insert(itInsertPos,
-                                                     Ray({rR, Ray({pBsR, aBs, itBl->leftRegion,
-                                                                   itBr->rightRegion})}));
+                                    itBn = sl.insert(itInsertPos, Ray({rR, Bs}));
                                     pq.push({sl.prj(pBsR), Event({pBsR, itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
-                                    itBn = sl.insert(itInsertPos, Ray({pBsR, aBs, itBl->leftRegion, itBr->rightRegion}));
+                                    itBn = sl.insert(itInsertPos, Bs);
                                 }
                             }
                         }
