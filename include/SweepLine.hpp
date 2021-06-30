@@ -77,12 +77,17 @@ struct Ray {
         return (((p[X] + std::cos(angle)) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + std::sin(angle)) - p[Y]) * (x[X] - p[X])) > 0;
     }
 
-    tFloatVector intersection(const Ray &b, const tBox &bounds) const {
+    struct tIntersectionRetVal {
+        bool valid;
+        tFloatVector pos;
+    };
+
+    tIntersectionRetVal intersection(const Ray &b, const tBox &bounds) const {
         return intersection(*this, b, bounds);
     }
 
 public:
-    static tFloatVector intersection(const Ray &a, const Ray &b, const tBox &bounds) {
+    static tIntersectionRetVal intersection(const Ray &a, const Ray &b, const tBox &bounds) {
         if (!a.ext && !b.ext) {
             return isRR(a, b, bounds);
         } else if (a.ext && b.ext) {
@@ -108,16 +113,17 @@ public:
 #endif
 
 private:
-    static tFloatVector isRR(const Ray &a, const Ray &b, const tBox &bounds) {
-        if (std::fmod(std::fmod(a.angle - b.angle, M_PI) + M_PI, M_PI) == 0)
-            throw std::domain_error("parallel lines");
+    static tIntersectionRetVal isRR(const Ray &a, const Ray &b, const tBox &bounds) {
+        if (std::fmod(std::fmod(a.angle - b.angle, M_PI) + M_PI, M_PI) == 0) {
+            return {false, {}};
+        }
 
         if (std::fmod(std::fmod(a.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
             // vertical line this's x
-            return {a.p[X], std::tan(b.angle) * (a.p[X] - b.p[X]) + b.p[Y]};
+            return {true, {a.p[X], std::tan(b.angle) * (a.p[X] - b.p[X]) + b.p[Y]}};
         } else if (std::fmod(std::fmod(b.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
             // vertical line at b's x
-            return {b.p[X], std::tan(a.angle) * (b.p[X] - a.p[X]) + a.p[Y]};
+            return {true, {b.p[X], std::tan(a.angle) * (b.p[X] - a.p[X]) + a.p[Y]}};
         }
 
         tFloat m0 = std::tan(a.angle);// Line 0: y = m0 (x - x0) + y0
@@ -127,58 +133,55 @@ private:
         tFloat y = m0 * (x - a.p[X]) + a.p[Y];
 
         if (!bounds.contains({x, y})) {
-            throw std::domain_error("outside bounds");
+            return {false, {}};
         }
 
-        return {x, y};
+        return {true, {x, y}};
     }
 
-    static tFloatVector isUR(const Ray &ua, const Ray &b, const tBox &bounds) {
+    static tIntersectionRetVal isUR(const Ray &ua, const Ray &b, const tBox &bounds) {
         assert(ua.ext);
 
-        try {
-            // check for intersection of main ray of ua and b
-            auto is = isRR(ua, b, bounds);
-            // check whether IS is before starting point of extension ray of ur
-            if (distance2(ua.p, is) < distance2(ua.p, ua.ext->p)) {
-                return is;
-            }
-        } catch (std::domain_error &e) {}
+        // check for intersection of main ray of ua and b
+        auto is = isRR(ua, b, bounds);
+        // check whether IS is before starting point of extension ray of ur
+        if (is.valid && distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p)) {
+            return is;
+        }
 
         // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
         return isRR(*ua.ext, b, bounds);
     }
 
-    static tFloatVector isUU(const Ray &ua, const Ray &ub, const tBox &bounds) {
+    static tIntersectionRetVal isUU(const Ray &ua, const Ray &ub, const tBox &bounds) {
         assert(ua.ext && ub.ext);
 
-        try {
-            // check for intersection of main ray of ua and ub
-            auto is = isRR(ua, ub, bounds);
-            // check whether IS is before starting point of lowerRay for both rays
-            if (distance2(ua.p, is) < distance2(ua.p, ua.ext->p) &&
-                distance2(ub.p, is) < distance2(ub.p, ub.ext->p)) {
-                return is;
-            }
-        } catch (std::domain_error &e) {}
+        // check for intersection of main ray of ua and ub
+        auto is = isRR(ua, ub, bounds);
+        // check whether IS is before starting point of lowerRay for both rays
+        if (is.valid &&
+            distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p) &&
+            distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
 
-        try {
-            // check for intersection of main ray of ua and lower ray of ub
-            auto is = isRR(ua, *ub.ext, bounds);
-            // check whether IS is before starting point of lowerRay of ua
-            if (distance2(ua.p, is) < distance2(ua.p, ua.ext->p)) {
-                return is;
-            }
-        } catch (std::domain_error &e) {}
+            return is;
+        }
 
-        try {
-            // check for intersection of lower ray of ua and main ray of ub
-            auto is = isRR(*ua.ext, ub, bounds);
-            // check whether IS is before starting point of ub's lowerRay
-            if (distance2(ub.p, is) < distance2(ub.p, ub.ext->p)) {
-                return is;
-            }
-        } catch (std::domain_error &e) {}
+
+        // check for intersection of main ray of ua and lower ray of ub
+        is = isRR(ua, *ub.ext, bounds);
+        // check whether IS is before starting point of lowerRay of ua
+        if (is.valid && distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p)) {
+            return is;
+        }
+
+
+        // check for intersection of lower ray of ua and main ray of ub
+        is = isRR(*ua.ext, ub, bounds);
+        // check whether IS is before starting point of ub's lowerRay
+        if (is.valid && distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
+            return is;
+        }
+
 
         // check for intersection of lower rays of ua and ub
         return isRR(*ua.ext, *ub.ext, bounds);
@@ -384,9 +387,8 @@ private:
 
                     std::cout << idx << " type: input point" << std::endl;
 
-                    auto itBr = sl.find(cPoint.pos);// right ray
-                    auto itBl =
-                            (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
+                    auto itBr = sl.find(cPoint.pos);                              // right ray
+                    auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
                     assert(itBl == sl.end() || itBl->leftOf(cPoint.pos));
 
                     std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
@@ -405,11 +407,11 @@ private:
 
                     // check if Bl and Br intersect, check only required if they don't originate from same point
                     if (itBl != sl.end() && itBr != sl.end() && itBl->p != itBr->p) {
-                        try {
-                            auto is = itBl->intersection(*itBr, bounds);
-                            delPQ.push({sl.prj(is), Event({is})});
-                            std::cout << idx << " deleted intersection point at " << is << " key: " << sl.prj(is) << std::endl;
-                        } catch (std::domain_error &e) {}
+                        auto is = itBl->intersection(*itBr, bounds);
+                        if (is.valid) {
+                            delPQ.push({sl.prj(is.pos), Event({is.pos})});
+                            std::cout << idx << " deleted intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                        }
                     }
 
                     // create new rays and insert them into SL
@@ -426,23 +428,19 @@ private:
 
                     // insert intersection points into PQ
                     if (itBl != sl.end()) {
-                        try {
-                            auto is = itBl->intersection(*itBln, bounds);
-                            if (sl.prj(is) > cKey) {
-                                pq.push({sl.prj(is), Event({is, itBl, itBln})});
-                                std::cout << idx << " added left intersection point at " << is << " key: " << sl.prj(is) << std::endl;
-                            }
-                        } catch (std::domain_error &e) {}
+                        auto is = itBl->intersection(*itBln, bounds);
+                        if (is.valid && sl.prj(is.pos) > cKey) {
+                            pq.push({sl.prj(is.pos), Event({is.pos, itBl, itBln})});
+                            std::cout << idx << " added left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                        }
                     }
 
                     if (itBr != sl.end()) {
-                        try {
-                            auto is = itBrn->intersection(*itBr, bounds);
-                            if (sl.prj(is) > cKey) {
-                                pq.push({sl.prj(is), Event({is, itBrn, itBr})});
-                                std::cout << idx << " added right intersection point at " << is << " key: " << sl.prj(is) << std::endl;
-                            }
-                        } catch (std::domain_error &e) {}
+                        auto is = itBrn->intersection(*itBr, bounds);
+                        if (is.valid && sl.prj(is.pos) > cKey) {
+                            pq.push({sl.prj(is.pos), Event({is.pos, itBrn, itBr})});
+                            std::cout << idx << " added right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                        }
                     }
 
                     break;
@@ -481,27 +479,27 @@ private:
 
                     // delete intersection points from PQ
                     if (itBl != sl.begin()) {
-                        try {
-                            auto itBll = std::prev(itBl);
+                        auto itBll = std::prev(itBl);
 
-                            if (itBl->p != itBll->p) {
-                                auto is = itBll->intersection(*itBl, bounds);
-                                delPQ.push({sl.prj(is), Event({is})});
-                                std::cout << idx << " deleted left intersection point at " << is << " key: " << sl.prj(is) << std::endl;
+                        if (itBl->p != itBll->p) {
+                            auto is = itBll->intersection(*itBl, bounds);
+                            if (is.valid) {
+                                delPQ.push({sl.prj(is.pos), Event({is.pos})});
+                                std::cout << idx << " deleted left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                             }
-                        } catch (std::domain_error &e) {}
+                        }
                     }
 
                     if (itBr != sl.end()) {
-                        try {
-                            auto itBrr = std::next(itBr);
+                        auto itBrr = std::next(itBr);
 
-                            if (itBrr != sl.end() && itBr->p != itBrr->p) {
-                                auto is = itBr->intersection(*itBrr, bounds);
-                                delPQ.push({sl.prj(is), Event({is})});
-                                std::cout << idx << " deleted right intersection point at " << is << " key: " << sl.prj(is) << std::endl;
+                        if (itBrr != sl.end() && itBr->p != itBrr->p) {
+                            auto is = itBr->intersection(*itBrr, bounds);
+                            if (is.valid) {
+                                delPQ.push({sl.prj(is.pos), Event({is.pos})});
+                                std::cout << idx << " deleted right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                             }
-                        } catch (std::domain_error &e) {}
+                        }
                     }
 
                     Ray rL({cPoint.pos, lTheta + tFloat(M_PI), itBl->leftRegion,
@@ -531,23 +529,15 @@ private:
                     std::cout << idx << " bisector: " << Bs << std::endl;
 
                     // check for intersections of Bln, Blr and BS
-                    bool BsL = false;
-                    tFloatVector pBsL;
-                    bool BsR = false;
-                    tFloatVector pBsR;
-                    try {
-                        pBsL = Bs.intersection(rL, bounds);
-                        if (sl.prj(pBsL) >= cKey) {// check whether IS is before SL
-                            BsL = true;
-                        }
-                    } catch (std::domain_error &e) {}
+                    auto BsL = Bs.intersection(rL, bounds);
+                    if (BsL.valid && sl.prj(BsL.pos) < cKey) {// check whether IS is before SL
+                        BsL.valid = false;
+                    }
 
-                    try {
-                        pBsR = Bs.intersection(rR, bounds);
-                        if (sl.prj(pBsR) >= cKey) {// check whether IS is before SL
-                            BsR = true;
-                        }
-                    } catch (std::domain_error &e) {}
+                    auto BsR = Bs.intersection(rR, bounds);
+                    if (BsR.valid && sl.prj(BsR.pos) < cKey) {// check whether IS is before SL
+                        BsR.valid = false;
+                    }
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     if (BsL) {
@@ -582,7 +572,7 @@ private:
                     auto itInsertPos = sl.erase(itBr);
                     auto itBn = sl.end();
 
-                    if (!BsL && !BsR) {
+                    if (!BsL.valid && !BsR.valid) {
                         std::cout << idx << " case a) no intersection" << std::endl;
                         // bisector intersects no ray from P
                         if (sl.prj(pR) < sl.prj(pL)) {
@@ -593,34 +583,34 @@ private:
                             itBn = sl.insert(itInsertPos, rL);
                         }
                     } else {
-                        if (BsL && BsR) {
+                        if (BsL.valid && BsR.valid) {
                             // bisector intersects both rays - > must be in same point v
-                            assert(approxEQ(pBsL, pBsR));
-                            assert(approxEQ(pBsL, cPoint.pos));
-                            assert(approxEQ(pBsR, cPoint.pos));
+                            assert(approxEQ(BsL.pos, BsR.pos));
+                            assert(approxEQ(BsL.pos, cPoint.pos));
+                            assert(approxEQ(BsR.pos, cPoint.pos));
                             std::cout << idx << " case c) both intersect" << std::endl;
                             // boundary originates at v with bisector angle
                             Bs.p = cPoint.pos;
                             itBn = sl.insert(itInsertPos, Bs);
                         } else {
                             std::cout << idx << " case b) one intersection" << std::endl;
-                            if (BsL) {
+                            if (BsL.valid) {
                                 // bisector intersects left ray
                                 // boundary to intersection point, then ray with bisector angle
-                                Bs.p = pBsL;
-                                if (!approxEQ(rL.p, pBsL)) {
+                                Bs.p = BsL.pos;
+                                if (!approxEQ(rL.p, Bs.p)) {
                                     itBn = sl.insert(itInsertPos, Ray({rL, Bs}));
-                                    pq.push({sl.prj(pBsL), Event({pBsL, itBn})});
+                                    pq.push({sl.prj(Bs.p), Event({Bs.p, itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);
                                 }
                             } else {
                                 // bisector intersects right ray
                                 // boundary to intersection point, then ray with bisector angle
-                                Bs.p = pBsR;
-                                if (!approxEQ(rR.p, pBsR)) {
+                                Bs.p = BsR.pos;
+                                if (!approxEQ(rR.p, Bs.p)) {
                                     itBn = sl.insert(itInsertPos, Ray({rR, Bs}));
-                                    pq.push({sl.prj(pBsR), Event({pBsR, itBn})});
+                                    pq.push({sl.prj(Bs.p), Event({Bs.p, itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);
                                 }
@@ -633,25 +623,21 @@ private:
 
                     // insert intersection points into PQ
                     if (itBn != sl.begin()) {
-                        try {
-                            auto itL = std::prev(itBn);
-                            auto is = itL->intersection(*itBn, bounds);
-                            if (sl.prj(is) > cKey) {// only consider point if not yet swept
-                                pq.push({sl.prj(is), Event({is, itL, itBn})});
-                                std::cout << idx << " added left intersection point at " << is << " key: " << sl.prj(is) << std::endl;
-                            }
-                        } catch (std::domain_error &e) {}
+                        auto itL = std::prev(itBn);
+                        auto is = itL->intersection(*itBn, bounds);
+                        if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept
+                            pq.push({sl.prj(is.pos), Event({is.pos, itL, itBn})});
+                            std::cout << idx << " added left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                        }
                     }
 
                     auto itR = std::next(itBn);
                     if (itR != sl.end()) {
-                        try {
-                            auto is = itBn->intersection(*itR, bounds);
-                            if (sl.prj(is) > cKey) {// only consider point if not yet swept
-                                pq.push({sl.prj(is), Event({is, itBn, itR})});
-                                std::cout << idx << " added right intersection point at " << is << " key: " << sl.prj(is) << std::endl;
-                            }
-                        } catch (std::domain_error &e) {}
+                        auto is = itBn->intersection(*itR, bounds);
+                        if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept
+                            pq.push({sl.prj(is.pos), Event({is.pos, itBn, itR})});
+                            std::cout << idx << " added right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                        }
                     }
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
