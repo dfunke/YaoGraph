@@ -512,7 +512,7 @@ private:
                     auto pR = points[itBr->rightRegion];
                     auto pMid = 0.5 * (pL + pR);
                     tFloat aBs = std::atan2(pR[Y] - pL[Y], pR[X] - pL[X]);
-                    aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO check angle orientation
+                    aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO: check angle orientation
                     Ray Bs({pMid, aBs, itBl->leftRegion, itBr->rightRegion});
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
