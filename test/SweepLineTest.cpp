@@ -36,5 +36,5 @@ TEST(SweepLineTest, Ordering) {
     }
 #endif
 
-    ASSERT_TRUE(valid);
+    EXPECT_TRUE(valid);
 }
