@@ -47,11 +47,16 @@ private:
         bool isLeaf() const override { return false; }
         bool isNode() const override { return true; }
 
+        int getBalance() const {
+            return (left && left->isNode() ? left->asNode()->height : 0) - (right && right->isNode() ? right->asNode()->height : 0);
+        }
+
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
 
         Leaf *leftRep = nullptr;
         Leaf *maxRep = nullptr;
+        tIndex height = 0;
     };
 
     struct Leaf : public Node {
@@ -282,19 +287,146 @@ private:
     }
 
 private:
+    // A utility function to right
+    // rotate subtree rooted with y
+    // See the diagram given above.
+    InternalNode *rightRotate(InternalNode *y) {
+        std::unique_ptr<Node> ux = std::move(y->left);
+        InternalNode *x = ux->asNode();
+
+        std::unique_ptr<Node> T2 = std::move(x->right);
+
+        // Perform rotation
+        y->left = std::move(T2);
+        y->left->parent = y;
+
+        // Update heights
+        y->height = 1 + std::max((y->left && y->left->isNode() ? y->left->asNode()->height : 0),
+                                 (y->right && y->right->isNode() ? y->right->asNode()->height : 0));
+
+        x->parent = y->parent;
+
+        if (x->parent != nullptr) {
+            bool leftChild = (y == y->parent->left.get());
+            assert(leftChild || y == y->parent->right.get());
+            x->right = std::move((leftChild ? y->parent->left : y->parent->right));
+            x->right->parent = x;
+
+            x->height = 1 + std::max((x->left && x->left->isNode() ? x->left->asNode()->height : 0),
+                                     (x->right && x->right->isNode() ? x->right->asNode()->height : 0));
+
+            (leftChild ? y->parent->left : y->parent->right) = std::move(ux);
+
+            // Return new root
+            return (leftChild ? y->parent->left : y->parent->right)->asNode();
+        } else {
+            assert(y->isRoot() && m_root.get() == y);
+            x->right = std::move(m_root);
+            x->right->parent = x;
+
+            x->height = 1 + std::max((x->left && x->left->isNode() ? x->left->asNode()->height : 0),
+                                     (x->right && x->right->isNode() ? x->right->asNode()->height : 0));
+
+            m_root.reset(static_cast<InternalNode *>(ux.release()));
+
+            return m_root->asNode();
+        }
+    }
+
+    // A utility function to left
+    // rotate subtree rooted with x
+    // See the diagram given above.
+    InternalNode *leftRotate(InternalNode *x) {
+
+        std::unique_ptr<Node> uy = std::move(x->right);
+        InternalNode *y = uy->asNode();
+
+        std::unique_ptr<Node> T2 = std::move(y->left);
+
+        // Perform rotation
+        x->right = std::move(T2);
+        x->right->parent = x;
+
+        // Update heights
+        x->height = 1 + std::max((x->left && x->left->isNode() ? x->left->asNode()->height : 0),
+                                 (x->right && x->right->isNode() ? x->right->asNode()->height : 0));
+
+        y->parent = x->parent;
+
+        if (y->parent != nullptr) {
+            bool leftChild = (x == x->parent->left.get());
+            assert(leftChild || x == x->parent->right.get());
+            y->left = std::move(leftChild ? x->parent->left : x->parent->right);
+            y->left->parent = y;
+
+            y->height = 1 + std::max((y->left && y->left->isNode() ? y->left->asNode()->height : 0),
+                                     (y->right && y->right->isNode() ? y->right->asNode()->height : 0));
+
+            (leftChild ? x->parent->left : x->parent->right) = std::move(uy);
+
+            return (leftChild ? x->parent->left : x->parent->right)->asNode();
+        } else {
+            assert(x->isRoot() && m_root.get() == x);
+            y->left = std::move(m_root);
+            y->left->parent = y;
+
+            y->height = 1 + std::max((y->left && y->left->isNode() ? y->left->asNode()->height : 0),
+                                     (y->right && y->right->isNode() ? y->right->asNode()->height : 0));
+
+            m_root.reset(static_cast<InternalNode *>(uy.release()));
+
+            return m_root->asNode();
+        }
+    }
+
     void updateReps(InternalNode *node) {
 
         if (node->left) {
             node->leftRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
             node->maxRep = node->leftRep;
+            node->height = 1 + (node->left->isNode() ? node->left->asNode()->height : 0);
         } else {
+            assert(!node->right);
             node->leftRep = nullptr;
             node->maxRep = nullptr;
+            node->height = 0;
         }
 
         if (node->right) {
             assert(node->left);
             node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
+            node->height = std::max(node->height, 1 + (node->right->isNode() ? node->right->asNode()->height : 0));
+        }
+
+        int balance = node->getBalance();
+        int leftBalance = (node->left && node->left->isNode() ? node->left->asNode()->getBalance() : 0);
+        int rightBalance = (node->right && node->right->isNode() ? node->right->asNode()->getBalance() : 0);
+
+        // If this node becomes unbalanced,
+        // then there are 4 cases
+
+        // Left Left Case
+        if (balance > 1 && leftBalance >= 0) {
+            rightRotate(node);
+        }
+
+        // Left Right Case
+        if (balance > 1 && leftBalance < 0) {
+            assert(node->left && node->left->isNode());
+            node->left.reset(leftRotate(node->left->asNode()));
+            rightRotate(node);
+        }
+
+        // Right Right Case
+        if (balance < -1 && rightBalance <= 0) {
+            leftRotate(node);
+        }
+
+        // Right Left Case
+        if (balance < -1 && rightBalance > 0) {
+            assert(node->right && node->right->isNode());
+            node->right.reset(rightRotate(node->right->asNode()));
+            leftRotate(node);
         }
 
         if (node->parent != nullptr) {
