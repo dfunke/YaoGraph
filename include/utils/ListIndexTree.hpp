@@ -214,7 +214,7 @@ public:
             m_first = nullptr;
             m_last = nullptr;
 
-            m_root->left.release();
+            m_root->left.reset();
             updateReps(m_root.get());
 
             return end();
@@ -255,7 +255,7 @@ private:
             // parent has both children
             if (child == parent->right.get()) {
                 // we are the right child, simply remove
-                parent->right.release();
+                parent->right.reset();
             } else {
                 assert(child == parent->left.get());
                 // we are the left child, move right child into left
@@ -268,7 +268,7 @@ private:
             assert(child == parent->left.get());
 
             // parent becomes empty node
-            parent->left.release();
+            parent->left.reset();
 
             if (parent->parent != nullptr) {
                 // for non-root delete node recursively
