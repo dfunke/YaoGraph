@@ -11,6 +11,7 @@
 
 #include "Predicates.hpp"
 #include "Types.hpp"
+#include "utils/ListIndexTree.hpp"
 
 #ifdef WITH_CAIRO
 
@@ -75,6 +76,13 @@ struct Ray {
         // swept, this ray will be replaced by it
 
         return (((p[X] + std::cos(angle)) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + std::sin(angle)) - p[Y]) * (x[X] - p[X])) > 0;
+    }
+
+    static bool leftOf(const tFloatVector &x, const Ray &ray) {
+        // we only consider main ray, when the starting point of lower ray is
+        // swept, this ray will be replaced by it
+
+        return (((ray.p[X] + std::cos(ray.angle)) - ray.p[X]) * (x[Y] - ray.p[Y]) - ((ray.p[Y] + std::sin(ray.angle)) - ray.p[Y]) * (x[X] - ray.p[X])) > 0;
     }
 
     struct tIntersectionRetVal {
@@ -213,9 +221,8 @@ std::string to_string(const Ray &r) {
 
 struct SweeplineDS {
 
-    using tRays = std::list<Ray>;
-    using tConstRayHandle = typename tRays::const_iterator;
-    using tRayHandle = typename tRays::iterator;
+    using tRays = SearchTree<Ray>;
+    using tRayHandle = typename tRays::Iterator;
 
     tFloat slDirection;
     tFloatVector slDirVector;
@@ -225,19 +232,15 @@ struct SweeplineDS {
         : slDirection(slDir_),
           slDirVector({std::cos(slDirection), std::sin(slDirection)}) {}
 
-    auto begin() const { return tConstRayHandle(slRays.begin()); }
 
-    auto end() const { return tConstRayHandle(slRays.end()); }
+    tRayHandle begin() { return slRays.begin(); }
+    tRayHandle end() { return slRays.end(); }
 
-    auto begin() { return tRayHandle(slRays.begin()); }
-
-    auto end() { return tRayHandle(slRays.end()); }
-
-    auto insert(const tRayHandle &pos, const Ray &ray) {
+    auto insert(tRayHandle &pos, const Ray &ray) {
         return slRays.insert(pos, ray);
     }
 
-    auto erase(const tRayHandle &pos) {
+    auto erase(tRayHandle &pos) {
         return slRays.erase(pos);
     }
 
@@ -257,7 +260,7 @@ struct SweeplineDS {
 
 #ifdef WITH_CAIRO
 
-    void draw(const tFloatVector &pos, Painter &painter) const {
+    void draw(const tFloatVector &pos, Painter &painter) {
 
         // draw sweepline
         painter.drawLine(pos, {pos[X] + std::cos(slDirection + tFloat(M_PI_2)),
@@ -271,7 +274,7 @@ struct SweeplineDS {
         painter.unsetDash();
 
         // draw rays
-        for (const auto &r : slRays) {
+        for (auto &r : slRays) {
             r.draw(painter);
         }
     }
@@ -387,8 +390,8 @@ private:
 
                     std::cout << idx << " type: input point" << std::endl;
 
-                    auto itBr = sl.find(cPoint.pos);                              // right ray
-                    auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
+                    auto itBr = sl.find(cPoint.pos);                          // right ray
+                    auto itBl = (itBr == sl.begin() ? sl.end() : itBr.prev());// left ray
                     assert(itBl == sl.end() || itBl->leftOf(cPoint.pos));
 
                     std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
@@ -471,15 +474,15 @@ private:
                     stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
 #endif
 
-                    assert(std::next(itBl) == itBr);
-                    assert(itBl == std::prev(itBr));
+                    assert(itBl.next() == itBr);
+                    assert(itBl == itBr.prev());
 
                     std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
                     std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
 
                     // delete intersection points from PQ
                     if (itBl != sl.begin()) {
-                        auto itBll = std::prev(itBl);
+                        auto itBll = itBl.prev();
 
                         if (itBl->p != itBll->p) {
                             auto is = itBll->intersection(*itBl, bounds);
@@ -491,7 +494,7 @@ private:
                     }
 
                     if (itBr != sl.end()) {
-                        auto itBrr = std::next(itBr);
+                        auto itBrr = itBr.next();
 
                         if (itBrr != sl.end() && itBr->p != itBrr->p) {
                             auto is = itBr->intersection(*itBrr, bounds);
@@ -623,7 +626,7 @@ private:
 
                     // insert intersection points into PQ
                     if (itBn != sl.begin()) {
-                        auto itL = std::prev(itBn);
+                        auto itL = itBn.prev();
                         auto is = itL->intersection(*itBn, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept
                             pq.push({sl.prj(is.pos), Event({is.pos, itL, itBn})});
@@ -631,7 +634,7 @@ private:
                         }
                     }
 
-                    auto itR = std::next(itBn);
+                    auto itR = itBn.next();
                     if (itR != sl.end()) {
                         auto is = itBn->intersection(*itR, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept
