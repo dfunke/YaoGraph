@@ -73,10 +73,18 @@ private:
 public:
     class Iterator {
 
+        friend class SearchTree<T>;
+
     protected:
         Leaf *leaf_;
 
     public:
+        using difference_type = short;
+        using value_type = T;
+        using pointer = T *;
+        using reference = T &;
+        using iterator_category = std::bidirectional_iterator_tag;
+
         Iterator() : leaf_(nullptr) {}
         Iterator(Leaf *leaf) : leaf_(leaf) {}
 
@@ -94,21 +102,8 @@ public:
         bool operator==(Iterator b) const { return leaf_ == b.leaf_; }
         bool operator!=(Iterator b) const { return leaf_ != b.leaf_; }
 
-        T &operator*() { return *(leaf_->obj.get()); }
-        T *operator->() { return leaf_->obj.get(); }
-
-        Leaf *leaf() { return leaf_; }
-
-        /*operator Leaf *() { return leaf_; }*/
-        /*operator bool() { return leaf_ != nullptr; }*/
-
-        Iterator prev() {
-            return Iterator(leaf_->prev);
-        }
-
-        Iterator next() {
-            return Iterator(leaf_->next);
-        }
+        reference operator*() { return *(leaf_->obj.get()); }
+        pointer operator->() { return leaf_->obj.get(); }
     };
 
 public:
@@ -141,7 +136,7 @@ private:
 
 public:
     Iterator insert(Iterator pos, const T &obj) {
-        return Iterator(insert(pos.leaf(), obj));
+        return Iterator(insert(pos.leaf_, obj));
     }
 
 private:
@@ -188,7 +183,7 @@ private:
         } else {
             leaf->prev = pos->prev;
             assert(leaf->prev != _end());
-            leaf->next = pos->prev->next;
+            leaf->next = pos;
             assert(leaf->next == pos);
 
             leaf->prev->next = leaf.get();
@@ -215,8 +210,15 @@ private:
     void joinFromRight(InternalNode *parent, std::unique_ptr<Leaf> &&leaf) {
 
         assert(parent->left);
+        assert(leaf->prev != _end());
+
+        bool prevIsLeftChild = (parent->left.get() == leaf->prev);
+        assert(prevIsLeftChild || (parent->right && parent->right.get() == leaf->prev));
+
         if (!parent->right) {
-            // parent has empty right child, insert
+            // parent has empty right child, prev must be left child
+            // insert new leaf as right child
+            assert(prevIsLeftChild);
 
             leaf->parent = parent;
 
@@ -229,14 +231,16 @@ private:
 
         std::unique_ptr<InternalNode> newNode = std::make_unique<InternalNode>();
         newNode->parent = parent;
-        newNode->left = std::move(parent->right);
+
+
+        newNode->left = std::move(prevIsLeftChild ? parent->left : parent->right);
         newNode->left->parent = newNode.get();
 
         newNode->right = std::move(leaf);
         newNode->right->parent = newNode.get();
 
-        parent->right = std::move(newNode);
-        updateAndRebalance(parent->right->asNode());
+        (prevIsLeftChild ? parent->left : parent->right) = std::move(newNode);
+        updateAndRebalance((prevIsLeftChild ? parent->left : parent->right)->asNode());
     }
 
     void joinFromLeft(InternalNode *parent, std::unique_ptr<Leaf> &&leaf) {
@@ -269,7 +273,7 @@ private:
 
 public:
     Iterator erase(Iterator pos) {
-        return Iterator(erase(pos.leaf()));
+        return Iterator(erase(pos.leaf_));
     }
 
 private:
@@ -334,6 +338,7 @@ private:
                 parent->left = std::move(parent->right);
             }
 
+            assert(parent->left && !parent->right);
             updateAndRebalance(parent);
         } else {
             assert(parent->left && !parent->right);
@@ -552,10 +557,12 @@ private:
             assert(node->left);
 
             if (cmp(obj, *(node->leftRep->obj))) {
+                assert(cmp(obj, *(node->maxRep->obj)));
                 if (node->left->isNode()) {
                     return find(node->left->asNode(), obj, cmp);
                 } else {
                     assert(node->left->isLeaf());
+                    assert(cmp(obj, *(node->left->asLeaf()->obj)));
                     return node->left->asLeaf();
                 }
             } else if (cmp(obj, *(node->maxRep->obj))) {
@@ -565,12 +572,14 @@ private:
                     return find(node->right->asNode(), obj, cmp);
                 } else {
                     assert(node->right->isLeaf());
+                    assert(cmp(obj, *(node->right->asLeaf()->obj)));
                     return node->right->asLeaf();
                 }
             } else {
                 return _end();
             }
         } else {
+            assert(node->isRoot());// only root may have an empty rep when root is empty
             return _end();
         }
     }
@@ -620,16 +629,3 @@ private:
     Leaf *m_beginLeaf = nullptr;
     std::unique_ptr<Leaf> m_endLeaf;
 };
-
-namespace std {
-
-    template<typename IT>
-    auto next(IT &it) {
-        return it.next();
-    }
-
-    template<typename IT>
-    auto prev(IT &it) {
-        return it.prev();
-    }
-}// namespace std

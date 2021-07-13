@@ -32,19 +32,17 @@ TEST(ListIndexTreeTest, Adding) {
     // traverse and verify list
     auto it = tree.begin();
     EXPECT_EQ(it, it0);
-    EXPECT_EQ(it.leaf()->prev, tree.end().leaf());
-    EXPECT_EQ(it.leaf()->next, it1);
-    it = it.next();
+    EXPECT_EQ(std::prev(it), tree.end());
+    EXPECT_EQ(std::next(it), it1);
+    it = std::next(it);
     int i = 1;
 
     for (; it != tree.end(); ++it) {
-        EXPECT_EQ(it, it.leaf()->prev->next);
+        EXPECT_EQ(it, std::next(std::prev(it)));
 
         EXPECT_EQ(*it, i++);
 
-        if (it.next() != tree.end()) {
-            EXPECT_EQ(it, it.leaf()->next->prev);
-        }
+        EXPECT_EQ(it, std::prev(std::next(it)));
     }
 }
 
@@ -69,26 +67,26 @@ TEST(ListIndexTreeTest, Query) {
     for (int i = 0; i < 20; i += 2) {
         auto it = tree.find(i, std::less<int>());
 
-        ASSERT_NE(it, tree.end().leaf());
+        ASSERT_NE(it, tree.end());
         EXPECT_GT(*it, i);
         EXPECT_EQ(*it - 1, i);
 
         if (i == 0) {
-            EXPECT_EQ(it.leaf()->prev, tree.end().leaf());
+            EXPECT_EQ(std::prev(it), tree.end());
         }
 
         if (i > 0) {
-            ASSERT_NE(it.leaf()->prev, tree.end().leaf());
-            EXPECT_LT(*(it.leaf()->prev->obj), i);
+            ASSERT_NE(std::prev(it), tree.end());
+            EXPECT_LT(*std::prev(it), i);
         }
 
         if (i == 18) {
-            EXPECT_EQ(it.leaf()->next, tree.end());
+            EXPECT_EQ(std::next(it), tree.end());
         }
     }
 
     auto it = tree.find(20, std::less<int>());
-    EXPECT_EQ(it, tree.end().leaf());
+    EXPECT_EQ(it, tree.end());
 }
 
 TEST(ListIndexTreeTest, Erase) {
@@ -111,16 +109,16 @@ TEST(ListIndexTreeTest, Erase) {
     for (int i = 5; i <= 15; ++i) {
         auto it = tree.find(i, std::less<int>());
 
-        ASSERT_NE(it, nullptr);
-        ASSERT_NE(it.leaf()->prev, tree.end().leaf());
+        ASSERT_NE(it, tree.end());
+        ASSERT_NE(std::prev(it), tree.end());
         EXPECT_GT(*it, i);
         EXPECT_EQ(*it, i + 1);
-        EXPECT_EQ(*(it.leaf()->prev->obj), i);
+        EXPECT_EQ(*std::prev(it), i);
 
-        auto del = tree.erase(SearchTree<int>::Iterator(it.leaf()->prev));
+        auto del = tree.erase(std::prev(it));
         EXPECT_TRUE(tree.checkInvariants());
 
-        ASSERT_NE(del, tree.end().leaf());
+        ASSERT_NE(del, tree.end());
         EXPECT_GT(*del, i);
         EXPECT_EQ(*del, i + 1);
     }
@@ -134,8 +132,8 @@ TEST(ListIndexTreeTest, Erase) {
         auto it = tree.find(v, std::less<int>());
 
         if (v < 20) {
-            ASSERT_NE(it, tree.end().leaf());
-            ASSERT_NE(it.leaf()->prev, tree.end().leaf());
+            ASSERT_NE(it, tree.end());
+            ASSERT_NE(std::prev(it), tree.end());
             EXPECT_GT(*it, v);
 
             if (v != 4) {
@@ -144,9 +142,9 @@ TEST(ListIndexTreeTest, Erase) {
                 EXPECT_EQ(*it, 16);
             }
 
-            EXPECT_EQ(*(it.leaf()->prev->obj), v);
+            EXPECT_EQ(*std::prev(it), v);
         } else {
-            EXPECT_EQ(it, tree.end().leaf());
+            EXPECT_EQ(it, tree.end());
         }
 
 
