@@ -22,8 +22,8 @@ int main() {
 
     constexpr tBox BOUNDS{{0, 0},
                           {1, 1}};
-    constexpr tIndex minN = 1e2;
-    constexpr tIndex maxN = 1e2;
+    constexpr tIndex minN = 1e3;
+    constexpr tIndex maxN = 1e5;
     constexpr tDim Cones = 6;
     constexpr tIndex cellOcc = 1e3;
 
