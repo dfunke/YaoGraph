@@ -242,22 +242,27 @@ struct SweeplineDS {
                dot(slDirVector, slDirVector);
     }
 
-    // return iterator to ray immediatly right of point p
-    tRayHandle find(const tFloatVector &p) {// TODO: make const?
-
-#ifndef NDEBUG
+    tRayHandle linearFind(const tFloatVector &p) {// TODO: make const?
         auto exp = begin();
         while (exp != end() && exp->leftOf(p)) {
             ++exp;
         }
-#endif
-        auto cmp = [](const tFloatVector& p, const Ray & r){
+
+        return exp;
+    }
+
+    // return iterator to ray immediatly right of point p
+    tRayHandle find(const tFloatVector &p) {// TODO: make const?
+
+        auto cmp = [](const tFloatVector &p, const Ray &r) {
             return !r.leftOf(p);
         };
 
         auto it = slRays.find(p, cmp);
 
-        assert(it == exp);
+        assert(it == end() || !it->leftOf(p));
+        assert(std::prev(it) == end() || std::prev(it)->leftOf(p));
+        assert(it == linearFind(p));
 
         return it;
     }
