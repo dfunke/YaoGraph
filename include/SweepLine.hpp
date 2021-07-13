@@ -78,13 +78,6 @@ struct Ray {
         return (((p[X] + std::cos(angle)) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + std::sin(angle)) - p[Y]) * (x[X] - p[X])) > 0;
     }
 
-    static bool leftOf(const tFloatVector &x, const Ray &ray) {
-        // we only consider main ray, when the starting point of lower ray is
-        // swept, this ray will be replaced by it
-
-        return (((ray.p[X] + std::cos(ray.angle)) - ray.p[X]) * (x[Y] - ray.p[Y]) - ((ray.p[Y] + std::sin(ray.angle)) - ray.p[Y]) * (x[X] - ray.p[X])) > 0;
-    }
-
     struct tIntersectionRetVal {
         bool valid;
         tFloatVector pos;
@@ -250,10 +243,21 @@ struct SweeplineDS {
     }
 
     // return iterator to ray immediatly right of point p
-    auto find(const tFloatVector &p) {// TODO: make const?
-        auto it = begin();
-        while (it != end() && it->leftOf(p))
-            ++it;
+    tRayHandle find(const tFloatVector &p) {// TODO: make const?
+
+#ifndef NDEBUG
+        auto exp = begin();
+        while (exp != end() && exp->leftOf(p)) {
+            ++exp;
+        }
+#endif
+        auto cmp = [](const tFloatVector& p, const Ray & r){
+            return !r.leftOf(p);
+        };
+
+        auto it = slRays.find(p, cmp);
+
+        assert(it == exp);
 
         return it;
     }
@@ -390,8 +394,8 @@ private:
 
                     std::cout << idx << " type: input point" << std::endl;
 
-                    auto itBr = sl.find(cPoint.pos);                          // right ray
-                    auto itBl = (itBr == sl.begin() ? sl.end() : itBr.prev());// left ray
+                    auto itBr = sl.find(cPoint.pos);                              // right ray
+                    auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
                     assert(itBl == sl.end() || itBl->leftOf(cPoint.pos));
 
                     std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
@@ -474,15 +478,15 @@ private:
                     stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
 #endif
 
-                    assert(itBl.next() == itBr);
-                    assert(itBl == itBr.prev());
+                    assert(std::next(itBl) == itBr);
+                    assert(itBl == std::prev(itBr));
 
                     std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
                     std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
 
                     // delete intersection points from PQ
                     if (itBl != sl.begin()) {
-                        auto itBll = itBl.prev();
+                        auto itBll = std::prev(itBl);
 
                         if (itBl->p != itBll->p) {
                             auto is = itBll->intersection(*itBl, bounds);
@@ -494,7 +498,7 @@ private:
                     }
 
                     if (itBr != sl.end()) {
-                        auto itBrr = itBr.next();
+                        auto itBrr = std::next(itBr);
 
                         if (itBrr != sl.end() && itBr->p != itBrr->p) {
                             auto is = itBr->intersection(*itBrr, bounds);
@@ -626,7 +630,7 @@ private:
 
                     // insert intersection points into PQ
                     if (itBn != sl.begin()) {
-                        auto itL = itBn.prev();
+                        auto itL = std::prev(itBn);
                         auto is = itL->intersection(*itBn, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept
                             pq.push({sl.prj(is.pos), Event({is.pos, itL, itBn})});
@@ -634,7 +638,7 @@ private:
                         }
                     }
 
-                    auto itR = itBn.next();
+                    auto itR = std::next(itBn);
                     if (itR != sl.end()) {
                         auto is = itBn->intersection(*itR, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept

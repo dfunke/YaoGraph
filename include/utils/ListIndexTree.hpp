@@ -100,7 +100,7 @@ public:
         Leaf *leaf() { return leaf_; }
 
         /*operator Leaf *() { return leaf_; }*/
-        operator bool() { return leaf_ != nullptr; }
+        /*operator bool() { return leaf_ != nullptr; }*/
 
         Iterator prev() {
             return Iterator(leaf_->prev);
@@ -114,14 +114,29 @@ public:
 public:
     SearchTree() {
         m_root = std::make_unique<InternalNode>();
+
+        m_endLeaf = std::make_unique<Leaf>();
+        m_endLeaf->prev = m_endLeaf.get();
+        m_endLeaf->next = m_endLeaf.get();
+
+        m_beginLeaf = m_endLeaf.get();
     }
 
     Iterator begin() {
-        return Iterator(m_first);
+        return Iterator(_begin());
     }
 
     Iterator end() {
-        return Iterator(nullptr);
+        return Iterator(_end());
+    }
+
+private:
+    Leaf *_begin() {
+        return m_beginLeaf;
+    }
+
+    Leaf *_end() {
+        return m_endLeaf.get();
     }
 
 public:
@@ -137,17 +152,17 @@ private:
         leaf->obj = std::make_unique<T>(obj);
 
         // special case empty list
-        if (pos == m_first && pos == nullptr) {
+        if (pos == _begin() && pos == _end()) {
 
             assert(!m_root->left && !m_root->right);
-            assert(m_first == nullptr && m_last == nullptr);
+            assert(_begin() == _end());
 
-            leaf->prev = nullptr;
-            leaf->next = nullptr;
+            leaf->prev = _end();
+            leaf->next = _end();
             leaf->parent = m_root.get();
 
-            m_first = leaf.get();
-            m_last = leaf.get();
+            m_beginLeaf = leaf.get();
+            m_endLeaf->prev = leaf.get();
 
             m_root->left = std::move(leaf);
             updateAndRebalance(m_root.get());
@@ -156,23 +171,23 @@ private:
         }
 
         // take care of the leaf double linked list
-        if (pos == end()) {
-            leaf->prev = m_last;
-            leaf->next = nullptr;
+        if (pos == _end()) {
+            leaf->prev = m_endLeaf->prev;
+            leaf->next = _end();
 
             leaf->prev->next = leaf.get();
 
-            m_last = leaf.get();
-        } else if (pos == begin()) {
-            leaf->prev = nullptr;
-            leaf->next = m_first;
+            m_endLeaf->prev = leaf.get();
+        } else if (pos == _begin()) {
+            leaf->prev = _end();
+            leaf->next = m_beginLeaf;
 
             leaf->next->prev = leaf.get();
 
-            m_first = leaf.get();
+            m_beginLeaf = leaf.get();
         } else {
             leaf->prev = pos->prev;
-            assert(leaf->prev != nullptr);
+            assert(leaf->prev != _end());
             leaf->next = pos->prev->next;
             assert(leaf->next == pos);
 
@@ -184,11 +199,11 @@ private:
         Leaf *pLeaf = leaf.get();
 
         // insert leaf into tree
-        if (leaf->prev != nullptr) {
+        if (leaf->prev != _end()) {
             // we have a left neighbor, join to it from right
             joinFromRight(leaf->prev->parent, std::move(leaf));
         } else {
-            assert(leaf->next != nullptr);
+            assert(leaf->next != _end());
             // we have no left neighbor but a right one, join to it from left
             joinFromLeft(leaf->next->parent, std::move(leaf));
         }
@@ -260,35 +275,36 @@ public:
 private:
     Leaf *erase(Leaf *pos) {
         assert(pos != nullptr);
+        assert(pos != _end());
         assert(pos->parent != nullptr);
 
         // special case singleton list
-        if (pos == m_first && pos == m_last) {
+        if (pos == _begin() && pos == _end()->prev) {
 
             assert(m_root->left && !m_root->right);
 
-            m_first = nullptr;
-            m_last = nullptr;
+            m_beginLeaf = _end();
+            m_endLeaf->prev = _end();
 
             m_root->left.reset();
             updateAndRebalance(m_root.get());
 
-            return nullptr;
+            return _end();
         }
 
         // take care of the leaf double linked list
         Leaf *retValue = nullptr;// save return value -> node after deleted one
 
-        if (pos == m_last) {
-            assert(pos->prev != nullptr);// singleton case already handled above
-            pos->prev->next = nullptr;
-            m_last = pos->prev;
-            retValue = nullptr;
-        } else if (pos == m_first) {
-            assert(pos->next != nullptr);// singleton case already handled above
-            pos->next->prev = nullptr;
-            m_first = pos->next;
-            retValue = m_first;
+        if (pos == _end()->prev) {
+            assert(pos->prev != _end());// singleton case already handled above
+            pos->prev->next = _end();
+            m_endLeaf->prev = pos->prev;
+            retValue = _end();
+        } else if (pos == _begin()) {
+            assert(pos->next != _end());// singleton case already handled above
+            pos->next->prev = _end();
+            m_beginLeaf = pos->next;
+            retValue = _begin();
         } else {
             pos->prev->next = pos->next;
             pos->next->prev = pos->prev;
@@ -522,31 +538,40 @@ private:
     }
 
 public:
-    template<class Compare>
-    Iterator find(const T &obj, const Compare &cmp) {
+    template<typename O, typename Compare>
+    Iterator find(const O &obj, const Compare &cmp) {
         return Iterator(find(m_root.get(), obj, cmp));
     }
 
 private:
-    template<class Compare>
-    Leaf *find(InternalNode *node, const T &obj, const Compare &cmp) {
+    template<typename O, typename Compare>
+    Leaf *find(InternalNode *node, const O &obj, const Compare &cmp) {
 
-        if (cmp(obj, *(node->leftRep->obj))) {
-            if (node->left->isNode()) {
-                return find(node->left->asNode(), obj, cmp);
+        if (node->leftRep != nullptr) {
+            assert(node->maxRep != nullptr);
+            assert(node->left);
+
+            if (cmp(obj, *(node->leftRep->obj))) {
+                if (node->left->isNode()) {
+                    return find(node->left->asNode(), obj, cmp);
+                } else {
+                    assert(node->left->isLeaf());
+                    return node->left->asLeaf();
+                }
+            } else if (cmp(obj, *(node->maxRep->obj))) {
+                assert(node->right);
+
+                if (node->right->isNode()) {
+                    return find(node->right->asNode(), obj, cmp);
+                } else {
+                    assert(node->right->isLeaf());
+                    return node->right->asLeaf();
+                }
             } else {
-                assert(node->left->isLeaf());
-                return node->left->asLeaf();
-            }
-        } else if (cmp(obj, *(node->maxRep->obj))) {
-            if (node->right->isNode()) {
-                return find(node->right->asNode(), obj, cmp);
-            } else {
-                assert(node->right->isLeaf());
-                return node->right->asLeaf();
+                return _end();
             }
         } else {
-            return nullptr;
+            return _end();
         }
     }
 
@@ -592,6 +617,19 @@ private:
 private:
     std::unique_ptr<InternalNode> m_root;
 
-    Leaf *m_first = nullptr;
-    Leaf *m_last = nullptr;
+    Leaf *m_beginLeaf = nullptr;
+    std::unique_ptr<Leaf> m_endLeaf;
 };
+
+namespace std {
+
+    template<typename IT>
+    auto next(IT &it) {
+        return it.next();
+    }
+
+    template<typename IT>
+    auto prev(IT &it) {
+        return it.prev();
+    }
+}// namespace std

@@ -32,7 +32,7 @@ TEST(ListIndexTreeTest, Adding) {
     // traverse and verify list
     auto it = tree.begin();
     EXPECT_EQ(it, it0);
-    EXPECT_EQ(it.leaf()->prev, nullptr);
+    EXPECT_EQ(it.leaf()->prev, tree.end().leaf());
     EXPECT_EQ(it.leaf()->next, it1);
     it = it.next();
     int i = 1;
@@ -42,7 +42,7 @@ TEST(ListIndexTreeTest, Adding) {
 
         EXPECT_EQ(*it, i++);
 
-        if (it.next()) {
+        if (it.next() != tree.end()) {
             EXPECT_EQ(it, it.leaf()->next->prev);
         }
     }
@@ -69,16 +69,16 @@ TEST(ListIndexTreeTest, Query) {
     for (int i = 0; i < 20; i += 2) {
         auto it = tree.find(i, std::less<int>());
 
-        ASSERT_NE(it, nullptr);
+        ASSERT_NE(it, tree.end().leaf());
         EXPECT_GT(*it, i);
         EXPECT_EQ(*it - 1, i);
 
         if (i == 0) {
-            EXPECT_EQ(it.leaf()->prev, nullptr);
+            EXPECT_EQ(it.leaf()->prev, tree.end().leaf());
         }
 
         if (i > 0) {
-            ASSERT_NE(it.leaf()->prev, nullptr);
+            ASSERT_NE(it.leaf()->prev, tree.end().leaf());
             EXPECT_LT(*(it.leaf()->prev->obj), i);
         }
 
@@ -88,7 +88,7 @@ TEST(ListIndexTreeTest, Query) {
     }
 
     auto it = tree.find(20, std::less<int>());
-    EXPECT_EQ(it, nullptr);
+    EXPECT_EQ(it, tree.end().leaf());
 }
 
 TEST(ListIndexTreeTest, Erase) {
@@ -112,7 +112,7 @@ TEST(ListIndexTreeTest, Erase) {
         auto it = tree.find(i, std::less<int>());
 
         ASSERT_NE(it, nullptr);
-        ASSERT_NE(it.leaf()->prev, nullptr);
+        ASSERT_NE(it.leaf()->prev, tree.end().leaf());
         EXPECT_GT(*it, i);
         EXPECT_EQ(*it, i + 1);
         EXPECT_EQ(*(it.leaf()->prev->obj), i);
@@ -120,7 +120,7 @@ TEST(ListIndexTreeTest, Erase) {
         auto del = tree.erase(SearchTree<int>::Iterator(it.leaf()->prev));
         EXPECT_TRUE(tree.checkInvariants());
 
-        ASSERT_NE(del, nullptr);
+        ASSERT_NE(del, tree.end().leaf());
         EXPECT_GT(*del, i);
         EXPECT_EQ(*del, i + 1);
     }
@@ -134,8 +134,8 @@ TEST(ListIndexTreeTest, Erase) {
         auto it = tree.find(v, std::less<int>());
 
         if (v < 20) {
-            ASSERT_NE(it, nullptr);
-            ASSERT_NE(it.leaf()->prev, nullptr);
+            ASSERT_NE(it, tree.end().leaf());
+            ASSERT_NE(it.leaf()->prev, tree.end().leaf());
             EXPECT_GT(*it, v);
 
             if (v != 4) {
@@ -146,7 +146,7 @@ TEST(ListIndexTreeTest, Erase) {
 
             EXPECT_EQ(*(it.leaf()->prev->obj), v);
         } else {
-            EXPECT_EQ(it, nullptr);
+            EXPECT_EQ(it, tree.end().leaf());
         }
 
 
