@@ -232,7 +232,6 @@ private:
         std::unique_ptr<InternalNode> newNode = std::make_unique<InternalNode>();
         newNode->parent = parent;
 
-
         newNode->left = std::move(prevIsLeftChild ? parent->left : parent->right);
         newNode->left->parent = newNode.get();
 
@@ -246,6 +245,10 @@ private:
     void joinFromLeft(InternalNode *parent, std::unique_ptr<Leaf> &&leaf) {
 
         assert(parent->left);
+        // this is only called when object is inserted to the beginning of list
+        // new leaf must become leftmost leaf
+        assert(leaf->prev == _end());
+
         if (!parent->right) {
             // parent has empty right child, move left to right, then insert
 
