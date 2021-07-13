@@ -27,7 +27,7 @@ int main() {
     constexpr tDim Cones = 6;
     constexpr tIndex cellOcc = 1e3;
 
-    std::cout << "n naive grid";
+    std::cout << "n naive grid sl";
 #ifdef WITH_CGAL
     std::cout << " cgal_del cgal_yao cgal_theta";
 #endif
@@ -57,6 +57,10 @@ int main() {
         Painter gridPainter(basePainter);
         gridPainter.draw(std::get<1>(grid), points);
         gridPainter.save("03_grid");
+
+        Painter slPainter(basePainter);
+        slPainter.draw(std::get<1>(sl), points);
+        slPainter.save("04_sl");
 #endif
 
 #ifdef WITH_CGAL
@@ -68,6 +72,7 @@ int main() {
         std::cout << nPoints
                   << " " << std::get<0>(naive)
                   << " " << std::get<0>(grid)
+                  << " " << std::get<0>(sl)
 #ifdef WITH_CGAL
                   << " " << std::get<0>(del)
                   << " " << std::get<0>(yao)
