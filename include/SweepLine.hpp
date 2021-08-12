@@ -151,7 +151,13 @@ private:
         }
 
         // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
-        return isRR(*ua.ext, b, bounds);
+        is =  isRR(*ua.ext, b, bounds);
+        // check whether IS is after starting point of extension ray of ur
+        if (is.valid && distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p)) {
+            return is;
+        }
+
+        return {false, {}};
     }
 
     static tIntersectionRetVal isUU(const Ray &ua, const Ray &ub, const tBox &bounds) {
@@ -159,7 +165,8 @@ private:
 
         // check for intersection of main ray of ua and ub
         auto is = isRR(ua, ub, bounds);
-        // check whether IS is before starting point of lowerRay for both rays
+        // check whether IS is before starting point of lowerRay of ua
+        // check whether IS is before starting point of lowerRay of ub
         if (is.valid &&
             distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p) &&
             distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
@@ -171,21 +178,36 @@ private:
         // check for intersection of main ray of ua and lower ray of ub
         is = isRR(ua, *ub.ext, bounds);
         // check whether IS is before starting point of lowerRay of ua
-        if (is.valid && distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p)) {
+        // check whether IS is after starting point of lowerRay of ub
+        if (is.valid &&
+            distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p) &&
+            distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
             return is;
         }
 
 
         // check for intersection of lower ray of ua and main ray of ub
         is = isRR(*ua.ext, ub, bounds);
+        // check whether IS is after starting point of ua's lowerRay
         // check whether IS is before starting point of ub's lowerRay
-        if (is.valid && distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
+        if (is.valid &&
+            distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p) &&
+            distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
             return is;
         }
 
 
         // check for intersection of lower rays of ua and ub
-        return isRR(*ua.ext, *ub.ext, bounds);
+        is = isRR(*ua.ext, *ub.ext, bounds);
+        // check whether IS is after starting point of ua's lowerRay
+        // check whether IS is after starting point of ub's lowerRay
+        if (is.valid &&
+            distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p) &&
+            distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
+            return is;
+        }
+
+        return {false, {}};
     }
 };
 
