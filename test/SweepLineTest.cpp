@@ -25,10 +25,22 @@ TEST(SweepLineTest, Ordering) {
 #ifdef WITH_CAIRO
     if (!valid) {
         Painter painter(BOUNDS, 1000);
-        painter.draw(points);
+        painter.draw(points, false);
         painter.draw(exp, points);
-        painter.setColor(1, 0, 0);
         for (auto idx : invalidVertices) {
+
+            for (tDim k = 0; k < K; ++k) {
+                if (exp[idx].neighbor[k] != is[idx].neighbor[k]) {
+
+                    painter.setColor(0, 1, 0);
+                    painter.draw(points[exp[idx].neighbor[k]], exp[idx].neighbor[k], true);
+
+                    painter.setColor(1, 0, 0);
+                    painter.draw(points[is[idx].neighbor[k]], is[idx].neighbor[k], true);
+                }
+            }
+
+            painter.setColor(1, 0, 0);
             painter.draw(idx, is[idx], points);
             painter.drawCones(points[idx], K);
         }
