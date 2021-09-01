@@ -96,7 +96,7 @@ public:
         } else if (a.ext) {
             return isUR(a, b, bounds);
         } else {// b.ext
-            return isUR(b, a, bounds);
+            return isRU(a, b, bounds);
         }
     }
 
@@ -151,9 +151,29 @@ private:
         }
 
         // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
-        is =  isRR(*ua.ext, b, bounds);
+        is = isRR(*ua.ext, b, bounds);
         // check whether IS is after starting point of extension ray of ur
         if (is.valid && distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p)) {
+            return is;
+        }
+
+        return {false, {}};
+    }
+
+    static tIntersectionRetVal isRU(const Ray &a, const Ray &ub, const tBox &bounds) {
+        assert(ub.ext);
+
+        // check for intersection of a and main ray of ub
+        auto is = isRR(a, ub, bounds);
+        // check whether IS is before starting point of extension ray of ur
+        if (is.valid && distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
+            return is;
+        }
+
+        // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
+        is = isRR(a, *ub.ext, bounds);
+        // check whether IS is after starting point of extension ray of ur
+        if (is.valid && distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
             return is;
         }
 
@@ -697,14 +717,26 @@ private:
                     auto itB = cPoint.leftRay;// we store the ray to be deleted as left ray
                     assert(itB != sl.end());
                     assert(itB->ext);
+                    assert(itB->leftRegion == itB->ext->leftRegion);
+                    assert(itB->rightRegion == itB->ext->rightRegion);
+                    assert(!itB->ext->ext);
 
 #ifdef WITH_CAIRO
                     basePainter.drawLine(itB->p, itB->ext->p);
 #endif
 
-                    *itB = *(itB->ext);
+//                    std::cout << idx << " old ray: " << *itB << std::endl;
+
                     // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
                     // all intersections processed after this point will be with lower ray
+                    itB->p = itB->ext->p;
+                    itB->angle = itB->ext->angle;
+                    // and delete the lower ray
+                    itB->ext.reset();
+
+//                    std::cout << idx << " new ray: " << *itB << std::endl;
+
+                    assert(!itB->ext);
 
                     break;
                 }
