@@ -17,6 +17,8 @@ TEST(SweepLineTest, Ordering) {
     SweepLine<K> sl;
     auto is = sl(points, BOUNDS);
 
+#ifndef VTUNE
+
     NaiveYao<K> nav;
     auto exp = nav(points);
 
@@ -46,7 +48,10 @@ TEST(SweepLineTest, Ordering) {
         }
         painter.save("invalidVertices");
     }
-#endif
+#endif// ifdef WITH_CAIRO
+#else // ifndef VTUNE
+    bool valid = true;
+#endif// ifndef VTUNE
 
     EXPECT_TRUE(valid);
 }
