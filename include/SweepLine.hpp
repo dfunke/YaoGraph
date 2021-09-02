@@ -22,6 +22,7 @@
 struct Ray {
     tFloatVector p;
     tFloat angle;
+    tFloat tanAngle;
 
     tIndex leftRegion;
     tIndex rightRegion;
@@ -29,26 +30,34 @@ struct Ray {
     // extension of ray with another ray
     std::unique_ptr<Ray> ext;// initialized with nullptr
 
-    Ray(const tFloatVector &p_, const tFloat &angle_, const tIndex &lr,
+    Ray(const tFloatVector &p_, const tFloat &angle_, const tFloat &tanAngle_, const tIndex &lr,
         const tIndex &rr)
-        : p(p_), angle(angle_), leftRegion(lr), rightRegion(rr) {}
+        : p(p_), angle(angle_), tanAngle(tanAngle_), leftRegion(lr), rightRegion(rr) {}
 
     Ray(const tFloatVector &p_, const tFloat &angle_, const tIndex &lr,
+        const tIndex &rr)
+        : Ray(p_, angle_, std::tan(angle_), lr, rr) {}
+
+    Ray(const tFloatVector &p_, const tFloat &angle_, const tFloat &tanAngle_, const tIndex &lr,
         const tIndex &rr, const Ray &ext_)
-        : p(p_), angle(angle_), leftRegion(lr), rightRegion(rr),
+        : p(p_), angle(angle_), tanAngle(tanAngle_), leftRegion(lr), rightRegion(rr),
           ext(std::make_unique<Ray>(ext_)) {
 
         // the starting points of upper and lower ray should be different
         assert(!approxEQ(p, ext->p));
 
         // the starting point of the lower ray must be on the upper rayl;
-        assert(approxEQ(ext->p, {ext->p[X], std::tan(angle) * (ext->p[X] - p[X]) + p[Y]}));
+        assert(approxEQ(ext->p, {ext->p[X], tanAngle * (ext->p[X] - p[X]) + p[Y]}));
         assert(leftRegion == ext->leftRegion);
         assert(rightRegion == ext->rightRegion);
     }
 
+    Ray(const tFloatVector &p_, const tFloat &angle_, const tIndex &lr,
+        const tIndex &rr, const Ray &ext_)
+        : Ray(p_, angle_, std::tan(angle_), lr, rr, ext_) {}
+
     Ray(const Ray &o)
-        : p(o.p), angle(o.angle), leftRegion(o.leftRegion),
+        : p(o.p), angle(o.angle), tanAngle(o.tanAngle), leftRegion(o.leftRegion),
           rightRegion(o.rightRegion) {
         if (o.ext) {
             ext = std::make_unique<Ray>(*o.ext);
@@ -58,6 +67,7 @@ struct Ray {
     Ray &operator=(const Ray &o) {
         p = o.p;
         angle = o.angle;
+        tanAngle = o.tanAngle;
         leftRegion = o.leftRegion;
         rightRegion = o.rightRegion;
 
@@ -69,7 +79,7 @@ struct Ray {
     }
 
     // convenience constructor for ray unions
-    Ray(const Ray &upper, const Ray &lower) : Ray(upper.p, upper.angle, upper.leftRegion, upper.rightRegion, lower) {}
+    Ray(const Ray &upper, const Ray &lower) : Ray(upper.p, upper.angle, upper.tanAngle, upper.leftRegion, upper.rightRegion, lower) {}
 
     bool leftOf(const tFloatVector &x) const {
         // we only consider main ray, when the starting point of lower ray is
@@ -121,14 +131,14 @@ private:
 
         if (std::fmod(std::fmod(a.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
             // vertical line this's x
-            return {true, {a.p[X], std::tan(b.angle) * (a.p[X] - b.p[X]) + b.p[Y]}};
+            return {true, {a.p[X], b.tanAngle * (a.p[X] - b.p[X]) + b.p[Y]}};
         } else if (std::fmod(std::fmod(b.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
             // vertical line at b's x
-            return {true, {b.p[X], std::tan(a.angle) * (b.p[X] - a.p[X]) + a.p[Y]}};
+            return {true, {b.p[X], a.tanAngle * (b.p[X] - a.p[X]) + a.p[Y]}};
         }
 
-        tFloat m0 = std::tan(a.angle);// Line 0: y = m0 (x - x0) + y0
-        tFloat m1 = std::tan(b.angle);// Line 1: y = m1 (x - x1) + y1
+        tFloat m0 = a.tanAngle;// Line 0: y = m0 (x - x0) + y0
+        tFloat m1 = b.tanAngle;// Line 1: y = m1 (x - x1) + y1
 
         tFloat x = ((m0 * a.p[X] - m1 * b.p[X]) - (a.p[Y] - b.p[Y])) / (m0 - m1);
         tFloat y = m0 * (x - a.p[X]) + a.p[Y];
@@ -393,6 +403,12 @@ private:
         tFloat lTheta = k * (2 * M_PI / K);
         tFloat uTheta = (k + 1) * (2 * M_PI / K);
 
+        tFloat lRayAngle = lTheta + tFloat(M_PI);
+        tFloat lRayTanAngle = std::tan(lRayAngle);
+
+        tFloat rRayAngle = uTheta + tFloat(M_PI);
+        tFloat rRayTanAngle = std::tan(rRayAngle);
+
         SweeplineDS sl(M_PI + .5 * (lTheta + uTheta));
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> pq(pqCmp);
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> delPQ(pqCmp);
@@ -469,10 +485,10 @@ private:
                     // create new rays and insert them into SL
                     auto itBln = sl.insert(
                             itBr,
-                            Ray({cPoint.pos, lTheta + tFloat(M_PI),
+                            Ray({cPoint.pos, lRayAngle, lRayTanAngle,
                                  itBl != sl.end() ? itBl->rightRegion : tIndex(-1), cPoint.idx}));
                     auto itBrn = sl.insert(
-                            itBr, Ray({cPoint.pos, uTheta + tFloat(M_PI), cPoint.idx,
+                            itBr, Ray({cPoint.pos, rRayAngle, rRayTanAngle, cPoint.idx,
                                        itBr != sl.end() ? itBr->leftRegion : tIndex(-1)}));
 
                     // std::cout << idx << " left ray " << *itBln << std::endl;
@@ -554,9 +570,9 @@ private:
                         }
                     }
 
-                    Ray rL({cPoint.pos, lTheta + tFloat(M_PI), itBl->leftRegion,
+                    Ray rL({cPoint.pos, lRayAngle, lRayTanAngle, itBl->leftRegion,
                             itBr->rightRegion});
-                    Ray rR({cPoint.pos, uTheta + tFloat(M_PI), itBl->leftRegion,
+                    Ray rR({cPoint.pos, rRayAngle, rRayTanAngle, itBl->leftRegion,
                             itBr->rightRegion});
 
                     // bisector line between A and B
@@ -584,7 +600,7 @@ private:
                     auto BsL = Bs.intersection(rL, bounds);
                     auto BsR = Bs.intersection(rR, bounds);
 
-                    if (BsL.valid && BsR.valid && approxEQ(BsL.pos, BsR.pos) && approxEQ(BsL.pos, cPoint.pos)) { //TODO better way to test?
+                    if (BsL.valid && BsR.valid && approxEQ(BsL.pos, BsR.pos) && approxEQ(BsL.pos, cPoint.pos)) {//TODO better way to test?
                         assert(approxEQ(BsR.pos, cPoint.pos));
                         // we don't check for sweepline projection to avoid floating point problems
                     } else {
@@ -730,16 +746,17 @@ private:
                     basePainter.drawLine(itB->p, itB->ext->p);
 #endif
 
-//                    std::cout << idx << " old ray: " << *itB << std::endl;
+                    // std::cout << idx << " old ray: " << *itB << std::endl;
 
                     // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
                     // all intersections processed after this point will be with lower ray
                     itB->p = itB->ext->p;
                     itB->angle = itB->ext->angle;
+                    itB->tanAngle = itB->ext->tanAngle;
                     // and delete the lower ray
                     itB->ext.reset();
 
-//                    std::cout << idx << " new ray: " << *itB << std::endl;
+                    //  std::cout << idx << " new ray: " << *itB << std::endl;
 
                     assert(!itB->ext);
 
