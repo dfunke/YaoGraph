@@ -582,24 +582,29 @@ private:
 
                     // check for intersections of Bln, Blr and BS
                     auto BsL = Bs.intersection(rL, bounds);
-                    if (BsL.valid && sl.prj(BsL.pos) < cKey) {// check whether IS is before SL
-                        BsL.valid = false;
-                    }
-
                     auto BsR = Bs.intersection(rR, bounds);
-                    if (BsR.valid && sl.prj(BsR.pos) < cKey) {// check whether IS is before SL
-                        BsR.valid = false;
+
+                    if (BsL.valid && BsR.valid && approxEQ(BsL.pos, BsR.pos) && approxEQ(BsL.pos, cPoint.pos)) { //TODO better way to test?
+                        assert(approxEQ(BsR.pos, cPoint.pos));
+                        // we don't check for sweepline projection to avoid floating point problems
+                    } else {
+                        if (BsL.valid && approxLT(sl.prj(BsL.pos), cKey)) {// check whether IS is before SL
+                            BsL.valid = false;
+                        }
+                        if (BsR.valid && approxLT(sl.prj(BsR.pos), cKey)) {// check whether IS is before SL
+                            BsR.valid = false;
+                        }
                     }
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
-                    if (BsL) {
+                    if (BsL.valid) {
                         stepPainter.setColor(IS);
-                        stepPainter.draw(pBsL, 0);
+                        stepPainter.draw(BsL.pos, 0);
                     }
 
-                    if (BsR) {
+                    if (BsR.valid) {
                         stepPainter.setColor(IS);
-                        stepPainter.draw(pBsR, 1);
+                        stepPainter.draw(BsR.pos, 1);
                     }
 #endif
 

@@ -41,6 +41,14 @@ bool approxEQ(const tFloatVector &a, const tFloatVector &b) {
     return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
 }
 
+bool approxLT(const tFloat &a, const tFloat &b) {
+    return a - b < MaxError<tFloat>::value;//TODO: use more meaningful test
+}
+
+bool approxGT(const tFloat &a, const tFloat &b) {
+    return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
+}
+
 tFloat atan2P(const tFloat &y, const tFloat &x) {
     auto rad = std::atan2(y, x);
     return rad >= 0 ? rad : 2 * M_PI + rad;
