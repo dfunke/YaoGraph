@@ -34,7 +34,7 @@ struct MaxError<float> {
 
 template<>
 struct MaxError<double> {
-    static constexpr double value = 1e-25;
+    static constexpr double value = 1e-22;
 };
 
 bool approxEQ(const tFloatVector &a, const tFloatVector &b) {
