@@ -15,6 +15,10 @@
 #define MY_CAIRO_WEIGHT Cairo::FONT_WEIGHT_NORMAL
 #endif
 
+#ifdef WITH_CGAL
+#include <CGAL/Point_2.h>
+#endif
+
 class Painter {
 
 public:
@@ -139,6 +143,15 @@ public:
         cr->line_to(translatePoint(b[0], 0), translatePoint(b[1], 1));
         cr->stroke();
     }
+
+#ifdef WITH_CGAL
+    template<typename K>
+    void drawLine(const CGAL::Point_2<K> &a, const CGAL::Point_2<K> &b) {
+        cr->move_to(translatePoint(a[0], 0), translatePoint(a[1], 1));
+        cr->line_to(translatePoint(b[0], 0), translatePoint(b[1], 1));
+        cr->stroke();
+    }
+#endif
 
     void drawCone(const tFloatVector &apex, const tDim &k, const tDim &K, const tFloat length = 1) {
         tFloat lowerPhi = k * 2 * M_PI / K;

@@ -14,7 +14,7 @@ TEST(SweepLineTest, Ordering) {
     Uniform uni;
     auto points = uni.generate(nPoints, BOUNDS);
 
-    SweepLine<K> sl;
+    SweepLine<K, InexactKernel> sl;
     auto is = sl(points, BOUNDS);
 
 #ifndef VTUNE

@@ -22,127 +22,130 @@
 #include "Painter.hpp"
 #endif
 
-struct SweeplineDS {
+template<tDim C, typename K>
+class SweepLine {
 
-    using tRays = SearchTree<Ray>;
-    using tRayHandle = typename tRays::Iterator;
+    using tFloat = typename K::Float;
+    using tDirection = typename K::Direction;
+    using tPoint = typename K::Point;
 
-    tFloat slDirection;
-    tFloatVector slDirVector;
-    tRays slRays;
+    using tRay = typename K::Ray;
 
-    SweeplineDS(const tFloat slDir_)
-        : slDirection(slDir_),
-          slDirVector({std::cos(slDirection), std::sin(slDirection)}) {}
+    struct SweeplineDS {
+
+        using tRays = SearchTree<tRay>;
+        using tRayHandle = typename tRays::Iterator;
+
+        tDirection slDirection;
+        tRays slRays;
+
+        SweeplineDS(const tDirection slDir_)
+            : slDirection(slDir_) {}
 
 
-    tRayHandle begin() { return slRays.begin(); }
-    tRayHandle end() { return slRays.end(); }
+        tRayHandle begin() { return slRays.begin(); }
+        tRayHandle end() { return slRays.end(); }
 
-    auto insert(tRayHandle &pos, const Ray &ray) {
-        return slRays.insert(pos, ray);
-    }
-
-    auto erase(tRayHandle &pos) {
-        return slRays.erase(pos);
-    }
-
-    tFloat prj(const tFloatVector &p) {
-        return (p[X] * slDirVector[X] + p[Y] * slDirVector[Y]) /
-               dot(slDirVector, slDirVector);
-    }
-
-    tRayHandle linearFind(const tFloatVector &p) {// TODO: make const?
-        auto exp = begin();
-        while (exp != end() && exp->leftOf(p)) {
-            ++exp;
+        auto insert(tRayHandle &pos, const tRay &ray) {
+            return slRays.insert(pos, ray);
         }
 
-        return exp;
-    }
+        auto erase(tRayHandle &pos) {
+            return slRays.erase(pos);
+        }
 
-    // return iterator to ray immediatly right of point p
-    tRayHandle find(const tFloatVector &p) {// TODO: make const?
+        tFloat prj(const tPoint &p) {
+            return slDirection.prj(p);
+        }
 
-        auto cmp = [](const tFloatVector &p, const Ray &r) {
-            return !r.leftOf(p);
-        };
+        tRayHandle linearFind(const tPoint &p) {// TODO: make const?
+            auto exp = begin();
+            while (exp != end() && exp->leftOf(p)) {
+                ++exp;
+            }
 
-        auto it = slRays.find(p, cmp);
+            return exp;
+        }
 
-        assert(it == end() || !it->leftOf(p));
-        assert(std::prev(it) == end() || std::prev(it)->leftOf(p));
-        assert(it == linearFind(p));
+        // return iterator to ray immediatly right of point p
+        tRayHandle find(const tPoint &p) {// TODO: make const?
 
-        return it;
-    }
+            auto cmp = [](const tPoint &p, const tRay &r) {
+                return !r.leftOf(p);
+            };
+
+            auto it = slRays.find(p, cmp);
+
+            assert(it == end() || !it->leftOf(p));
+            assert(std::prev(it) == end() || std::prev(it)->leftOf(p));
+            assert(it == linearFind(p));
+
+            return it;
+        }
 
 #ifdef WITH_CAIRO
 
-    void draw(const tFloatVector &pos, Painter &painter) {
+        void draw(const tFloatVector &pos, Painter &painter) {
 
-        // draw sweepline
-        painter.drawLine(pos, {pos[X] + std::cos(slDirection + tFloat(M_PI_2)),
-                               pos[Y] + std::sin(slDirection + tFloat(M_PI_2))});
-        painter.drawLine(pos, {pos[X] + std::cos(slDirection - tFloat(M_PI_2)),
-                               pos[Y] + std::sin(slDirection - tFloat(M_PI_2))});
+            // draw sweepline
+            painter.drawLine(pos, {pos[X] + std::cos(slDirection + tFloat(M_PI_2)),
+                                   pos[Y] + std::sin(slDirection + tFloat(M_PI_2))});
+            painter.drawLine(pos, {pos[X] + std::cos(slDirection - tFloat(M_PI_2)),
+                                   pos[Y] + std::sin(slDirection - tFloat(M_PI_2))});
 
-        // draw direction
-        painter.setDash();
-        painter.drawLine(pos, {pos[X] + slDirVector[X], pos[Y] + slDirVector[Y]});
-        painter.unsetDash();
+            // draw direction
+            painter.setDash();
+            //painter.drawLine(pos, {pos[X] + slDirVector[X], pos[Y] + slDirVector[Y]});
+            painter.unsetDash();
 
-        // draw rays
-        for (auto &r : slRays) {
-            r.draw(painter);
+            // draw rays
+            for (auto &r : slRays) {
+                r.draw(painter);
+            }
         }
-    }
 
 #endif
-};
+    };
 
-struct Event {
+    struct Event {
 
-    enum Type { Input,
-                Intersection,
-                Deletion };
+        enum Type { Input,
+                    Intersection,
+                    Deletion };
 
-    using tRayHandle = typename SweeplineDS::tRayHandle;
+        using tRayHandle = typename SweeplineDS::tRayHandle;
 
-    Event(const tFloatVector &pos_)
-        : type(Type::Deletion), pos(pos_), idx(tIndex(-1)) {}
+        Event(const tFloatVector &pos_)
+            : type(Type::Deletion), pos(pos_), idx(tIndex(-1)) {}
 
-    Event(const tFloatVector &pos_, const tIndex &idx_)
-        : type(Type::Input), pos(pos_), idx(idx_) {}
+        Event(const tFloatVector &pos_, const tIndex &idx_)
+            : type(Type::Input), pos(pos_), idx(idx_) {}
 
-    Event(const tFloatVector &pos_, const tRayHandle &left)
-        : type(Type::Deletion), pos(pos_), leftRay(left) {}
+        Event(const tFloatVector &pos_, const tRayHandle &left)
+            : type(Type::Deletion), pos(pos_), leftRay(left) {}
 
-    Event(const tFloatVector &pos_, const tRayHandle &left,
-          const tRayHandle &right)
-        : type(Type::Intersection), pos(pos_), idx(tIndex(-1)), leftRay(left),
-          rightRay(right) {}
+        Event(const tFloatVector &pos_, const tRayHandle &left,
+              const tRayHandle &right)
+            : type(Type::Intersection), pos(pos_), idx(tIndex(-1)), leftRay(left),
+              rightRay(right) {}
 
-    Type type;
-    tFloatVector pos;
+        Type type;
+        tFloatVector pos;
 
-    tIndex idx;
+        tIndex idx;
 
-    tRayHandle leftRay;
-    tRayHandle rightRay;
-};
-
-template<tDim K>
-class SweepLine {
+        tRayHandle leftRay;
+        tRayHandle rightRay;
+    };
 
 public:
-    using tVertex = tYaoVertex<K>;
+    using tVertex = tYaoVertex<C>;
     using tGraph = tYaoGraph<tVertex>;
 
     tGraph operator()(const tPoints &points, const tBox &bounds) const {
         tGraph g(points.size());
 
-        for (tDim k = 0; k < K; ++k) {
+        for (tDim k = 0; k < C; ++k) {
             sweepline(points, k, g, bounds);
         }
 
@@ -158,8 +161,8 @@ private:
             return a.first > b.first;
         };
 
-        tFloat lTheta = k * (2 * M_PI / K);
-        tFloat uTheta = (k + 1) * (2 * M_PI / K);
+        tFloat lTheta = k * (2 * M_PI / C);
+        tFloat uTheta = (k + 1) * (2 * M_PI / C);
 
         tFloat lRayAngle = lTheta + tFloat(M_PI);
         tFloat lRayTanAngle = std::tan(lRayAngle);
@@ -167,7 +170,7 @@ private:
         tFloat rRayAngle = uTheta + tFloat(M_PI);
         tFloat rRayTanAngle = std::tan(rRayAngle);
 
-        SweeplineDS sl(M_PI + .5 * (lTheta + uTheta));
+        SweeplineDS sl(tDirection(M_PI + .5 * (lTheta + uTheta)));
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> pq(pqCmp);
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> delPQ(pqCmp);
 
@@ -243,11 +246,11 @@ private:
                     // create new rays and insert them into SL
                     auto itBln = sl.insert(
                             itBr,
-                            Ray({cPoint.pos, lRayAngle, lRayTanAngle,
-                                 itBl != sl.end() ? itBl->rightRegion : tIndex(-1), cPoint.idx}));
+                            tRay({cPoint.pos, lRayAngle, lRayTanAngle,
+                                  itBl != sl.end() ? itBl->rightRegion : tIndex(-1), cPoint.idx}));
                     auto itBrn = sl.insert(
-                            itBr, Ray({cPoint.pos, rRayAngle, rRayTanAngle, cPoint.idx,
-                                       itBr != sl.end() ? itBr->leftRegion : tIndex(-1)}));
+                            itBr, tRay({cPoint.pos, rRayAngle, rRayTanAngle, cPoint.idx,
+                                        itBr != sl.end() ? itBr->leftRegion : tIndex(-1)}));
 
                     // std::cout << idx << " left ray " << *itBln << std::endl;
                     // std::cout << idx << " right ray " << *itBrn << std::endl;
@@ -328,18 +331,18 @@ private:
                         }
                     }
 
-                    Ray rL({cPoint.pos, lRayAngle, lRayTanAngle, itBl->leftRegion,
-                            itBr->rightRegion});
-                    Ray rR({cPoint.pos, rRayAngle, rRayTanAngle, itBl->leftRegion,
-                            itBr->rightRegion});
+                    tRay rL({cPoint.pos, lRayAngle, lRayTanAngle, itBl->leftRegion,
+                             itBr->rightRegion});
+                    tRay rR({cPoint.pos, rRayAngle, rRayTanAngle, itBl->leftRegion,
+                             itBr->rightRegion});
 
                     // bisector line between A and B
                     auto pL = points[itBl->leftRegion];
                     auto pR = points[itBr->rightRegion];
                     auto pMid = 0.5 * (pL + pR);
                     tFloat aBs = std::atan2(pR[Y] - pL[Y], pR[X] - pL[X]);
-                    aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO: check angle orientation
-                    Ray Bs({pMid, aBs, itBl->leftRegion, itBr->rightRegion});
+                    //aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO: check angle orientation
+                    tRay Bs({pMid, aBs, itBl->leftRegion, itBr->rightRegion});
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     stepPainter.setColor(IS);
@@ -430,7 +433,7 @@ private:
                                 // boundary to intersection point, then ray with bisector angle
                                 Bs.p = BsL.pos;
                                 if (!approxEQ(rL.p, Bs.p)) {
-                                    itBn = sl.insert(itInsertPos, Ray({rL, Bs}));
+                                    itBn = sl.insert(itInsertPos, tRay({rL, Bs}));
                                     pq.push({sl.prj(Bs.p), Event({Bs.p, itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);
@@ -440,7 +443,7 @@ private:
                                 // boundary to intersection point, then ray with bisector angle
                                 Bs.p = BsR.pos;
                                 if (!approxEQ(rR.p, Bs.p)) {
-                                    itBn = sl.insert(itInsertPos, Ray({rR, Bs}));
+                                    itBn = sl.insert(itInsertPos, tRay({rR, Bs}));
                                     pq.push({sl.prj(Bs.p), Event({Bs.p, itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);

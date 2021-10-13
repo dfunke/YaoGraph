@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Ray_2.h>
 
@@ -20,14 +21,14 @@ struct CGAL_Ray {
     using CGAL_Point = K::Point_2;
     using CGAL_Angle = CGAL::Direction_2<K>;
     using CGAL_Segment = CGAL::Segment_2<K>;
-    using CGAL_Box = CGAL::Bbox_2<K>;
+    using CGAL_Box = CGAL::Bbox_2;
 
     CGAL::Ray_2<K> iRay;
 
     tIndex leftRegion;
     tIndex rightRegion;
 
-    // extension of ray with another ray
+    // extension of ray with a segment before ray
     std::unique_ptr<CGAL_Segment> ext;// initialized with nullptr
 
     CGAL_Ray(const CGAL_Point &p_, const CGAL_Angle &angle_,
@@ -54,11 +55,11 @@ struct CGAL_Ray {
         return *this;
     }
 
-    bool leftOf(const tFloatVector &x) const {
+    bool leftOf(const CGAL_Point &x) const {
         // we only consider main ray, when the starting point of lower ray is
         // swept, this ray will be replaced by it
 
-        return (((p[X] + std::cos(angle)) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + std::sin(angle)) - p[Y]) * (x[X] - p[X])) > 0;
+        return iRay.supporting_line().oriented_side(x) == CGAL::ON_NEGATIVE_SIDE;
     }
 
     struct tIntersectionRetVal {
@@ -86,136 +87,112 @@ public:
 #ifdef WITH_CAIRO
 
     void draw(Painter &painter) const {
-        if (!ext) {
-            painter.drawLine(p, {p[X] + std::cos(angle), p[Y] + std::sin(angle)});
-        } else {
-            painter.drawLine(p, ext->p);
-            painter.drawLine(ext->p, {ext->p[X] + std::cos(ext->angle), ext->p[Y] + std::sin(ext->angle)});
-        }
+                if (!ext) {
+                    painter.drawLine(iRay.start(), iRay.point(1));
+                } else {
+                    painter.drawLine(ext->start(), ext->end());
+                    painter.drawLine(iRay.start(), iRay.point(1));
+                }
     }
 
 #endif
 
 private:
     static tIntersectionRetVal isRR(const CGAL_Ray &a, const CGAL_Ray &b, const CGAL_Box &bounds) {
-        if (std::fmod(std::fmod(a.angle - b.angle, M_PI) + M_PI, M_PI) == 0) {
+
+        auto result = CGAL::intersection(a.iRay, b.iRay);
+
+        if (result) {
+            const CGAL_Point *p = boost::get<CGAL_Point>(&*result);
+            if (p && CGAL::do_intersect(*p, bounds)) {
+                return {true, {p->x(), p->y()}};
+            } else {
+                // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                return {false, {}};
+            }
+        } else {
             return {false, {}};
         }
-
-        if (std::fmod(std::fmod(a.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
-            // vertical line this's x
-            return {true, {a.p[X], b.tanAngle * (a.p[X] - b.p[X]) + b.p[Y]}};
-        } else if (std::fmod(std::fmod(b.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
-            // vertical line at b's x
-            return {true, {b.p[X], a.tanAngle * (b.p[X] - a.p[X]) + a.p[Y]}};
-        }
-
-        tFloat m0 = a.tanAngle;// Line 0: y = m0 (x - x0) + y0
-        tFloat m1 = b.tanAngle;// Line 1: y = m1 (x - x1) + y1
-
-        tFloat x = ((m0 * a.p[X] - m1 * b.p[X]) - (a.p[Y] - b.p[Y])) / (m0 - m1);
-        tFloat y = m0 * (x - a.p[X]) + a.p[Y];
-
-        if (!bounds.contains({x, y})) {
-            return {false, {}};
-        }
-
-        return {true, {x, y}};
     }
 
     static tIntersectionRetVal isUR(const CGAL_Ray &ua, const CGAL_Ray &b, const CGAL_Box &bounds) {
         assert(ua.ext);
 
-        // check for intersection of main ray of ua and b
-        auto is = isRR(ua, b, bounds);
-        // check whether IS is before starting point of extension ray of ur
-        if (is.valid && distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p)) {
-            return is;
-        }
+        // check for intersection of pre-segment of ua and b
+        auto result = CGAL::intersection(*ua.ext, b.iRay);
 
-        // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
-        is = isRR(*ua.ext, b, bounds);
-        // check whether IS is after starting point of extension ray of ur
-        if (is.valid && distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p)) {
-            return is;
+        if (result) {
+            if (const CGAL_Point *p = boost::get<CGAL_Point>(&*result)) {
+                assert(CGAL::do_intersect(*p, bounds));
+                return {true, {p->x(), p->y()}};
+            } else {
+                // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                return {false, {}};
+            }
+        } else {
+            // check intersecton of main ray of ua and b
+            return isRR(ua, b, bounds);
         }
-
-        return {false, {}};
     }
 
     static tIntersectionRetVal isRU(const CGAL_Ray &a, const CGAL_Ray &ub, const CGAL_Box &bounds) {
         assert(ub.ext);
 
-        // check for intersection of a and main ray of ub
-        auto is = isRR(a, ub, bounds);
-        // check whether IS is before starting point of extension ray of ur
-        if (is.valid && distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
-            return is;
-        }
+        // check for intersection of pre-segment of ua and b
+        auto result = CGAL::intersection(a.iRay, *ub.ext);
 
-        // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
-        is = isRR(a, *ub.ext, bounds);
-        // check whether IS is after starting point of extension ray of ur
-        if (is.valid && distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
-            return is;
+        if (result) {
+            if (const CGAL_Point *p = boost::get<CGAL_Point>(&*result)) {
+                assert(CGAL::do_intersect(*p, bounds));
+                return {true, {p->x(), p->y()}};
+            } else {
+                // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                return {false, {}};
+            }
+        } else {
+            // check intersecton of a and main ray of ub
+            return isRR(a, ub, bounds);
         }
-
-        return {false, {}};
     }
 
     static tIntersectionRetVal isUU(const CGAL_Ray &ua, const CGAL_Ray &ub, const CGAL_Box &bounds) {
         assert(ua.ext && ub.ext);
 
-        // check for intersection of main ray of ua and ub
-        auto is = isRR(ua, ub, bounds);
-        // check whether IS is before starting point of lowerRay of ua
-        // check whether IS is before starting point of lowerRay of ub
-        if (is.valid &&
-            distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p) &&
-            distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
-
-            return is;
+        // check for intersection of pre-segment of ua and ub
+        auto result = CGAL::intersection(*ua.ext, *ub.ext);
+        if (result) {
+            if (const CGAL_Point *p = boost::get<CGAL_Point>(&*result)) {
+                assert(CGAL::do_intersect(*p, bounds));
+                return {true, {p->x(), p->y()}};
+            }
         }
 
 
-        // check for intersection of main ray of ua and lower ray of ub
-        is = isRR(ua, *ub.ext, bounds);
-        // check whether IS is before starting point of lowerRay of ua
-        // check whether IS is after starting point of lowerRay of ub
-        if (is.valid &&
-            distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p) &&
-            distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
-            return is;
+        // check for intersection of main ray of ua and pre-segment of ub
+        result = CGAL::intersection(ua.iRay, *ub.ext);
+        if (result) {
+            if (const CGAL_Point *p = boost::get<CGAL_Point>(&*result)) {
+                assert(CGAL::do_intersect(*p, bounds));
+                return {true, {p->x(), p->y()}};
+            }
         }
 
-
-        // check for intersection of lower ray of ua and main ray of ub
-        is = isRR(*ua.ext, ub, bounds);
-        // check whether IS is after starting point of ua's lowerRay
-        // check whether IS is before starting point of ub's lowerRay
-        if (is.valid &&
-            distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p) &&
-            distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
-            return is;
+        // check for intersection of pre-segment of ua and main ray of ub
+        result = CGAL::intersection(*ua.ext, ub.iRay);
+        if (result) {
+            if (const CGAL_Point *p = boost::get<CGAL_Point>(&*result)) {
+                assert(CGAL::do_intersect(*p, bounds));
+                return {true, {p->x(), p->y()}};
+            }
         }
 
-
-        // check for intersection of lower rays of ua and ub
-        is = isRR(*ua.ext, *ub.ext, bounds);
-        // check whether IS is after starting point of ua's lowerRay
-        // check whether IS is after starting point of ub's lowerRay
-        if (is.valid &&
-            distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p) &&
-            distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
-            return is;
-        }
-
-        return {false, {}};
+        // check for intersection of main rays of ua and ub
+        return isRR(ua, ub, bounds);
     }
 };
 
 std::ostream &operator<<(std::ostream &os, const CGAL_Ray &r) {
-    os << "p: " << r.p << " angle: " << r.angle << " boundary: "
+    os << "boundary: "
        << (r.leftRegion != tIndex(-1) ? std::to_string(r.leftRegion) : "INF") << "/"
        << (r.rightRegion != tIndex(-1) ? std::to_string(r.rightRegion) : "INF");
     if (r.ext) {
@@ -227,7 +204,7 @@ std::ostream &operator<<(std::ostream &os, const CGAL_Ray &r) {
 
 std::string to_string(const CGAL_Ray &r) {
     std::stringstream os;
-    os << "p: " << r.p << " angle: " << r.angle << " boundary: "
+    os << "boundary: "
        << (r.leftRegion != tIndex(-1) ? std::to_string(r.leftRegion) : "INF") << "/"
        << (r.rightRegion != tIndex(-1) ? std::to_string(r.rightRegion) : "INF");
     if (r.ext) {
