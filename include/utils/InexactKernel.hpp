@@ -80,6 +80,19 @@ public:
             }
         }
 
+        std::string str() const {
+            std::stringstream os;
+
+            os << "p: " << p << " angle: " << angle << " boundary: "
+               << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
+               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
+            if (ext) {
+                os << " extension: " << ext->str();
+            }
+
+            return os.str();
+        }
+
         Ray &operator=(const Ray &o) {
             p = o.p;
             angle = o.angle;
@@ -259,24 +272,6 @@ public:
 };
 
 std::ostream &operator<<(std::ostream &os, const InexactKernel::Ray &r) {
-    os << "p: " << r.p << " angle: " << r.angle << " boundary: "
-       << (r.leftRegion != tIndex(-1) ? std::to_string(r.leftRegion) : "INF") << "/"
-       << (r.rightRegion != tIndex(-1) ? std::to_string(r.rightRegion) : "INF");
-    if (r.ext) {
-        os << " extension: " << *r.ext;
-    }
-
+    os << r.str();
     return os;
-}
-
-std::string to_string(const InexactKernel::Ray &r) {
-    std::stringstream os;
-    os << "p: " << r.p << " angle: " << r.angle << " boundary: "
-       << (r.leftRegion != tIndex(-1) ? std::to_string(r.leftRegion) : "INF") << "/"
-       << (r.rightRegion != tIndex(-1) ? std::to_string(r.rightRegion) : "INF");
-    if (r.ext) {
-        os << " extension: " << *r.ext;
-    }
-
-    return os.str();
 }
