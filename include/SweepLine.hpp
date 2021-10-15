@@ -164,11 +164,8 @@ private:
         tFloat lTheta = k * (2 * M_PI / C);
         tFloat uTheta = (k + 1) * (2 * M_PI / C);
 
-        tFloat lRayAngle = lTheta + tFloat(M_PI);
-        tFloat lRayTanAngle = std::tan(lRayAngle);
-
-        tFloat rRayAngle = uTheta + tFloat(M_PI);
-        tFloat rRayTanAngle = std::tan(rRayAngle);
+        tDirection lRay(lTheta + tFloat(M_PI));
+        tDirection rRay(uTheta + tFloat(M_PI));
 
         SweeplineDS sl(tDirection(M_PI + .5 * (lTheta + uTheta)));
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> pq(pqCmp);
@@ -235,7 +232,7 @@ private:
                     }
 
                     // check if Bl and Br intersect, check only required if they don't originate from same point
-                    if (itBl != sl.end() && itBr != sl.end() && itBl->p != itBr->p) {
+                    if (itBl != sl.end() && itBr != sl.end()) {
                         auto is = itBl->intersection(*itBr, bounds);
                         if (is.valid) {
                             delPQ.push({sl.prj(is.pos), Event({is.pos})});
@@ -246,10 +243,10 @@ private:
                     // create new rays and insert them into SL
                     auto itBln = sl.insert(
                             itBr,
-                            tRay({cPoint.pos, lRayAngle, lRayTanAngle,
+                            tRay({cPoint.pos, lRay,
                                   itBl != sl.end() ? itBl->rightRegion : tIndex(-1), cPoint.idx}));
                     auto itBrn = sl.insert(
-                            itBr, tRay({cPoint.pos, rRayAngle, rRayTanAngle, cPoint.idx,
+                            itBr, tRay({cPoint.pos, rRay, cPoint.idx,
                                         itBr != sl.end() ? itBr->leftRegion : tIndex(-1)}));
 
                     // std::cout << idx << " left ray " << *itBln << std::endl;
@@ -310,19 +307,17 @@ private:
                     if (itBl != sl.begin()) {
                         auto itBll = std::prev(itBl);
 
-                        if (itBl->p != itBll->p) {
-                            auto is = itBll->intersection(*itBl, bounds);
-                            if (is.valid) {
-                                delPQ.push({sl.prj(is.pos), Event({is.pos})});
-                                // std::cout << idx << " deleted left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
-                            }
+                        auto is = itBll->intersection(*itBl, bounds);
+                        if (is.valid) {
+                            delPQ.push({sl.prj(is.pos), Event({is.pos})});
+                            // std::cout << idx << " deleted left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                         }
                     }
 
                     if (itBr != sl.end()) {
                         auto itBrr = std::next(itBr);
 
-                        if (itBrr != sl.end() && itBr->p != itBrr->p) {
+                        if (itBrr != sl.end()) {
                             auto is = itBr->intersection(*itBrr, bounds);
                             if (is.valid) {
                                 delPQ.push({sl.prj(is.pos), Event({is.pos})});
@@ -331,10 +326,8 @@ private:
                         }
                     }
 
-                    tRay rL({cPoint.pos, lRayAngle, lRayTanAngle, itBl->leftRegion,
-                             itBr->rightRegion});
-                    tRay rR({cPoint.pos, rRayAngle, rRayTanAngle, itBl->leftRegion,
-                             itBr->rightRegion});
+                    tRay rL({cPoint.pos, lRay, itBl->leftRegion, itBr->rightRegion});
+                    tRay rR({cPoint.pos, rRay, itBl->leftRegion, itBr->rightRegion});
 
                     // bisector line between A and B
                     auto pL = points[itBl->leftRegion];
@@ -386,19 +379,19 @@ private:
 #endif
 
                     // check whether rays have extension before deletion: delete delete event
-                    if (itBl->ext) {
-                        delPQ.push({sl.prj(itBl->ext->p), Event({itBl->ext->p})});
+                    if (itBl->isExtended()) {
+                        delPQ.push({sl.prj(itBl->extOrigin()), Event({itBl->extOrigin()})});
                         // std::cout << idx << " deleted Deletion event " << itBl->ext->p << " key: " << sl.prj(itBl->ext->p) << std::endl;
                     }
-                    if (itBr->ext) {
-                        delPQ.push({sl.prj(itBr->ext->p), Event({itBr->ext->p})});
+                    if (itBr->isExtended()) {
+                        delPQ.push({sl.prj(itBr->extOrigin()), Event({itBr->extOrigin()})});
                         // std::cout << idx << " deleted Deletion event " << itBr->ext->p << " key: " << sl.prj(itBr->ext->p) << std::endl;
                     }
 
 #ifdef WITH_CAIRO
                     basePainter.drawSquare(cPoint.pos);
-                    basePainter.drawLine(itBl->p, cPoint.pos);
-                    basePainter.drawLine(itBr->p, cPoint.pos);
+                    basePainter.drawLine(itBl->origin(), cPoint.pos);
+                    basePainter.drawLine(itBr->origin(), cPoint.pos);
 #endif
 
                     // remove old Rays from list
@@ -424,27 +417,27 @@ private:
                             assert(approxEQ(BsR.pos, cPoint.pos));
                             // std::cout << idx << " case c) both intersect" << std::endl;
                             // boundary originates at v with bisector angle
-                            Bs.p = cPoint.pos;
+                            Bs.setOrigin(cPoint.pos);
                             itBn = sl.insert(itInsertPos, Bs);
                         } else {
                             // std::cout << idx << " case b) one intersection" << std::endl;
                             if (BsL.valid) {
                                 // bisector intersects left ray
                                 // boundary to intersection point, then ray with bisector angle
-                                Bs.p = BsL.pos;
-                                if (!approxEQ(rL.p, Bs.p)) {
+                                Bs.setOrigin(BsL.pos);
+                                if (!approxEQ(rL.origin(), Bs.origin())) {
                                     itBn = sl.insert(itInsertPos, tRay({rL, Bs}));
-                                    pq.push({sl.prj(Bs.p), Event({Bs.p, itBn})});
+                                    pq.push({sl.prj(Bs.origin()), Event({Bs.origin(), itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);
                                 }
                             } else {
                                 // bisector intersects right ray
                                 // boundary to intersection point, then ray with bisector angle
-                                Bs.p = BsR.pos;
-                                if (!approxEQ(rR.p, Bs.p)) {
+                                Bs.setOrigin(BsR.pos);
+                                if (!approxEQ(rR.origin(), Bs.origin())) {
                                     itBn = sl.insert(itInsertPos, tRay({rR, Bs}));
-                                    pq.push({sl.prj(Bs.p), Event({Bs.p, itBn})});
+                                    pq.push({sl.prj(Bs.origin()), Event({Bs.origin(), itBn})});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);
                                 }
@@ -498,28 +491,24 @@ private:
 
                     auto itB = cPoint.leftRay;// we store the ray to be deleted as left ray
                     assert(itB != sl.end());
-                    assert(itB->ext);
-                    assert(itB->leftRegion == itB->ext->leftRegion);
-                    assert(itB->rightRegion == itB->ext->rightRegion);
-                    assert(!itB->ext->ext);
+                    assert(itB->isExtended());
+                    //assert(itB->leftRegion == itB->ext->leftRegion);
+                    //assert(itB->rightRegion == itB->ext->rightRegion);
+                    //assert(!itB->ext->ext);
 
 #ifdef WITH_CAIRO
-                    basePainter.drawLine(itB->p, itB->ext->p);
+                    basePainter.drawLine(itB->origin(), itB->extOrigin());
 #endif
 
                     // std::cout << idx << " old ray: " << *itB << std::endl;
 
                     // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
                     // all intersections processed after this point will be with lower ray
-                    itB->p = itB->ext->p;
-                    itB->angle = itB->ext->angle;
-                    itB->tanAngle = itB->ext->tanAngle;
-                    // and delete the lower ray
-                    itB->ext.reset();
+                    itB->foldExtension();
 
                     //  std::cout << idx << " new ray: " << *itB << std::endl;
 
-                    assert(!itB->ext);
+                    assert(!itB->isExtended());
 
                     break;
                 }

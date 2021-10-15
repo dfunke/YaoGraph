@@ -20,22 +20,38 @@ public:
 
     class Direction {
     public:
-        Direction(const tFloat _dir) : dir(_dir), vec({std::cos(dir), std::sin(dir)}) {}
+        Direction(const tFloat _dir) : dir(_dir), tanDir(std::tan(dir)), vec({std::cos(dir), std::sin(dir)}) {}
 
         Float prj(const Point &p) {
             return (p[X] * vec[X] + p[Y] * vec[Y]) / dot(vec, vec);
         }
 
+        Float tan() const {
+            return tanDir;
+        }
+
+        Float cos() const {
+            return std::cos(dir);
+        }
+
+        Float sin() const {
+            return std::sin(dir);
+        }
+
+        Float angle() const {
+            return dir;
+        }
+
     private:
         Float dir;
+        Float tanDir;
         Vector vec;
     };
 
     struct Ray {
     private:
-        tFloatVector p;
-        tFloat angle;
-        tFloat tanAngle;
+        Point p;
+        Direction dir;
 
     public:
         tIndex leftRegion;
@@ -46,34 +62,25 @@ public:
         std::unique_ptr<Ray> ext;// initialized with nullptr
 
     public:
-        Ray(const tFloatVector &p_, const tFloat &angle_, const tFloat &tanAngle_, const tIndex &lr,
-            const tIndex &rr)
-            : p(p_), angle(angle_), tanAngle(tanAngle_), leftRegion(lr), rightRegion(rr) {}
+        Ray(const Point &p_, const Direction &angle_, const tIndex &lr, const tIndex &rr)
+            : p(p_), dir(angle_), leftRegion(lr), rightRegion(rr) {}
 
-        Ray(const tFloatVector &p_, const tFloat &angle_, const tIndex &lr,
-            const tIndex &rr)
-            : Ray(p_, angle_, std::tan(angle_), lr, rr) {}
-
-        Ray(const tFloatVector &p_, const tFloat &angle_, const tFloat &tanAngle_, const tIndex &lr,
+        Ray(const Point &p_, const Direction &angle_, const tIndex &lr,
             const tIndex &rr, const Ray &ext_)
-            : p(p_), angle(angle_), tanAngle(tanAngle_), leftRegion(lr), rightRegion(rr),
+            : p(p_), dir(angle_), leftRegion(lr), rightRegion(rr),
               ext(std::make_unique<Ray>(ext_)) {
 
             // the starting points of upper and lower ray should be different
             assert(!approxEQ(p, ext->p));
 
             // the starting point of the lower ray must be on the upper rayl;
-            assert(approxEQ(ext->p, {ext->p[X], tanAngle * (ext->p[X] - p[X]) + p[Y]}));
+            assert(approxEQ(ext->p, {ext->p[X], dir.tan() * (ext->p[X] - p[X]) + p[Y]}));
             assert(leftRegion == ext->leftRegion);
             assert(rightRegion == ext->rightRegion);
         }
 
-        Ray(const tFloatVector &p_, const tFloat &angle_, const tIndex &lr,
-            const tIndex &rr, const Ray &ext_)
-            : Ray(p_, angle_, std::tan(angle_), lr, rr, ext_) {}
-
         Ray(const Ray &o)
-            : p(o.p), angle(o.angle), tanAngle(o.tanAngle), leftRegion(o.leftRegion),
+            : p(o.p), dir(o.dir), leftRegion(o.leftRegion),
               rightRegion(o.rightRegion) {
             if (o.ext) {
                 ext = std::make_unique<Ray>(*o.ext);
@@ -83,11 +90,10 @@ public:
         std::string str() const {
             std::stringstream os;
 
-            os << "p: " << p << " angle: " << angle << " boundary: "
-               << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
+            os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
                << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
             if (ext) {
-                os << " extension: " << ext->str();
+                os << " EXT";
             }
 
             return os.str();
@@ -95,8 +101,7 @@ public:
 
         Ray &operator=(const Ray &o) {
             p = o.p;
-            angle = o.angle;
-            tanAngle = o.tanAngle;
+            dir = o.dir;
             leftRegion = o.leftRegion;
             rightRegion = o.rightRegion;
 
@@ -107,14 +112,43 @@ public:
             return *this;
         }
 
+        bool isExtended() const {
+            return (bool) ext;
+        }
+
+        Point origin() const {
+            return p;
+        }
+
+        Point extOrigin() const {
+            assert(ext);
+            return ext->p;
+        }
+
+        void setOrigin(const Point &p_) {
+            p = p_;
+        }
+
+        void foldExtension() {
+            assert(ext);
+
+            // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
+            // all intersections processed after this point will be with lower ray
+            p = ext->p;
+            dir = ext->dir;
+            // and delete the lower ray
+            ext.reset();
+
+            assert(!ext);
+        }
         // convenience constructor for ray unions
-        Ray(const Ray &upper, const Ray &lower) : Ray(upper.p, upper.angle, upper.tanAngle, upper.leftRegion, upper.rightRegion, lower) {}
+        Ray(const Ray &upper, const Ray &lower) : Ray(upper.p, upper.dir, upper.leftRegion, upper.rightRegion, lower) {}
 
         bool leftOf(const tFloatVector &x) const {
             // we only consider main ray, when the starting point of lower ray is
             // swept, this ray will be replaced by it
 
-            return (((p[X] + std::cos(angle)) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + std::sin(angle)) - p[Y]) * (x[X] - p[X])) > 0;
+            return (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X])) > 0;
         }
 
         struct tIntersectionRetVal {
@@ -128,14 +162,20 @@ public:
 
     public:
         static tIntersectionRetVal intersection(const Ray &a, const Ray &b, const tBox &bounds) {
-            if (!a.ext && !b.ext) {
-                return isRR(a, b, bounds);
-            } else if (a.ext && b.ext) {
-                return isUU(a, b, bounds);
-            } else if (a.ext) {
-                return isUR(a, b, bounds);
-            } else {// b.ext
-                return isRU(a, b, bounds);
+
+            if (a.p == b.p) {
+                // if both rays originate at the same point, we don't consider it an intersection
+                return {false, {}};
+            } else {
+                if (!a.ext && !b.ext) {
+                    return isRR(a, b, bounds);
+                } else if (a.ext && b.ext) {
+                    return isUU(a, b, bounds);
+                } else if (a.ext) {
+                    return isUR(a, b, bounds);
+                } else {// b.ext
+                    return isRU(a, b, bounds);
+                }
             }
         }
 
@@ -143,10 +183,10 @@ public:
 
         void draw(Painter &painter) const {
             if (!ext) {
-                painter.drawLine(p, {p[X] + std::cos(angle), p[Y] + std::sin(angle)});
+                painter.drawLine(p, {p[X] + dir.cos(), p[Y] + dir.sin()});
             } else {
                 painter.drawLine(p, ext->p);
-                painter.drawLine(ext->p, {ext->p[X] + std::cos(ext->angle), ext->p[Y] + std::sin(ext->angle)});
+                painter.drawLine(ext->p, {ext->p[X] + ext->dir.cos(), ext->p[Y] + ext->dir.sin()});
             }
         }
 
@@ -154,20 +194,20 @@ public:
 
     private:
         static tIntersectionRetVal isRR(const Ray &a, const Ray &b, const tBox &bounds) {
-            if (std::fmod(std::fmod(a.angle - b.angle, M_PI) + M_PI, M_PI) == 0) {
+            if (std::fmod(std::fmod(a.dir.angle() - b.dir.angle(), M_PI) + M_PI, M_PI) == 0) {
                 return {false, {}};
             }
 
-            if (std::fmod(std::fmod(a.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
+            if (std::fmod(std::fmod(a.dir.angle(), M_PI) + M_PI, M_PI) == M_PI_2) {
                 // vertical line this's x
-                return {true, {a.p[X], b.tanAngle * (a.p[X] - b.p[X]) + b.p[Y]}};
-            } else if (std::fmod(std::fmod(b.angle, M_PI) + M_PI, M_PI) == M_PI_2) {
+                return {true, {a.p[X], b.dir.tan() * (a.p[X] - b.p[X]) + b.p[Y]}};
+            } else if (std::fmod(std::fmod(b.dir.angle(), M_PI) + M_PI, M_PI) == M_PI_2) {
                 // vertical line at b's x
-                return {true, {b.p[X], a.tanAngle * (b.p[X] - a.p[X]) + a.p[Y]}};
+                return {true, {b.p[X], a.dir.tan() * (b.p[X] - a.p[X]) + a.p[Y]}};
             }
 
-            tFloat m0 = a.tanAngle;// Line 0: y = m0 (x - x0) + y0
-            tFloat m1 = b.tanAngle;// Line 1: y = m1 (x - x1) + y1
+            tFloat m0 = a.dir.tan();// Line 0: y = m0 (x - x0) + y0
+            tFloat m1 = b.dir.tan();// Line 1: y = m1 (x - x1) + y1
 
             tFloat x = ((m0 * a.p[X] - m1 * b.p[X]) - (a.p[Y] - b.p[Y])) / (m0 - m1);
             tFloat y = m0 * (x - a.p[X]) + a.p[Y];
