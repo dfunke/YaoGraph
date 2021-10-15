@@ -22,14 +22,14 @@
 #include "Painter.hpp"
 #endif
 
-template<tDim C, typename K>
+template<tDim C, typename Kernel>
 class SweepLine {
 
-    using tFloat = typename K::Float;
-    using tDirection = typename K::Direction;
-    using tPoint = typename K::Point;
+    using tFloat = typename Kernel::Float;
+    using tDirection = typename Kernel::Direction;
+    using tPoint = typename Kernel::Point;
 
-    using tRay = typename K::Ray;
+    using tRay = typename Kernel::Ray;
 
     struct SweeplineDS {
 
@@ -85,7 +85,7 @@ class SweepLine {
 
 #ifdef WITH_CAIRO
 
-        void draw(const tFloatVector &pos, Painter &painter) {
+        void draw(const tPoint &pos, Painter &painter) {
 
             // draw sweepline
             painter.drawLine(pos, {pos[X] + std::cos(slDirection + tFloat(M_PI_2)),
@@ -115,22 +115,22 @@ class SweepLine {
 
         using tRayHandle = typename SweeplineDS::tRayHandle;
 
-        Event(const tFloatVector &pos_)
+        Event(const tPoint &pos_)
             : type(Type::Deletion), pos(pos_), idx(tIndex(-1)) {}
 
-        Event(const tFloatVector &pos_, const tIndex &idx_)
+        Event(const tPoint &pos_, const tIndex &idx_)
             : type(Type::Input), pos(pos_), idx(idx_) {}
 
-        Event(const tFloatVector &pos_, const tRayHandle &left)
+        Event(const tPoint &pos_, const tRayHandle &left)
             : type(Type::Deletion), pos(pos_), leftRay(left) {}
 
-        Event(const tFloatVector &pos_, const tRayHandle &left,
+        Event(const tPoint &pos_, const tRayHandle &left,
               const tRayHandle &right)
             : type(Type::Intersection), pos(pos_), idx(tIndex(-1)), leftRay(left),
               rightRay(right) {}
 
         Type type;
-        tFloatVector pos;
+        tPoint pos;
 
         tIndex idx;
 
@@ -333,9 +333,9 @@ private:
                     auto pL = points[itBl->leftRegion];
                     auto pR = points[itBr->rightRegion];
                     auto pMid = 0.5 * (pL + pR);
-                    tFloat aBs = std::atan2(pR[Y] - pL[Y], pR[X] - pL[X]);
+                    tDirection aBs(std::atan2(pR[Y] - pL[Y], pR[X] - pL[X]));
                     //aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO: check angle orientation
-                    tRay Bs({pMid, aBs, itBl->leftRegion, itBr->rightRegion});
+                    tRay Bs(pMid, aBs, itBl->leftRegion, itBr->rightRegion);
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     stepPainter.setColor(IS);
