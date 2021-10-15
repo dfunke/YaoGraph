@@ -20,7 +20,7 @@ public:
 
     class Direction {
     public:
-        Direction(const tFloat _dir) : dir(_dir), tanDir(std::tan(dir)), vec({std::cos(dir), std::sin(dir)}) {}
+        Direction(const Float _dir) : dir(_dir), tanDir(std::tan(_dir)), vec({std::cos(_dir), std::sin(_dir)}) {}
 
         Float prj(const Point &p) {
             return (p[X] * vec[X] + p[Y] * vec[Y]) / dot(vec, vec);
@@ -112,6 +112,9 @@ public:
             return *this;
         }
 
+        // convenience constructor for ray unions
+        Ray(const Ray &upper, const Ray &lower) : Ray(upper.p, upper.dir, upper.leftRegion, upper.rightRegion, lower) {}
+
         bool isExtended() const {
             return (bool) ext;
         }
@@ -141,8 +144,6 @@ public:
 
             assert(!ext);
         }
-        // convenience constructor for ray unions
-        Ray(const Ray &upper, const Ray &lower) : Ray(upper.p, upper.dir, upper.leftRegion, upper.rightRegion, lower) {}
 
         bool leftOf(const tFloatVector &x) const {
             // we only consider main ray, when the starting point of lower ray is
