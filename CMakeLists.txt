@@ -4,7 +4,7 @@ project(GeoGraph)
 # default to Release building
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message("Defaulting CMAKE_BUILD_TYPE to Release")
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type")
 endif ()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
