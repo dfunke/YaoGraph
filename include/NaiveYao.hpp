@@ -6,13 +6,16 @@
 
 #include "Predicates.hpp"
 #include "Types.hpp"
+#include "utils/InexactKernel.hpp"
 
-template<tDim K>
+template<tDim C, typename Kernel>
 class NaiveYao {
 
 public:
-    using tVertex = tYaoVertex<K>;
+    using tVertex = tYaoVertex<C>;
     using tGraph = tYaoGraph<tVertex>;
+
+    using tPoint = typename Kernel::Point;
 
     tGraph operator()(const tPoints &points) const {
         tGraph g(points.size());
@@ -22,8 +25,9 @@ public:
 
                 if (i == j) continue;
 
-                auto d = distance2(points[i], points[j]);
-                tDim sec = std::floor(atan2P(points[i], points[j]) / (2 * M_PI / K));
+                //auto d = InexactKernel::distance2(points[i], points[j]);
+                auto d = Kernel::distance2(Kernel::mkPoint(points[i]), Kernel::mkPoint(points[j]));
+                tDim sec = std::floor(atan2P(points[i], points[j]) / (2 * M_PI / C));
 
                 if (d < g[i].distance[sec]) {
                     g[i].neighbor[sec] = j;

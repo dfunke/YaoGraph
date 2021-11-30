@@ -99,6 +99,15 @@ public:
         cr->fill();
     }
 
+#ifdef WITH_CGAL
+    template<typename K>
+    void drawSquare(const CGAL::Point_2<K> &point) {
+        cr->rectangle(translatePoint(point[0], 0) - 5,
+                      translatePoint(point[1], 1) - 5, 10, 10);
+        cr->fill();
+    }
+#endif
+
     void draw(const tFloatVector &point, const tIndex &idx, bool label = true) {
         cr->arc(translatePoint(point[0], 0),
                 translatePoint(point[1], 1), 5, 0, 2 * M_PI);

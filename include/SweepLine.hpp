@@ -88,10 +88,10 @@ class SweepLine {
         void draw(const tPoint &pos, Painter &painter) {
 
             // draw sweepline
-            painter.drawLine(pos, {pos[X] + std::cos(slDirection + tFloat(M_PI_2)),
-                                   pos[Y] + std::sin(slDirection + tFloat(M_PI_2))});
-            painter.drawLine(pos, {pos[X] + std::cos(slDirection - tFloat(M_PI_2)),
-                                   pos[Y] + std::sin(slDirection - tFloat(M_PI_2))});
+            painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() + tFloat(M_PI_2)),
+                                   pos[Y] + std::sin(slDirection.angle() + tFloat(M_PI_2))});
+            painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() - tFloat(M_PI_2)),
+                                   pos[Y] + std::sin(slDirection.angle() - tFloat(M_PI_2))});
 
             // draw direction
             painter.setDash();
@@ -122,7 +122,7 @@ class SweepLine {
             : type(Type::Input), pos(pos_), idx(idx_) {}
 
         Event(const tPoint &pos_, const tRayHandle &left)
-            : type(Type::Deletion), pos(pos_), leftRay(left) {}
+            : type(Type::Deletion), pos(pos_), idx(tIndex(-1)), leftRay(left) {}
 
         Event(const tPoint &pos_, const tRayHandle &left,
               const tRayHandle &right)
@@ -153,8 +153,8 @@ public:
     }
 
 private:
-    void sweepline(const tPoints &points, tDim k, tGraph &graph,
-                   const tBox &bounds) const {
+    void sweepline(const tPoints &iPoints, tDim k, tGraph &graph,
+                   const tBox &iBounds) const {
 
         using pqItem = std::pair<tFloat, Event>;
         auto pqCmp = [](const pqItem &a, const pqItem &b) {
@@ -167,12 +167,15 @@ private:
         tDirection lRay(lTheta + tFloat(M_PI));
         tDirection rRay(uTheta + tFloat(M_PI));
 
+        auto bounds = Kernel::mkBBox(iBounds);
+
         SweeplineDS sl(tDirection(M_PI + .5 * (lTheta + uTheta)));
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> pq(pqCmp);
         std::priority_queue<pqItem, std::vector<pqItem>, decltype(pqCmp)> delPQ(pqCmp);
 
-        for (tIndex i = 0; i < points.size(); ++i) {
-            pq.push({sl.prj(points[i]), Event({points[i], i})});
+        for (tIndex i = 0; i < iPoints.size(); ++i) {
+            auto p = Kernel::mkPoint(iPoints[i]);
+            pq.push({sl.prj(p), Event(p, i)});
         }
 
 #ifdef WITH_CAIRO
@@ -183,9 +186,9 @@ private:
         [[maybe_unused]] constexpr std::array<float, 3> IS = {0, 1, 0};
         [[maybe_unused]] constexpr std::array<float, 3> BOUND = {0, 1, 1};
 
-        Painter basePainter(bounds, 1000);
+        Painter basePainter(iBounds, 1000);
         basePainter.setColor(BASE);
-        basePainter.draw(points, true);
+        basePainter.draw(iPoints, true);
 #endif
         tIndex idx = 0;
         while (!pq.empty()) {
@@ -206,7 +209,11 @@ private:
 
             stepPainter.setColor(SL);
             sl.draw(cPoint.pos, stepPainter);
-            stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
+
+            std::ostringstream stepFilename;
+            stepFilename << "img_k" << k << "_s" << std::setfill('0')
+                         << std::setw(static_cast<int>(std::ceil(std::log10(iPoints.size()) + 2))) << idx;
+            stepPainter.save(stepFilename.str());
 #endif
 
             switch (cPoint.type) {
@@ -226,7 +233,7 @@ private:
                         assert(itBl->rightRegion == itBr->leftRegion);
 
                         graph[cPoint.idx].neighbor[k] = itBr->leftRegion;
-                        graph[cPoint.idx].distance[k] = distance2(cPoint.pos, points[itBr->leftRegion]);
+                        graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion]));
 
                         // std::cout << idx << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << distance2(cPoint.pos, points[itBr->leftRegion]) << std::endl;
                     }
@@ -234,7 +241,7 @@ private:
                     // check if Bl and Br intersect, check only required if they don't originate from same point
                     if (itBl != sl.end() && itBr != sl.end()) {
                         auto is = itBl->intersection(*itBr, bounds);
-                        if (is.valid) {
+                        if (is.valid && sl.prj(is.pos) > cKey) {
                             delPQ.push({sl.prj(is.pos), Event({is.pos})});
                             // std::cout << idx << " deleted intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                         }
@@ -294,7 +301,7 @@ private:
                     stepPainter.setColor(BOUND);
                     itBl->draw(stepPainter);
                     itBr->draw(stepPainter);
-                    stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
+                    stepPainter.save(stepFilename.str());
 #endif
 
                     assert(std::next(itBl) == itBr);
@@ -306,9 +313,10 @@ private:
                     // delete intersection points from PQ
                     if (itBl != sl.begin()) {
                         auto itBll = std::prev(itBl);
+                        assert(itBll != sl.end());
 
                         auto is = itBll->intersection(*itBl, bounds);
-                        if (is.valid) {
+                        if (is.valid && sl.prj(is.pos) > cKey) {
                             delPQ.push({sl.prj(is.pos), Event({is.pos})});
                             // std::cout << idx << " deleted left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                         }
@@ -319,7 +327,7 @@ private:
 
                         if (itBrr != sl.end()) {
                             auto is = itBr->intersection(*itBrr, bounds);
-                            if (is.valid) {
+                            if (is.valid && sl.prj(is.pos) > cKey) {
                                 delPQ.push({sl.prj(is.pos), Event({is.pos})});
                                 // std::cout << idx << " deleted right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                             }
@@ -330,11 +338,10 @@ private:
                     tRay rR({cPoint.pos, rRay, itBl->leftRegion, itBr->rightRegion});
 
                     // bisector line between A and B
-                    auto pL = points[itBl->leftRegion];
-                    auto pR = points[itBr->rightRegion];
-                    auto pMid = 0.5 * (pL + pR);
-                    tDirection aBs(std::atan2(pR[Y] - pL[Y], pR[X] - pL[X]));
-                    //aBs += (((sl.slDirection - aBs) < M_PI) ? 1 : -1) * M_PI_2;// TODO: check angle orientation
+                    auto pL = Kernel::mkPoint(iPoints[itBl->leftRegion]);
+                    auto pR = Kernel::mkPoint(iPoints[itBr->rightRegion]);
+                    auto pMid = Kernel::Midpoint(pL, pR);
+                    tDirection aBs = tDirection(pR - pL).perp(sl.slDirection);
                     tRay Bs(pMid, aBs, itBl->leftRegion, itBr->rightRegion);
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
@@ -354,14 +361,14 @@ private:
                     auto BsL = Bs.intersection(rL, bounds);
                     auto BsR = Bs.intersection(rR, bounds);
 
-                    if (BsL.valid && BsR.valid && approxEQ(BsL.pos, BsR.pos) && approxEQ(BsL.pos, cPoint.pos)) {//TODO better way to test?
-                        assert(approxEQ(BsR.pos, cPoint.pos));
+                    if (BsL.valid && BsR.valid && Kernel::approxEQ(BsL.pos, BsR.pos) && Kernel::approxEQ(BsL.pos, cPoint.pos)) {//TODO better way to test?
+                        assert(Kernel::approxEQ(BsR.pos, cPoint.pos));
                         // we don't check for sweepline projection to avoid floating point problems
                     } else {
-                        if (BsL.valid && approxLT(sl.prj(BsL.pos), cKey)) {// check whether IS is before SL
+                        if (BsL.valid && Kernel::approxLT(sl.prj(BsL.pos), cKey)) {// check whether IS is before SL
                             BsL.valid = false;
                         }
-                        if (BsR.valid && approxLT(sl.prj(BsR.pos), cKey)) {// check whether IS is before SL
+                        if (BsR.valid && Kernel::approxLT(sl.prj(BsR.pos), cKey)) {// check whether IS is before SL
                             BsR.valid = false;
                         }
                     }
@@ -412,9 +419,9 @@ private:
                     } else {
                         if (BsL.valid && BsR.valid) {
                             // bisector intersects both rays - > must be in same point v
-                            assert(approxEQ(BsL.pos, BsR.pos));
-                            assert(approxEQ(BsL.pos, cPoint.pos));
-                            assert(approxEQ(BsR.pos, cPoint.pos));
+                            assert(Kernel::approxEQ(BsL.pos, BsR.pos));
+                            assert(Kernel::approxEQ(BsL.pos, cPoint.pos));
+                            assert(Kernel::approxEQ(BsR.pos, cPoint.pos));
                             // std::cout << idx << " case c) both intersect" << std::endl;
                             // boundary originates at v with bisector angle
                             Bs.setOrigin(cPoint.pos);
@@ -425,9 +432,9 @@ private:
                                 // bisector intersects left ray
                                 // boundary to intersection point, then ray with bisector angle
                                 Bs.setOrigin(BsL.pos);
-                                if (!approxEQ(rL.origin(), Bs.origin())) {
+                                if (!Kernel::approxEQ(rL.origin(), Bs.origin())) {
                                     itBn = sl.insert(itInsertPos, tRay({rL, Bs}));
-                                    pq.push({sl.prj(Bs.origin()), Event({Bs.origin(), itBn})});
+                                    pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);
                                 }
@@ -435,9 +442,9 @@ private:
                                 // bisector intersects right ray
                                 // boundary to intersection point, then ray with bisector angle
                                 Bs.setOrigin(BsR.pos);
-                                if (!approxEQ(rR.origin(), Bs.origin())) {
+                                if (!Kernel::approxEQ(rR.origin(), Bs.origin())) {
                                     itBn = sl.insert(itInsertPos, tRay({rR, Bs}));
-                                    pq.push({sl.prj(Bs.origin()), Event({Bs.origin(), itBn})});
+                                    pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.insert(itInsertPos, Bs);
                                 }

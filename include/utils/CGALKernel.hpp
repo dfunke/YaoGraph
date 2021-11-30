@@ -28,13 +28,22 @@ public:
     class Direction {
     public:
         Direction(const tFloat _dir) : dir(Vector(std::cos(_dir), std::sin(_dir))) {}
+        Direction(const Vector &v) : dir(v) {}
 
         Float prj(const Point &p) {
-            return 0;
+            return CGAL::scalar_product(Vector(p[X], p[Y]), dir.vector()) / CGAL::scalar_product(dir.vector(), dir.vector());
         }
 
         auto &base() const {
             return dir;
+        }
+
+        Direction perp() const {
+            return {dir.vector().perpendicular(CGAL::CLOCKWISE)};// TODO: check angle orientation
+        }
+
+        Direction perp(const Direction &ref) const {
+            return {dir.vector().perpendicular(CGAL::CLOCKWISE)};// TODO: check angle orientation
         }
 
     private:
@@ -71,10 +80,13 @@ public:
             std::stringstream os;
 
             os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
-               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
+            << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
+
             if (ext) {
-                os << " EXT";
+                os << " p: " << ext->start() << " a: " << std::atan2(ext->direction().dy(), ext->direction().dx());
+                os << " EXT: ";
             }
+            os << " p: " << iRay.start() << " a: " << std::atan2(iRay.direction().dy(), iRay.direction().dx());
 
             return os.str();
         }
@@ -91,12 +103,19 @@ public:
             return *this;
         }
 
+        // convenience constructor for ray unions
+        Ray(const Ray &upper, const Ray &lower) {
+            *this = lower;
+            this->ext = std::make_unique<Segment>(upper.origin(), lower.origin());
+        }
+
+
         bool leftOf(const Point &x) const {
             // extension is before ray, as long as its active we check against it
             if (ext) {
-                return ext->supporting_line().oriented_side(x) == CGAL::ON_NEGATIVE_SIDE;
+                return ext->supporting_line().oriented_side(x) == CGAL::ON_POSITIVE_SIDE;
             } else {
-                return iRay.supporting_line().oriented_side(x) == CGAL::ON_NEGATIVE_SIDE;
+                return iRay.supporting_line().oriented_side(x) == CGAL::ON_POSITIVE_SIDE;
             }
         }
 
@@ -132,7 +151,7 @@ public:
 
         struct tIntersectionRetVal {
             bool valid;
-            tFloatVector pos;
+            Point pos;
         };
 
         tIntersectionRetVal intersection(const Ray &b, const Box &bounds) const {
@@ -142,8 +161,8 @@ public:
     public:
         static tIntersectionRetVal intersection(const Ray &a, const Ray &b, const Box &bounds) {
 
-            if (a.iRay.start() == b.iRay.start()) {
-                // if both rays originate at the same point, we don't consider it an intersection
+            if (a.origin() == b.origin()) {
+                // we ignore rays originating at he same source
                 return {false, {}};
             } else {
                 if (!a.ext && !b.ext) {
@@ -264,9 +283,45 @@ public:
             return isRR(ua, ub, bounds);
         }
     };
+
+    static Point mkPoint(const tFloatVector &p) {
+        return Point(p[X], p[Y]);
+    }
+
+    static Box mkBBox(const tBox &box) {
+        return Box(box.low[X], box.low[Y], box.high[X], box.high[Y]);
+    }
+
+    static Point Midpoint(const Point &a, const Point &b) {
+        return CGAL::midpoint(a, b);
+    }
+
+    static Float distance2(const Point &a, const Point &b) {
+        return CGAL::squared_distance(a, b);
+    }
+
+    static Float distance(const Point &a, const Point &b) {
+        return std::sqrt(distance2(a, b));
+    }
+
+    static bool approxEQ(const Point &a, const Point &b) {
+        return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
+
+    static bool approxLT(const Float &a, const Float &b) {
+        return a - b < MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
+
+    static bool approxGT(const Float &a, const Float &b) {
+        return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
 };
 
 std::ostream &operator<<(std::ostream &os, const CGALKernel::Ray &r) {
     os << r.str();
     return os;
+}
+
+std::string to_string(const CGALKernel::Ray &r) {
+    return r.str();
 }

@@ -22,6 +22,19 @@ using tIndexVector = std::array<tIndex, D>;
 using tPoints = std::vector<tFloatVector>;
 using tIndexSet = std::unordered_set<tIndex>;
 
+template<typename F>
+struct MaxError;
+
+template<>
+struct MaxError<float> {
+    static constexpr float value = 1e-10;
+};
+
+template<>
+struct MaxError<double> {
+    static constexpr double value = 1e-22;
+};
+
 struct tBox {
     tFloatVector low;
     tFloatVector high;
@@ -38,8 +51,10 @@ struct tBox {
     }
 };
 
-template<tDim K>
+template<tDim C>
 struct tYaoVertex {
+
+    static const tDim K = C;
 
     tYaoVertex() {
         for (tDim i = 0; i < neighbor.size(); ++i) {

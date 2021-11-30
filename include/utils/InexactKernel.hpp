@@ -20,7 +20,8 @@ public:
 
     class Direction {
     public:
-        Direction(const Float _dir) : dir(_dir), tanDir(std::tan(_dir)), vec({std::cos(_dir), std::sin(_dir)}) {}
+        Direction(const Float _dir) : dir(_dir), tanDir(std::tan(dir)), vec({std::cos(dir), std::sin(dir)}) {}
+        Direction(const Vector _vec) : Direction(std::atan2(_vec[Y], _vec[X])) {}
 
         Float prj(const Point &p) {
             return (p[X] * vec[X] + p[Y] * vec[Y]) / dot(vec, vec);
@@ -40,6 +41,14 @@ public:
 
         Float angle() const {
             return dir;
+        }
+
+        Direction perp() const {
+            return {dir + M_PI_2};// TODO: check angle orientation
+        }
+
+        Direction perp(const Direction &ref) const {
+            return {dir + (((ref.angle() - dir) < M_PI) ? 1 : -1) * M_PI_2};// TODO: check angle orientation
         }
 
     private:
@@ -91,9 +100,12 @@ public:
             std::stringstream os;
 
             os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
-               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
+               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF")
+               << " p: " << p << " a: " << dir.angle();
             if (ext) {
-                os << " EXT";
+                os << " EXT: "
+                   << " p: " << ext->p << " a: " << ext->dir.angle();
+                ;
             }
 
             return os.str();
@@ -148,13 +160,12 @@ public:
         bool leftOf(const tFloatVector &x) const {
             // we only consider main ray, when the starting point of lower ray is
             // swept, this ray will be replaced by it
-
             return (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X])) > 0;
         }
 
         struct tIntersectionRetVal {
             bool valid;
-            tFloatVector pos;
+            Point pos;
         };
 
         tIntersectionRetVal intersection(const Ray &b, const tBox &bounds) const {
@@ -164,8 +175,8 @@ public:
     public:
         static tIntersectionRetVal intersection(const Ray &a, const Ray &b, const tBox &bounds) {
 
-            if (a.p == b.p) {
-                // if both rays originate at the same point, we don't consider it an intersection
+            if (a.origin() == b.origin()) {
+                // we ignore rays originating at he same source
                 return {false, {}};
             } else {
                 if (!a.ext && !b.ext) {
@@ -310,9 +321,49 @@ public:
             return {false, {}};
         }
     };
+
+    static Point mkPoint(const tFloatVector &p) {
+        return p;
+    }
+
+    static tBox mkBBox(const tBox &box) {
+        return box;
+    }
+
+    static Point Midpoint(const Point &a, const Point &b) {
+        return 0.5 * (a + b);
+    }
+
+    static Float distance2(const Point &a, const Point &b) {
+        tFloat dist2 = 0;
+        for (tDim d = 0; d < a.size(); ++d) {
+            dist2 += (b[d] - a[d]) * (b[d] - a[d]);
+        }
+        return dist2;
+    }
+
+    static Float distance(const Point &a, const Point &b) {
+        return std::sqrt(distance2(a, b));
+    }
+
+    static bool approxEQ(const Point &a, const Point &b) {
+        return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
+
+    static bool approxLT(const Float &a, const Float &b) {
+        return a - b < MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
+
+    static bool approxGT(const Float &a, const Float &b) {
+        return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
 };
 
 std::ostream &operator<<(std::ostream &os, const InexactKernel::Ray &r) {
     os << r.str();
     return os;
+}
+
+std::string to_string(const InexactKernel::Ray &r) {
+    return r.str();
 }

@@ -12,43 +12,6 @@ tFloat dot(const tFloatVector &a, const tFloatVector &b) {
     return dot;
 }
 
-tFloat distance2(const tFloatVector &a, const tFloatVector &b) {
-    tFloat dist2 = 0;
-    for (tDim d = 0; d < a.size(); ++d) {
-        dist2 += (b[d] - a[d]) * (b[d] - a[d]);
-    }
-    return dist2;
-}
-
-tFloat distance(const tFloatVector &a, const tFloatVector &b) {
-    return std::sqrt(distance2(a, b));
-}
-
-template<typename F>
-struct MaxError;
-
-template<>
-struct MaxError<float> {
-    static constexpr float value = 1e-10;
-};
-
-template<>
-struct MaxError<double> {
-    static constexpr double value = 1e-22;
-};
-
-bool approxEQ(const tFloatVector &a, const tFloatVector &b) {
-    return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
-}
-
-bool approxLT(const tFloat &a, const tFloat &b) {
-    return a - b < MaxError<tFloat>::value;//TODO: use more meaningful test
-}
-
-bool approxGT(const tFloat &a, const tFloat &b) {
-    return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
-}
-
 tFloat atan2P(const tFloat &y, const tFloat &x) {
     auto rad = std::atan2(y, x);
     return rad >= 0 ? rad : 2 * M_PI + rad;
@@ -127,8 +90,8 @@ std::ostream &operator<<(std::ostream &os, const tYaoVertex<K> &v) {
 }
 
 std::ostream &operator<<(std::ostream &os, const tFloatVector &v) {
-    os << "(" << v[X] << ", " << v[Y] << ")";
-
+    //    os << "(" << v[X] << ", " << v[Y] << ")";
+    os << v[X] << " " << v[Y];
     return os;
 }
 
@@ -149,6 +112,13 @@ std::tuple<bool, tIndexSet> checkGraph(const YaoGraph &is, const YaoGraph &exp) 
             invalidVertices.insert(i);
 
             std::cerr << "vertex error " << i << ":\n\tis:  " << is[i] << "\n\texp: " << exp[i] << std::endl;
+
+            for (tIndex k = 0; k < YaoGraph::value_type::K; ++k) {
+                if (is[i].neighbor[k] != exp[i].neighbor[k]) {
+                    std::cerr << "\tcone " << k << ": is: " << is[i].neighbor[k] << " (" << is[i].distance[k]
+                              << ") exp: " << exp[i].neighbor[k] << " (" << exp[i].distance[k] << ")" << std::endl;
+                }
+            }
         }
     }
 

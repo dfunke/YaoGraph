@@ -4,12 +4,14 @@
 #include "NaiveYao.hpp"
 #include "SweepLine.hpp"
 
+#include "utils/CGALKernel.hpp"
+#include "utils/InexactKernel.hpp"
+
 TEST(SweepLineTest, Ordering) {
     constexpr tBox BOUNDS{{0, 0},
                           {1, 1}};
-    constexpr tIndex nPoints = 1e3;
+    constexpr tIndex nPoints = 50;
     constexpr tDim K = 6;
-
 
     Uniform uni;
     auto points = uni.generate(nPoints, BOUNDS);
@@ -19,7 +21,7 @@ TEST(SweepLineTest, Ordering) {
 
 #ifndef VTUNE
 
-    NaiveYao<K> nav;
+    NaiveYao<K, CGALKernel> nav;
     auto exp = nav(points);
 
     auto [valid, invalidVertices] = checkGraph(is, exp);
