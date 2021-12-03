@@ -20,6 +20,7 @@
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
+// #define PAINT_STEPS
 #endif
 
 template<tDim C, typename Kernel>
@@ -153,6 +154,20 @@ public:
     }
 
 private:
+    // Only for pairs of std::hash-able types for simplicity.
+    // You can of course template this struct to allow other hash functions
+    struct pair_hash {
+        template<class T>
+        std::size_t operator()(const std::pair<T, T> &p) const {
+            auto h1 = std::hash<void *>{}(&*p.first);
+            auto h2 = std::hash<void *>{}(&*p.second);
+
+            // Mainly for demonstration purposes, i.e. works but is overly simple
+            // In the real world, use sth. like boost.hash_combine
+            return h1 ^ h2;
+        }
+    };
+
     void sweepline(const tPoints &iPoints, tDim k, tGraph &graph,
                    const tBox &iBounds) const {
 
@@ -160,6 +175,9 @@ private:
         auto pqCmp = [](const pqItem &a, const pqItem &b) {
             return a.first > b.first;
         };
+
+        using isKey = std::pair<typename Event::tRayHandle, typename Event::tRayHandle>;
+        std::unordered_map<isKey, tPoint, pair_hash> isMap;
 
         tFloat lTheta = k * (2 * M_PI / C);
         tFloat uTheta = (k + 1) * (2 * M_PI / C);
@@ -197,7 +215,7 @@ private:
             auto cPoint = pq.top().second;
             pq.pop();
 
-            // std::cout << idx << ": " << cPoint.idx << " (" << cPoint.pos[X] << ", " << cPoint.pos[Y] << "): key: " << cKey << std::endl;
+            std::cout << idx << ": " << cPoint.idx << " (" << cPoint.pos[X] << ", " << cPoint.pos[Y] << "): key: " << cKey << std::endl;
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
             //basePainter.draw(cPoint.pos, idx);
@@ -216,17 +234,21 @@ private:
             stepPainter.save(stepFilename.str());
 #endif
 
+            if (idx == 538) {
+                std::cout << "break" << std::endl;
+            }
+
             switch (cPoint.type) {
                 case Event::Type::Input: {
 
-                    // std::cout << idx << " type: input point" << std::endl;
+                    std::cout << idx << " type: input point" << std::endl;
 
                     auto itBr = sl.find(cPoint.pos);                              // right ray
                     auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
                     assert(itBl == sl.end() || itBl->leftOf(cPoint.pos));
 
-                    // std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
-                    // std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
+                    std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
+                    std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
 
                     // add graph edge
                     if (itBr != sl.end() && itBr->leftRegion != tIndex(-1)) {
@@ -235,15 +257,16 @@ private:
                         graph[cPoint.idx].neighbor[k] = itBr->leftRegion;
                         graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion]));
 
-                        // std::cout << idx << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << distance2(cPoint.pos, points[itBr->leftRegion]) << std::endl;
+                        std::cout << idx << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])) << std::endl;
                     }
 
                     // check if Bl and Br intersect, check only required if they don't originate from same point
                     if (itBl != sl.end() && itBr != sl.end()) {
-                        auto is = itBl->intersection(*itBr, bounds);
-                        if (is.valid && sl.prj(is.pos) > cKey) {
-                            delPQ.push({sl.prj(is.pos), Event({is.pos})});
-                            // std::cout << idx << " deleted intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                        auto itIs = isMap.find(std::make_pair(itBl, itBr));
+                        if (itIs != isMap.end() && sl.prj(itIs->second) > cKey) {
+                            delPQ.push({sl.prj(itIs->second), Event({itIs->second})});
+                            std::cout << idx << " deleted intersection point at " << itIs->second << " key: " << sl.prj(itIs->second) << std::endl;
+                            isMap.erase(itIs);
                         }
                     }
 
@@ -256,23 +279,25 @@ private:
                             itBr, tRay({cPoint.pos, rRay, cPoint.idx,
                                         itBr != sl.end() ? itBr->leftRegion : tIndex(-1)}));
 
-                    // std::cout << idx << " left ray " << *itBln << std::endl;
-                    // std::cout << idx << " right ray " << *itBrn << std::endl;
+                    std::cout << idx << " left ray " << *itBln << std::endl;
+                    std::cout << idx << " right ray " << *itBrn << std::endl;
 
                     // insert intersection points into PQ
                     if (itBl != sl.end()) {
                         auto is = itBl->intersection(*itBln, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {
+                            isMap[std::make_pair(itBl, itBln)] = is.pos;
                             pq.push({sl.prj(is.pos), Event({is.pos, itBl, itBln})});
-                            // std::cout << idx << " added left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                            std::cout << idx << " added left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                         }
                     }
 
                     if (itBr != sl.end()) {
                         auto is = itBrn->intersection(*itBr, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {
+                            isMap[std::make_pair(itBrn, itBr)] = is.pos;
                             pq.push({sl.prj(is.pos), Event({is.pos, itBrn, itBr})});
-                            // std::cout << idx << " added right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                            std::cout << idx << " added right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                         }
                     }
 
@@ -281,7 +306,7 @@ private:
 
                 case Event::Type::Intersection: {
 
-                    // std::cout << idx << " type: intersection point" << std::endl;
+                    std::cout << idx << " type: intersection point" << std::endl;
 
                     // check for point that are not processed on delPQ
                     while (!delPQ.empty() && delPQ.top().first < cKey) {
@@ -290,7 +315,7 @@ private:
 
                     if (!delPQ.empty() && delPQ.top().second.pos == cPoint.pos) {
                         delPQ.pop();
-                        // std::cout << idx << " previously deleted" << std::endl;
+                        std::cout << idx << " previously deleted" << std::endl;
                         break;
                     }
 
@@ -307,18 +332,19 @@ private:
                     assert(std::next(itBl) == itBr);
                     assert(itBl == std::prev(itBr));
 
-                    // std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
-                    // std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
+                    std::cout << idx << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl;
+                    std::cout << idx << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl;
 
                     // delete intersection points from PQ
                     if (itBl != sl.begin()) {
                         auto itBll = std::prev(itBl);
                         assert(itBll != sl.end());
 
-                        auto is = itBll->intersection(*itBl, bounds);
-                        if (is.valid && sl.prj(is.pos) > cKey) {
-                            delPQ.push({sl.prj(is.pos), Event({is.pos})});
-                            // std::cout << idx << " deleted left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                        auto itIs = isMap.find(std::make_pair(itBll, itBl));
+                        if (itIs != isMap.end() && sl.prj(itIs->second) > cKey) {
+                            delPQ.push({sl.prj(itIs->second), Event({itIs->second})});
+                            std::cout << idx << " deleted left intersection point at " << itIs->second << " key: " << sl.prj(itIs->second) << std::endl;
+                            isMap.erase(itIs);
                         }
                     }
 
@@ -326,10 +352,11 @@ private:
                         auto itBrr = std::next(itBr);
 
                         if (itBrr != sl.end()) {
-                            auto is = itBr->intersection(*itBrr, bounds);
-                            if (is.valid && sl.prj(is.pos) > cKey) {
-                                delPQ.push({sl.prj(is.pos), Event({is.pos})});
-                                // std::cout << idx << " deleted right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                            auto itIs = isMap.find(std::make_pair(itBr, itBrr));
+                            if (itIs != isMap.end() && sl.prj(itIs->second) > cKey) {
+                                delPQ.push({sl.prj(itIs->second), Event({itIs->second})});
+                                std::cout << idx << " deleted right intersection point at " << itIs->second << " key: " << sl.prj(itIs->second) << std::endl;
+                                isMap.erase(itIs);
                             }
                         }
                     }
@@ -353,9 +380,9 @@ private:
                     Bs.draw(stepPainter);
 #endif
 
-                    // std::cout << idx << " left ray: " << rL << std::endl;
-                    // std::cout << idx << " right ray: " << rR << std::endl;
-                    // std::cout << idx << " bisector: " << Bs << std::endl;
+                    std::cout << idx << " left ray: " << rL << std::endl;
+                    std::cout << idx << " right ray: " << rR << std::endl;
+                    std::cout << idx << " bisector: " << Bs << std::endl;
 
                     // check for intersections of Bln, Blr and BS
                     auto BsL = Bs.intersection(rL, bounds);
@@ -388,11 +415,11 @@ private:
                     // check whether rays have extension before deletion: delete delete event
                     if (itBl->isExtended()) {
                         delPQ.push({sl.prj(itBl->extOrigin()), Event({itBl->extOrigin()})});
-                        // std::cout << idx << " deleted Deletion event " << itBl->ext->p << " key: " << sl.prj(itBl->ext->p) << std::endl;
+                        std::cout << idx << " deleted Deletion event " << itBl->extOrigin() << " key: " << sl.prj(itBl->extOrigin()) << std::endl;
                     }
                     if (itBr->isExtended()) {
                         delPQ.push({sl.prj(itBr->extOrigin()), Event({itBr->extOrigin()})});
-                        // std::cout << idx << " deleted Deletion event " << itBr->ext->p << " key: " << sl.prj(itBr->ext->p) << std::endl;
+                        std::cout << idx << " deleted Deletion event " << itBr->extOrigin() << " key: " << sl.prj(itBr->extOrigin()) << std::endl;
                     }
 
 #ifdef WITH_CAIRO
@@ -407,7 +434,7 @@ private:
                     auto itBn = sl.end();
 
                     if (!BsL.valid && !BsR.valid) {
-                        // std::cout << idx << " case a) no intersection" << std::endl;
+                        std::cout << idx << " case a) no intersection" << std::endl;
                         // bisector intersects no ray from P
                         if (sl.prj(pR) < sl.prj(pL)) {
                             // right point is further from v -> right ray becomes border
@@ -422,12 +449,12 @@ private:
                             assert(Kernel::approxEQ(BsL.pos, BsR.pos));
                             assert(Kernel::approxEQ(BsL.pos, cPoint.pos));
                             assert(Kernel::approxEQ(BsR.pos, cPoint.pos));
-                            // std::cout << idx << " case c) both intersect" << std::endl;
+                            std::cout << idx << " case c) both intersect" << std::endl;
                             // boundary originates at v with bisector angle
                             Bs.setOrigin(cPoint.pos);
                             itBn = sl.insert(itInsertPos, Bs);
                         } else {
-                            // std::cout << idx << " case b) one intersection" << std::endl;
+                            std::cout << idx << " case b) one intersection" << std::endl;
                             if (BsL.valid) {
                                 // bisector intersects left ray
                                 // boundary to intersection point, then ray with bisector angle
@@ -453,15 +480,16 @@ private:
                     }
                     assert(itBn != sl.end());// some boundary was inserted into SL
 
-                    // std::cout << "found boundary: " << *itBn << std::endl;
+                    std::cout << "found boundary: " << *itBn << std::endl;
 
                     // insert intersection points into PQ
                     if (itBn != sl.begin()) {
                         auto itL = std::prev(itBn);
                         auto is = itL->intersection(*itBn, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept
+                            isMap[std::make_pair(itL, itBn)] = is.pos;
                             pq.push({sl.prj(is.pos), Event({is.pos, itL, itBn})});
-                            // std::cout << idx << " added left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                            std::cout << idx << " added left intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                         }
                     }
 
@@ -469,13 +497,14 @@ private:
                     if (itR != sl.end()) {
                         auto is = itBn->intersection(*itR, bounds);
                         if (is.valid && sl.prj(is.pos) > cKey) {// only consider point if not yet swept
+                            isMap[std::make_pair(itBn, itR)] = is.pos;
                             pq.push({sl.prj(is.pos), Event({is.pos, itBn, itR})});
-                            // std::cout << idx << " added right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
+                            std::cout << idx << " added right intersection point at " << is.pos << " key: " << sl.prj(is.pos) << std::endl;
                         }
                     }
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
-                    stepPainter.save("img_k" + std::to_string(k) + "_s" + std::to_string(idx));
+                    stepPainter.save(stepFilename.str());
 #endif
 
                     break;
@@ -483,7 +512,7 @@ private:
 
                 case Event::Type::Deletion: {
 
-                    // std::cout << idx << " type: deletion point" << std::endl;
+                    std::cout << idx << " type: deletion point" << std::endl;
 
                     // check for point that are not processed on delPQ
                     while (!delPQ.empty() && delPQ.top().first < cKey) {
@@ -492,7 +521,7 @@ private:
 
                     if (!delPQ.empty() && delPQ.top().second.pos == cPoint.pos) {
                         delPQ.pop();
-                        // std::cout << idx << " previously deleted" << std::endl;
+                        std::cout << idx << " previously deleted" << std::endl;
                         break;
                     }
 
@@ -507,7 +536,7 @@ private:
                     basePainter.drawLine(itB->origin(), itB->extOrigin());
 #endif
 
-                    // std::cout << idx << " old ray: " << *itB << std::endl;
+                    std::cout << idx << " old ray: " << *itB << std::endl;
 
                     // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
                     // all intersections processed after this point will be with lower ray
@@ -523,7 +552,7 @@ private:
 
             ++idx;
 
-            // std::cout << std::endl;
+            std::cout << std::endl;
         }
 
 #ifdef WITH_CAIRO

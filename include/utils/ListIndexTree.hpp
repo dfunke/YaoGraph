@@ -82,7 +82,9 @@ public:
         using difference_type = short;
         using value_type = T;
         using pointer = T *;
+        using const_pointer = const T *;
         using reference = T &;
+        using const_reference = const T &;
         using iterator_category = std::bidirectional_iterator_tag;
 
         Iterator() : leaf_(nullptr) {}
@@ -104,6 +106,9 @@ public:
 
         reference operator*() { return *(leaf_->obj.get()); }
         pointer operator->() { return leaf_->obj.get(); }
+
+        const_reference operator*() const { return *(leaf_->obj.get()); }
+        const_pointer operator->() const { return leaf_->obj.get(); }
     };
 
 public:
