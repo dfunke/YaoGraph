@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <functional>
 #include <list>
 #include <memory>
 #include <queue>
 #include <sstream>
+#include <unordered_map>
 
 #include "Predicates.hpp"
 #include "Types.hpp"
@@ -157,15 +159,20 @@ private:
     // Only for pairs of std::hash-able types for simplicity.
     // You can of course template this struct to allow other hash functions
     struct pair_hash {
-        template<class T>
-        std::size_t operator()(const std::pair<T, T> &p) const {
-            auto h1 = std::hash<void *>{}(&*p.first);
-            auto h2 = std::hash<void *>{}(&*p.second);
+        template<class IT>
+        std::size_t operator()(const std::pair<IT, IT> &p) const {
+            auto h1 = std::hash<typename IT::const_pointer>{}(&*p.first);
+            auto h2 = std::hash<typename IT::const_pointer>{}(&*p.second);
 
-            // Mainly for demonstration purposes, i.e. works but is overly simple
-            // In the real world, use sth. like boost.hash_combine
-            return h1 ^ h2;
+            return h1 ^ h2;//TODO better hash combination
         }
+    };
+
+    struct it_hash {
+        template<class IT>
+                std::size_t operator()(const IT &p) const {
+                    return std::hash<typename IT::const_pointer>{}(&*p);
+                }
     };
 
     void sweepline(const tPoints &iPoints, tDim k, tGraph &graph,
