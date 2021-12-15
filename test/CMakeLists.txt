@@ -1,6 +1,6 @@
 find_package(GTest)
 
-add_executable(GTest_run SweepLineTest.cpp ListIndexTreeTest.cpp)
+add_executable(GTest_run SweepLineTest.cpp ListIndexTreeTest.cpp PriorityQueueTest.cpp)
 target_link_libraries(GTest_run GTest::gtest_main)
 
 if (WITH_CAIRO)
