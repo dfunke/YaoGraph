@@ -12,6 +12,11 @@ tFloat dot(const tFloatVector &a, const tFloatVector &b) {
     return dot;
 }
 
+tFloat wrapAngle(const tFloat &a) {
+    const auto TwoPi = 2 * M_PI;
+    return a - TwoPi * std::floor(a / TwoPi);
+}
+
 tFloat atan2P(const tFloat &y, const tFloat &x) {
     auto rad = std::atan2(y, x);
     return rad >= 0 ? rad : 2 * M_PI + rad;
