@@ -32,7 +32,7 @@
 template<tDim C, typename Kernel>
 class SweepLine {
 
-    using tFloat = typename Kernel::Float;
+    using eFloat = typename Kernel::Float;
     using tDirection = typename Kernel::Direction;
     using tPoint = typename Kernel::Point;
 
@@ -61,7 +61,7 @@ class SweepLine {
             return slRays.erase(pos);
         }
 
-        tFloat prj(const tPoint &p) {
+        eFloat prj(const tPoint &p) {
             return slDirection.prj(p);
         }
 
@@ -182,7 +182,7 @@ private:
     void sweepline(const tPoints &iPoints, tDim k, tGraph &graph,
                    const tBox &iBounds) const {
 
-        using pqItem = std::pair<tFloat, Event>;
+        using pqItem = std::pair<eFloat, Event>;
         auto pqCmp = [](const pqItem &a, const pqItem &b) {
             return a.first > b.first;
         };
@@ -277,7 +277,7 @@ private:
                         assert(itBl->rightRegion == itBr->leftRegion);
 
                         graph[cPoint.idx].neighbor[k] = itBr->leftRegion;
-                        graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion]));
+                        graph[cPoint.idx].distance[k] = Kernel::to_float(Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])));
 
                         LOG(idx << ": "
                                 << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])) << std::endl);

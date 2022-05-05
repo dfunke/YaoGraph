@@ -19,7 +19,7 @@ class CGALKernel {
 
 public:
     using K = CGAL::Exact_predicates_inexact_constructions_kernel;
-    using Float = tFloat;
+    using Float = K::FT;
     using Vector = CGAL::Vector_2<K>;
     using Point = K::Point_2;
     using Segment = CGAL::Segment_2<K>;
@@ -327,7 +327,7 @@ public:
     }
 
     static Float distance(const Point &a, const Point &b) {
-        return std::sqrt(distance2(a, b));
+        return CGAL::sqrt(distance2(a, b));
     }
 
     static bool approxEQ(const Point &a, const Point &b) {
@@ -340,6 +340,10 @@ public:
 
     static bool approxGT(const Float &a, const Float &b) {
         return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
+
+    static tFloat to_float(const Float &x) {
+        return CGAL::to_double(x);
     }
 };
 

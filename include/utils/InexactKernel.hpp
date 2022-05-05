@@ -366,6 +366,10 @@ public:
     static bool approxGT(const Float &a, const Float &b) {
         return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
     }
+
+    static tFloat to_float(const Float &x) {
+        return x;
+    }
 };
 
 std::ostream &operator<<(std::ostream &os, const InexactKernel::Ray &r) {
