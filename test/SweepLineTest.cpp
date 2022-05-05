@@ -10,7 +10,7 @@
 TEST(SweepLineTest, Ordering) {
     constexpr tBox BOUNDS{{0, 0},
                           {1, 1}};
-    constexpr tIndex nPoints = 50;
+    constexpr tIndex nPoints = 1000;
     constexpr tDim K = 6;
 
     Uniform uni;
