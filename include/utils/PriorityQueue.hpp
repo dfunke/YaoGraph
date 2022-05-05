@@ -49,6 +49,7 @@ public:
         _heap_element_vec[pos] = std::move(value);
         _heap_hindex_vec[pos] = h;
         _handle_vec[_heap_hindex_vec[pos]] = pos;
+
         return _heap_hindex_vec[pos];
     }
 
@@ -84,13 +85,18 @@ public:
         _free_handle_vec.push_back(h);
         if (!_heap_element_vec.size()) return;
 
-        pos = sift_down(pos, temp_element);
+        if (compare(temp_element, _heap_element_vec[pos])) {
+            pos = sift_up(pos, temp_element);
+        } else {
+            pos = sift_down(pos, temp_element);
+        }
         _heap_element_vec[pos] = std::move(temp_element);
         _heap_hindex_vec[pos] = temp_handle;
         _handle_vec[temp_handle] = pos;
     }
 
     void change_key(handle h, T newvalue) {
+
         auto pos = _handle_vec[h];
         if (compare(newvalue, _heap_element_vec[pos])) {
             pos = sift_up(pos, newvalue);
@@ -106,6 +112,10 @@ public:
         return _heap_element_vec[_handle_vec[h]];
     }
 
+    bool verify() const {
+        return verify_node(0);
+    }
+
 private:
     /* member definitions *****************************************************/
     //std::priority_queue<T, std::vector<T>, Comp> pq;
@@ -118,7 +128,7 @@ private:
     std::vector<size_t> _free_handle_vec;
 
 
-    bool compare(const T &v1, const T &v2) {
+    bool compare(const T &v1, const T &v2) const {
         return _comp(v2, v1);
     }
 
@@ -147,11 +157,11 @@ private:
         }
     }
 
-    size_t parent(size_t index) {
+    size_t parent(size_t index) const {
         return (index - 1) >> _ldeg;
     }
 
-    size_t child(size_t index) {
+    size_t child(size_t index) const {
         return (index << _ldeg) + 1;
     }
 
@@ -183,5 +193,17 @@ private:
             pos = min_idx;
         }
         return pos;
+    }
+
+    bool verify_node(size_t pos) const {
+        // check all children
+        for (size_t i = child(pos);
+             i < child(pos + 1) && i < _heap_element_vec.size();
+             ++i) {
+            if (!compare(_heap_element_vec[pos], _heap_element_vec[i]) || !verify_node(i))
+                return false;
+        }
+
+        return true;
     }
 };
