@@ -83,7 +83,7 @@ public:
         _heap_hindex_vec.pop_back();
 
         _free_handle_vec.push_back(h);
-        if (!_heap_element_vec.size()) return;
+        if (pos >= _heap_element_vec.size()) return;
 
         if (compare(temp_element, _heap_element_vec[pos])) {
             pos = sift_up(pos, temp_element);
