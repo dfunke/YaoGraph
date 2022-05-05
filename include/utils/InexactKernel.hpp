@@ -21,7 +21,7 @@ public:
     class Direction {
     public:
         Direction(const Float _dir) : dir(_dir), tanDir(std::tan(dir)), vec({std::cos(dir), std::sin(dir)}) {}
-        Direction(const Vector _vec) : Direction(std::atan2(_vec[Y], _vec[X])) {}
+        Direction(const Vector _vec) : Direction(atan2P(_vec[Y], _vec[X])) {}
 
         Float prj(const Point &p) {
             return (p[X] * vec[X] + p[Y] * vec[Y]) / dot(vec, vec);
@@ -44,11 +44,12 @@ public:
         }
 
         Direction perp() const {
-            return {dir + M_PI_2};// TODO: check angle orientation
+            return {wrapAngle(dir + M_PI_2)};// TODO: check angle orientation
         }
 
         Direction perp(const Direction &ref) const {
-            return {dir + (((ref.angle() - dir) < M_PI) ? 1 : -1) * M_PI_2};// TODO: check angle orientation
+            auto p = perp();
+            return angleBetween(p.dir, ref.dir) <= M_PI_2 ? p : Direction(wrapAngle(p.dir + M_PI));
         }
 
     private:
@@ -334,11 +335,11 @@ public:
         return 0.5 * (a + b);
     }
 
-    static Direction Bisector(const Point &l, const Point &r){
+    static Direction Bisector(const Point &l, const Point &r) {
         return Direction(r - l).perp();
     }
 
-    static Direction Bisector(const Point &l, const Point &r, const Direction &ref){
+    static Direction Bisector(const Point &l, const Point &r, const Direction &ref) {
         return Direction(r - l).perp(ref);
     }
 

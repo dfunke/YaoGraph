@@ -17,6 +17,13 @@ tFloat wrapAngle(const tFloat &a) {
     return a - TwoPi * std::floor(a / TwoPi);
 }
 
+tFloat angleBetween(const tFloat &a, const tFloat &b){
+    const auto TwoPi = 2 * M_PI;
+    int phi = std::fmod(std::abs(b - a), TwoPi);       // This is either the distance or 360 - distance
+    int distance = phi > M_PI ? TwoPi - phi : phi;
+    return distance;
+}
+
 tFloat atan2P(const tFloat &y, const tFloat &x) {
     auto rad = std::atan2(y, x);
     return rad >= 0 ? rad : 2 * M_PI + rad;

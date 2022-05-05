@@ -17,6 +17,7 @@
 
 #ifdef WITH_CGAL
 #include <CGAL/Point_2.h>
+#include <CGAL/number_utils.h>
 #endif
 
 class Painter {
@@ -156,8 +157,8 @@ public:
 #ifdef WITH_CGAL
     template<typename K>
     void drawLine(const CGAL::Point_2<K> &a, const CGAL::Point_2<K> &b) {
-        cr->move_to(translatePoint(a[0], 0), translatePoint(a[1], 1));
-        cr->line_to(translatePoint(b[0], 0), translatePoint(b[1], 1));
+        cr->move_to(translatePoint(CGAL::to_double(a[0]), 0), translatePoint(CGAL::to_double(a[1]), 1));
+        cr->line_to(translatePoint(CGAL::to_double(b[0]), 0), translatePoint(CGAL::to_double(b[1]), 1));
         cr->stroke();
     }
 #endif

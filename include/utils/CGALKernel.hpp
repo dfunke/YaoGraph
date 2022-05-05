@@ -36,7 +36,7 @@ public:
         }
 
         tFloat angle() const {
-            return atan2P(dir.dy(), dir.dx());
+            return atan2P(CGAL::to_double(dir.dy()), CGAL::to_double(dir.dx()));
         }
 
         auto &base() const {
@@ -44,11 +44,15 @@ public:
         }
 
         Direction perp() const {
-            return {dir.vector().perpendicular(CGAL::CLOCKWISE)};// TODO: check angle orientation
+            return {dir.perpendicular(CGAL::CLOCKWISE)};// TODO: check angle orientation
         }
 
         Direction perp(const Direction &ref) const {
-            return {dir.vector().perpendicular(CGAL::CLOCKWISE)};// TODO: check angle orientation
+            auto p = perp().dir.vector();
+            if (CGAL::angle(p, ref.dir.vector()) == CGAL::OBTUSE) {
+                p *= -1;
+            }
+            return Direction(p);
         }
 
     private:
@@ -88,10 +92,10 @@ public:
                << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
 
             if (ext) {
-                os << " p: " << ext->start() << " a: " << atan2P(ext->direction().dy(), ext->direction().dx());
+                os << " p: " << ext->start() << " a: " << atan2P(CGAL::to_double(ext->direction().dy()), CGAL::to_double(ext->direction().dx()));
                 os << " EXT: ";
             }
-            os << " p: " << iRay.start() << " a: " << atan2P(iRay.direction().dy(), iRay.direction().dx());
+            os << " p: " << iRay.start() << " a: " << atan2P(CGAL::to_double(iRay.direction().dy()), CGAL::to_double(iRay.direction().dx()));
 
             return os.str();
         }
@@ -202,10 +206,15 @@ public:
 
             if (result) {
                 const Point *p = boost::get<Point>(&*result);
-                if (p && CGAL::do_intersect(*p, bounds)) {
-                    return {true, {p->x(), p->y()}};
+                if (p) {
+                    if (CGAL::do_intersect(*p, bounds)) {
+                        return {true, {p->x(), p->y()}};
+                    } else {
+                        return {false, {}};
+                    }
                 } else {
                     // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                    assert(false);
                     return {false, {}};
                 }
             } else {
@@ -306,7 +315,11 @@ public:
     }
 
     static Direction Bisector(const Point &l, const Point &r, const Direction &ref) {
-        return Direction(CGAL::bisector(l, r).direction());
+        auto b = CGAL::bisector(l, r).direction().vector();
+        if (CGAL::angle(b, ref.base().vector()) == CGAL::OBTUSE) {
+            b *= -1;
+        }
+        return Direction(b);
     }
 
     static Float distance2(const Point &a, const Point &b) {

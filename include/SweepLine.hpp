@@ -194,15 +194,20 @@ private:
         std::unordered_map<isKey, typename PQ::handle, pair_hash> isMap;
         std::unordered_map<typename Event::tRayHandle, typename PQ::handle, it_hash> extMap;
 
-        tFloat lTheta = k * (2 * M_PI / C);
-        tFloat uTheta = (k + 1) * (2 * M_PI / C);
-
-        tDirection lRay(lTheta + tFloat(M_PI));
-        tDirection rRay(uTheta + tFloat(M_PI));
-
         auto bounds = Kernel::mkBBox(iBounds);
 
-        SweeplineDS sl(tDirection(M_PI + .5 * (lTheta + uTheta)));
+        tFloat lTheta = k * (2 * M_PI / C);      // range [0..2PI]
+        tFloat uTheta = (k + 1) * (2 * M_PI / C);// range [0..2PI]
+        assert(lTheta <= uTheta);                // trivial
+
+        tDirection lRay(wrapAngle(lTheta + tFloat(M_PI)));// range [0..2PI]
+        tDirection rRay(wrapAngle(uTheta + tFloat(M_PI)));// range [0..2PI]
+        //assert(lRay.angle() <= rRay.angle());
+
+        tDirection slDir(wrapAngle(M_PI + .5 * (lTheta + uTheta)));// range [0..2PI]
+        //assert(lRay.angle() <= slDir.angle() && slDir.angle() <= rRay.angle());
+
+        SweeplineDS sl(slDir);// range [0..2PI]
 
         for (tIndex i = 0; i < iPoints.size(); ++i) {
             auto p = Kernel::mkPoint(iPoints[i]);
