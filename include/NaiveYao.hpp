@@ -31,7 +31,7 @@ public:
 
                 if (d < g[i].distance[sec]) {
                     g[i].neighbor[sec] = j;
-                    g[i].distance[sec] = d;
+                    g[i].distance[sec] = Kernel::to_float(d);
                 }
             }
         }

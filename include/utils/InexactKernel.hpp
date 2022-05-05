@@ -351,9 +351,9 @@ public:
         return dist2;
     }
 
-    static Float distance(const Point &a, const Point &b) {
-        return std::sqrt(distance2(a, b));
-    }
+//    static Float distance(const Point &a, const Point &b) {
+//        return std::sqrt(distance2(a, b));
+//    }
 
     static bool approxEQ(const Point &a, const Point &b) {
         return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test

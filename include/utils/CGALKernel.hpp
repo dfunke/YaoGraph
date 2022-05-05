@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <CGAL/Exact_predicates_exact_constructions_kernel_with_root_of.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Ray_2.h>
@@ -18,7 +19,7 @@
 class CGALKernel {
 
 public:
-    using K = CGAL::Exact_predicates_inexact_constructions_kernel;
+    using K = CGAL::Exact_predicates_exact_constructions_kernel;
     using Float = K::FT;
     using Vector = CGAL::Vector_2<K>;
     using Point = K::Point_2;
@@ -326,20 +327,20 @@ public:
         return CGAL::squared_distance(a, b);
     }
 
-    static Float distance(const Point &a, const Point &b) {
-        return CGAL::sqrt(distance2(a, b));
-    }
+//    static Float distance(const Point &a, const Point &b) {
+//        return CGAL::sqrt(distance2(a, b));
+//    }
 
     static bool approxEQ(const Point &a, const Point &b) {
         return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
     }
 
     static bool approxLT(const Float &a, const Float &b) {
-        return a - b < MaxError<tFloat>::value;//TODO: use more meaningful test
+        return a - b < 0;//TODO: use more meaningful test
     }
 
     static bool approxGT(const Float &a, const Float &b) {
-        return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
+        return a - b > 0;//TODO: use more meaningful test
     }
 
     static tFloat to_float(const Float &x) {
