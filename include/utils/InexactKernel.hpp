@@ -334,6 +334,14 @@ public:
         return 0.5 * (a + b);
     }
 
+    static Direction Bisector(const Point &l, const Point &r){
+        return Direction(r - l).perp();
+    }
+
+    static Direction Bisector(const Point &l, const Point &r, const Direction &ref){
+        return Direction(r - l).perp(ref);
+    }
+
     static Float distance2(const Point &a, const Point &b) {
         tFloat dist2 = 0;
         for (tDim d = 0; d < a.size(); ++d) {

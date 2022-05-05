@@ -29,9 +29,14 @@ public:
     public:
         Direction(const tFloat _dir) : dir(Vector(std::cos(_dir), std::sin(_dir))) {}
         Direction(const Vector &v) : dir(v) {}
+        Direction(const CGAL::Direction_2<K> &d) : dir(d) {}
 
         Float prj(const Point &p) {
             return CGAL::scalar_product(Vector(p[X], p[Y]), dir.vector()) / CGAL::scalar_product(dir.vector(), dir.vector());
+        }
+
+        tFloat angle() const {
+            return atan2P(dir.dy(), dir.dx());
         }
 
         auto &base() const {
@@ -80,13 +85,13 @@ public:
             std::stringstream os;
 
             os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
-            << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
+               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
 
             if (ext) {
-                os << " p: " << ext->start() << " a: " << std::atan2(ext->direction().dy(), ext->direction().dx());
+                os << " p: " << ext->start() << " a: " << atan2P(ext->direction().dy(), ext->direction().dx());
                 os << " EXT: ";
             }
-            os << " p: " << iRay.start() << " a: " << std::atan2(iRay.direction().dy(), iRay.direction().dx());
+            os << " p: " << iRay.start() << " a: " << atan2P(iRay.direction().dy(), iRay.direction().dx());
 
             return os.str();
         }
@@ -294,6 +299,14 @@ public:
 
     static Point Midpoint(const Point &a, const Point &b) {
         return CGAL::midpoint(a, b);
+    }
+
+    static Direction Bisector(const Point &l, const Point &r) {
+        return Direction(CGAL::bisector(l, r).direction());
+    }
+
+    static Direction Bisector(const Point &l, const Point &r, const Direction &ref) {
+        return Direction(CGAL::bisector(l, r).direction());
     }
 
     static Float distance2(const Point &a, const Point &b) {
