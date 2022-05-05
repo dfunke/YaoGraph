@@ -6,6 +6,7 @@
 
 #include "Predicates.hpp"
 #include "Types.hpp"
+#include "utils/InexactKernel.hpp"
 
 template<tDim K>
 class GridYao {
@@ -154,7 +155,7 @@ private:
 
             if (p == point) continue;
 
-            auto d = distance2(points[point], points[p]);
+            auto d = InexactKernel::distance2(points[point], points[p]);
             tDim sec = std::floor(atan2P(points[point], points[p]) / (2 * M_PI / K));
 
             if (d < vertex.distance[sec]) {

@@ -37,12 +37,12 @@ int main() {
         Uniform uni;
         auto points = uni.generate(nPoints, BOUNDS);
 
-        auto naive = Timer<NaiveYao<Cones>>::time(points);
+        auto naive = Timer<NaiveYao<Cones, CGALKernel>>::time(points);
 
         auto grid = Timer<GridYao<Cones>>::time(points, BOUNDS, cellOcc);
         checkGraph(std::get<1>(grid), std::get<1>(naive));
 
-        auto sl = Timer<SweepLine<Cones>>::time(points, BOUNDS);
+        auto sl = Timer<SweepLine<Cones, CGALKernel>>::time(points, BOUNDS);
         checkGraph(std::get<1>(sl), std::get<1>(naive));
 
 #ifdef WITH_CAIRO
