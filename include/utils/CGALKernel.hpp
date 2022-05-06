@@ -239,6 +239,7 @@ public:
                     return {true, {p->x(), p->y()}};
                 } else {
                     // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                    assert(false);
                     return {false, {}};
                 }
             } else {
@@ -259,6 +260,7 @@ public:
                     return {true, {p->x(), p->y()}};
                 } else {
                     // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                    assert(false);
                     return {false, {}};
                 }
             } else {
@@ -276,6 +278,10 @@ public:
                 if (const Point *p = boost::get<Point>(&*result)) {
                     assert(CGAL::do_intersect(*p, bounds));
                     return {true, {p->x(), p->y()}};
+                } else {
+                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                    assert(false);
+                    return {false, {}};
                 }
             }
 
@@ -286,6 +292,10 @@ public:
                 if (const Point *p = boost::get<Point>(&*result)) {
                     assert(CGAL::do_intersect(*p, bounds));
                     return {true, {p->x(), p->y()}};
+                } else {
+                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                    assert(false);
+                    return {false, {}};
                 }
             }
 
@@ -295,6 +305,10 @@ public:
                 if (const Point *p = boost::get<Point>(&*result)) {
                     assert(CGAL::do_intersect(*p, bounds));
                     return {true, {p->x(), p->y()}};
+                } else {
+                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
+                    assert(false);
+                    return {false, {}};
                 }
             }
 
