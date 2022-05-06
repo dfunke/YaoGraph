@@ -30,7 +30,7 @@ public:
 
     class Direction {
     public:
-        Direction(const Float _dir) : dir(Vector(std::cos(_dir), std::sin(_dir))) {}
+        Direction(const tIFloat _dir) : dir(Vector(std::cos(_dir), std::sin(_dir))) {}
         Direction(const Vector &v) : dir(v) {}
         Direction(const CGAL::Direction_2<K> &d) : dir(d) {}
 
@@ -350,11 +350,11 @@ public:
     //    }
 
     static bool approxEQ(const Point &a, const Point &b) {
-        return distance2(a, b) < MaxError<Float>::value;//TODO: use more meaningful test
+        return distance2(a, b) < MaxError<tIFloat>::value;//TODO: use more meaningful test
     }
 
     static bool approxEQ(const Float &a, const Float &b) {
-        return std::fabs(CGAL::to_double(a) - CGAL::to_double(b)) < MaxError<Float>::value;//TODO: use more meaningful test
+        return std::fabs(CGAL::to_double(a) - CGAL::to_double(b)) < MaxError<tIFloat>::value;//TODO: use more meaningful test
     }
 
     static bool approxLT(const Float &a, const Float &b) {

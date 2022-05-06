@@ -23,7 +23,7 @@ public:
 
     class Direction {
     public:
-        Direction(const Float _dir) : dir(_dir), tanDir(std::tan(dir)), vec({std::cos(dir), std::sin(dir)}) {}
+        Direction(const tIFloat _dir) : dir(_dir), tanDir(std::tan(dir)), vec({std::cos(dir), std::sin(dir)}) {}
         Direction(const Vector _vec) : Direction(atan2P(_vec[Y], _vec[X])) {}
 
         Float prj(const Point &p) {
