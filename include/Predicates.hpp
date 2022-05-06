@@ -4,32 +4,32 @@
 
 #include "Types.hpp"
 
-tFloat dot(const tFloatVector &a, const tFloatVector &b) {
-    tFloat dot = 0;
+tIFloat dot(const tIFloatVector &a, const tIFloatVector &b) {
+    tIFloat dot = 0;
     for (tDim d = 0; d < a.size(); ++d) {
         dot += a[d] * b[d];
     }
     return dot;
 }
 
-tFloat wrapAngle(const tFloat &a) {
+tIFloat wrapAngle(const tIFloat &a) {
     const auto TwoPi = 2 * M_PI;
     return a - TwoPi * std::floor(a / TwoPi);
 }
 
-tFloat angleBetween(const tFloat &a, const tFloat &b){
+tIFloat angleBetween(const tIFloat &a, const tIFloat &b){
     const auto TwoPi = 2 * M_PI;
     auto phi = std::fmod(std::abs(b - a), TwoPi);       // This is either the distance or 360 - distance
     auto distance = phi > M_PI ? TwoPi - phi : phi;
     return distance;
 }
 
-tFloat atan2P(const tFloat &y, const tFloat &x) {
+tIFloat atan2P(const tIFloat &y, const tIFloat &x) {
     auto rad = std::atan2(y, x);
     return rad >= 0 ? rad : 2 * M_PI + rad;
 }
 
-tFloat atan2P(const tFloatVector &a, const tFloatVector &b) {
+tIFloat atan2P(const tIFloatVector &a, const tIFloatVector &b) {
     return atan2P(b[1] - a[1], b[0] - a[0]);
 }
 
@@ -101,7 +101,7 @@ std::ostream &operator<<(std::ostream &os, const tYaoVertex<K> &v) {
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const tFloatVector &v) {
+std::ostream &operator<<(std::ostream &os, const tIFloatVector &v) {
     //    os << "(" << v[X] << ", " << v[Y] << ")";
     os << v[X] << " " << v[Y];
     return os;

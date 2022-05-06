@@ -46,7 +46,12 @@ int main() {
         auto naive = Timer<NaiveYao<Cones, InexactKernel>>::time(points);
 #endif
 
-        auto grid = Timer<GridYao<Cones>>::time(points, BOUNDS, cellOcc);
+#ifdef WITH_CGAL
+        auto grid = Timer<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>>::time(points, BOUNDS, cellOcc);
+#else
+        auto grid = Timer<GridYao<Cones, InexactKernel>>::time(points, BOUNDS, cellOcc);
+#endif
+
         checkGraph(std::get<1>(grid), std::get<1>(naive));
 
 #ifdef WITH_CGAL

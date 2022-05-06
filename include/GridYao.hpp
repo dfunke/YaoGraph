@@ -8,14 +8,14 @@
 #include "Types.hpp"
 #include "utils/InexactKernel.hpp"
 
-template<tDim K>
+template<tDim K, typename Kernel>
 class GridYao {
 
 private:
     class Grid {
 
     private:
-        friend class GridYao<K>;
+        friend class GridYao<K, Kernel>;
 
         using tGridCell = std::vector<tIndex>;
         using tGrid = std::vector<tGridCell>;
@@ -39,7 +39,7 @@ private:
             }
         }
 
-        tIndexVector getIndexVector(const tFloatVector &p) const {
+        tIndexVector getIndexVector(const tIFloatVector &p) const {
             tIndexVector idx;
             for (tDim d = 0; d < idx.size(); ++d) {
                 idx[d] = std::floor(p[d] / cellSize[d]);
@@ -55,7 +55,7 @@ private:
             return i;
         }
 
-        tIndex getIndex(const tFloatVector &p) const {
+        tIndex getIndex(const tIFloatVector &p) const {
             return getIndex(getIndexVector(p));
         }
 
@@ -78,7 +78,7 @@ private:
     private:
         tIndex numCellsPerDim;
         tIndex numCells;
-        tFloatVector cellSize;
+        tIFloatVector cellSize;
         tBox bounds;
         tGrid cells;
     };
@@ -89,7 +89,7 @@ public:
 
     tGraph operator()(const tPoints &points, const tBox &bounds, const tIndex &cellOcc) const {
         tGraph graph(points.size());
-        Grid grid(bounds, std::ceil(points.size() / static_cast<tFloat>(cellOcc)));
+        Grid grid(bounds, std::ceil(points.size() / static_cast<tIFloat>(cellOcc)));
         grid.buildGrid(points);
 
         for (tIndex i = 0; i < points.size(); ++i) {
@@ -104,7 +104,7 @@ public:
     }
 
 private:
-    bool isFinalized(const tVertex &v, const tIndex &radius, const tFloatVector &cellSize) const {
+    bool isFinalized(const tVertex &v, const tIndex &radius, const tIFloatVector &cellSize) const {
 
         auto minLength = *std::min_element(cellSize.begin(), cellSize.end());
 
@@ -155,12 +155,12 @@ private:
 
             if (p == point) continue;
 
-            auto d = InexactKernel::distance2(points[point], points[p]);
+            auto d = Kernel::distance2(Kernel::mkPoint(points[point]), Kernel::mkPoint(points[p]));
             tDim sec = std::floor(atan2P(points[point], points[p]) / (2 * M_PI / K));
 
             if (d < vertex.distance[sec]) {
                 vertex.neighbor[sec] = p;
-                vertex.distance[sec] = d;
+                vertex.distance[sec] = Kernel::to_float(d);//TODO: exact solution
             }
         }
     }

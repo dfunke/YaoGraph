@@ -25,13 +25,12 @@ public:
 
                 if (i == j) continue;
 
-                //auto d = InexactKernel::distance2(points[i], points[j]);
                 auto d = Kernel::distance2(Kernel::mkPoint(points[i]), Kernel::mkPoint(points[j]));
                 tDim sec = std::floor(atan2P(points[i], points[j]) / (2 * M_PI / C));
 
                 if (d < g[i].distance[sec]) {
                     g[i].neighbor[sec] = j;
-                    g[i].distance[sec] = Kernel::to_float(d);
+                    g[i].distance[sec] = Kernel::to_float(d); //TODO: exact solution
                 }
             }
         }

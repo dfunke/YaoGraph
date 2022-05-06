@@ -88,13 +88,13 @@ public:
         cr->set_source_rgba(r, g, b, alpha);
     }
 
-    void draw(const tFloatVector &point) {
+    void draw(const tIFloatVector &point) {
         cr->arc(translatePoint(point[0], 0),
                 translatePoint(point[1], 1), 5, 0, 2 * M_PI);
         cr->fill();
     }
 
-    void drawSquare(const tFloatVector &point) {
+    void drawSquare(const tIFloatVector &point) {
         cr->rectangle(translatePoint(point[0], 0) - 5,
                       translatePoint(point[1], 1) - 5, 10, 10);
         cr->fill();
@@ -109,7 +109,7 @@ public:
     }
 #endif
 
-    void draw(const tFloatVector &point, const tIndex &idx, bool label = true) {
+    void draw(const tIFloatVector &point, const tIndex &idx, bool label = true) {
         cr->arc(translatePoint(point[0], 0),
                 translatePoint(point[1], 1), 5, 0, 2 * M_PI);
         cr->fill();
@@ -135,7 +135,7 @@ public:
         }
     }
 
-    void drawCircle(const tFloatVector &center, const tFloat &radius) {
+    void drawCircle(const tIFloatVector &center, const tIFloat &radius) {
 
         // draw center
         cr->arc(translatePoint(center[0], 0),
@@ -148,7 +148,7 @@ public:
         cr->stroke();
     }
 
-    void drawLine(const tFloatVector &a, const tFloatVector &b) {
+    void drawLine(const tIFloatVector &a, const tIFloatVector &b) {
         cr->move_to(translatePoint(a[0], 0), translatePoint(a[1], 1));
         cr->line_to(translatePoint(b[0], 0), translatePoint(b[1], 1));
         cr->stroke();
@@ -163,24 +163,24 @@ public:
     }
 #endif
 
-    void drawCone(const tFloatVector &apex, const tDim &k, const tDim &K, const tFloat length = 1) {
-        tFloat lowerPhi = k * 2 * M_PI / K;
-        tFloat upperPhi = (k + 1) * 2 * M_PI / K;
+    void drawCone(const tIFloatVector &apex, const tDim &k, const tDim &K, const tIFloat length = 1) {
+        tIFloat lowerPhi = k * 2 * M_PI / K;
+        tIFloat upperPhi = (k + 1) * 2 * M_PI / K;
 
         drawCone(apex, lowerPhi, upperPhi, length);
     }
 
-    void drawCone(const tFloatVector &apex, const tFloat &lowerPhi, const tFloat &upperPhi, const tFloat length = 1) {
-        drawLine(apex, apex + tFloatVector({length * std::cos(lowerPhi),
+    void drawCone(const tIFloatVector &apex, const tIFloat &lowerPhi, const tIFloat &upperPhi, const tIFloat length = 1) {
+        drawLine(apex, apex + tIFloatVector({length * std::cos(lowerPhi),
                                             length * std::sin(lowerPhi)}));
-        drawLine(apex, apex + tFloatVector({length * std::cos(upperPhi),
+        drawLine(apex, apex + tIFloatVector({length * std::cos(upperPhi),
                                             length * std::sin(upperPhi)}));
     }
 
     void drawGrid(const tIndex _nCells) {
         auto numCellsPerDim = std::ceil(std::sqrt(_nCells));
 
-        tFloatVector cellSize;
+        tIFloatVector cellSize;
         for (tDim d = 0; d < bounds.high.size(); ++d) {
             cellSize[d] = (bounds.high[d] - bounds.low[d]) / numCellsPerDim;
         }
@@ -197,7 +197,7 @@ public:
         cr->stroke();
     }
 
-    void drawCones(const tFloatVector &apex, const tDim &K, const tFloat length = 1) {
+    void drawCones(const tIFloatVector &apex, const tDim &K, const tIFloat length = 1) {
         for (tDim k = 0; k < K; ++k) {
             drawCone(apex, k, K, length);
         }

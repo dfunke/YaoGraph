@@ -32,7 +32,7 @@
 template<tDim C, typename Kernel>
 class SweepLine {
 
-    using eFloat = typename Kernel::Float;
+    using tEFloat = typename Kernel::Float; // possibly exact float
     using tDirection = typename Kernel::Direction;
     using tPoint = typename Kernel::Point;
 
@@ -61,7 +61,7 @@ class SweepLine {
             return slRays.erase(pos);
         }
 
-        eFloat prj(const tPoint &p) {
+        tEFloat prj(const tPoint &p) {
             return slDirection.prj(p);
         }
 
@@ -95,10 +95,10 @@ class SweepLine {
         void draw(const tPoint &pos, Painter &painter) {
 
             // draw sweepline
-            painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() + tFloat(M_PI_2)),
-                                   pos[Y] + std::sin(slDirection.angle() + tFloat(M_PI_2))});
-            painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() - tFloat(M_PI_2)),
-                                   pos[Y] + std::sin(slDirection.angle() - tFloat(M_PI_2))});
+            painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() + tIFloat(M_PI_2)),
+                                   pos[Y] + std::sin(slDirection.angle() + tIFloat(M_PI_2))});
+            painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() - tIFloat(M_PI_2)),
+                                   pos[Y] + std::sin(slDirection.angle() - tIFloat(M_PI_2))});
 
             // draw direction
             painter.setDash();
@@ -182,7 +182,7 @@ private:
     void sweepline(const tPoints &iPoints, tDim k, tGraph &graph,
                    const tBox &iBounds) const {
 
-        using pqItem = std::pair<eFloat, Event>;
+        using pqItem = std::pair<tEFloat, Event>;
         auto pqCmp = [](const pqItem &a, const pqItem &b) {
             return a.first > b.first;
         };
@@ -196,12 +196,12 @@ private:
 
         auto bounds = Kernel::mkBBox(iBounds);
 
-        tFloat lTheta = k * (2 * M_PI / C);      // range [0..2PI]
-        tFloat uTheta = (k + 1) * (2 * M_PI / C);// range [0..2PI]
+        tIFloat lTheta = k * (2 * M_PI / C);      // range [0..2PI]
+        tIFloat uTheta = (k + 1) * (2 * M_PI / C);// range [0..2PI]
         assert(lTheta <= uTheta);                // trivial
 
-        tDirection lRay(wrapAngle(lTheta + tFloat(M_PI)));// range [0..2PI]
-        tDirection rRay(wrapAngle(uTheta + tFloat(M_PI)));// range [0..2PI]
+        tDirection lRay(wrapAngle(lTheta + tIFloat(M_PI)));// range [0..2PI]
+        tDirection rRay(wrapAngle(uTheta + tIFloat(M_PI)));// range [0..2PI]
         //assert(lRay.angle() <= rRay.angle());
 
         tDirection slDir(wrapAngle(M_PI + .5 * (lTheta + uTheta)));// range [0..2PI]

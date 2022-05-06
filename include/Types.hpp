@@ -7,7 +7,7 @@
 #include <unordered_set>
 #include <vector>
 
-using tFloat = double;
+using tIFloat = double; // Inexact Float
 using tDim = unsigned short;
 using tIndex = std::size_t;
 
@@ -17,9 +17,9 @@ constexpr tDim Y = 1;
 constexpr tDim D = 2;
 constexpr int SEED = 1986;
 
-using tFloatVector = std::array<tFloat, D>;
+using tIFloatVector = std::array<tIFloat, D>;
 using tIndexVector = std::array<tIndex, D>;
-using tPoints = std::vector<tFloatVector>;
+using tPoints = std::vector<tIFloatVector>;
 using tIndexSet = std::unordered_set<tIndex>;
 
 template<typename F>
@@ -36,10 +36,10 @@ struct MaxError<double> {
 };
 
 struct tBox {
-    tFloatVector low;
-    tFloatVector high;
+    tIFloatVector low;
+    tIFloatVector high;
 
-    bool contains(const tFloatVector &p) const {
+    bool contains(const tIFloatVector &p) const {
         assert(p.size() == low.size());
         for (tDim d = 0; d < p.size(); ++d) {
             if (p[d] < low[d] || high[d] < p[d]) {
@@ -59,12 +59,12 @@ struct tYaoVertex {
     tYaoVertex() {
         for (tDim i = 0; i < neighbor.size(); ++i) {
             neighbor[i] = tIndex(-1);
-            distance[i] = std::numeric_limits<tFloat>::max();
+            distance[i] = std::numeric_limits<tIFloat>::max();
         }
     }
 
     std::array<tIndex, K> neighbor;
-    std::array<tFloat, K> distance;
+    std::array<tIFloat, K> distance;
 };
 
 template<typename V>

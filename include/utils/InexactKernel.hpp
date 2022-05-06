@@ -17,9 +17,9 @@
 class InexactKernel {
 
 public:
-    using Float = tFloat;
-    using Vector = tFloatVector;
-    using Point = tFloatVector;
+    using Float = tIFloat;
+    using Vector = tIFloatVector;
+    using Point = tIFloatVector;
 
     class Direction {
     public:
@@ -42,7 +42,7 @@ public:
             return std::sin(dir);
         }
 
-        Float angle() const {
+        tIFloat angle() const {
             return dir;
         }
 
@@ -163,7 +163,7 @@ public:
             assert(!ext);
         }
 
-        bool leftOf(const tFloatVector &x) const {
+        bool leftOf(const Point &x) const {
             // we only consider main ray, when the starting point of lower ray is
             // swept, this ray will be replaced by it
             return (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X])) > 0;
@@ -224,11 +224,11 @@ public:
                 return {true, {b.p[X], a.dir.tan() * (b.p[X] - a.p[X]) + a.p[Y]}};
             }
 
-            tFloat m0 = a.dir.tan();// Line 0: y = m0 (x - x0) + y0
-            tFloat m1 = b.dir.tan();// Line 1: y = m1 (x - x1) + y1
+            Float m0 = a.dir.tan();// Line 0: y = m0 (x - x0) + y0
+            Float m1 = b.dir.tan();// Line 1: y = m1 (x - x1) + y1
 
-            tFloat x = ((m0 * a.p[X] - m1 * b.p[X]) - (a.p[Y] - b.p[Y])) / (m0 - m1);
-            tFloat y = m0 * (x - a.p[X]) + a.p[Y];
+            Float x = ((m0 * a.p[X] - m1 * b.p[X]) - (a.p[Y] - b.p[Y])) / (m0 - m1);
+            Float y = m0 * (x - a.p[X]) + a.p[Y];
 
             if (!bounds.contains({x, y})) {
                 return {false, {}};
@@ -328,7 +328,7 @@ public:
         }
     };
 
-    static Point mkPoint(const tFloatVector &p) {
+    static Point mkPoint(const tIFloatVector &p) {
         return p;
     }
 
@@ -349,7 +349,7 @@ public:
     }
 
     static Float distance2(const Point &a, const Point &b) {
-        tFloat dist2 = 0;
+        Float dist2 = 0;
         for (tDim d = 0; d < a.size(); ++d) {
             dist2 += (b[d] - a[d]) * (b[d] - a[d]);
         }
@@ -361,22 +361,22 @@ public:
 //    }
 
     static bool approxEQ(const Point &a, const Point &b) {
-        return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
+        return distance2(a, b) < MaxError<Float>::value;//TODO: use more meaningful test
     }
 
     static bool approxEQ(const Float &a, const Float &b) {
-        return std::fabs(a - b) < MaxError<tFloat>::value;//TODO: use more meaningful test
+        return std::fabs(a - b) < MaxError<Float>::value;//TODO: use more meaningful test
     }
 
     static bool approxLT(const Float &a, const Float &b) {
-        return a - b < MaxError<tFloat>::value;//TODO: use more meaningful test
+        return a - b < MaxError<Float>::value;//TODO: use more meaningful test
     }
 
     static bool approxGT(const Float &a, const Float &b) {
-        return a - b > MaxError<tFloat>::value;//TODO: use more meaningful test
+        return a - b > MaxError<Float>::value;//TODO: use more meaningful test
     }
 
-    static tFloat to_float(const Float &x) {
+    static tIFloat to_float(const Float &x) {
         return x;
     }
 };
