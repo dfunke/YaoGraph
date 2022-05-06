@@ -16,12 +16,12 @@ TEST(SweepLineTest, Ordering) {
     Uniform uni;
     auto points = uni.generate(nPoints, BOUNDS);
 
-    SweepLine<K, InexactKernel> sl;
+    SweepLine<K, CGALKernel<ExactPredicatesInexactConstructions>> sl;
     auto is = sl(points, BOUNDS);
 
 #ifndef VTUNE
 
-    NaiveYao<K, CGALKernel> nav;
+    NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>> nav;
     auto exp = nav(points);
 
     auto [valid, invalidVertices] = checkGraph(is, exp);

@@ -8,6 +8,8 @@
 #include "NaiveYao.hpp"
 #include "SweepLine.hpp"
 
+#include "utils/InexactKernel.hpp"
+
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
 #endif
@@ -16,6 +18,7 @@
 #include "CGAL/CGAL_Delaunay.hpp"
 #include "CGAL/CGAL_Theta.hpp"
 #include "CGAL/CGAL_Yao.hpp"
+#include "utils/CGALKernel.hpp"
 #endif
 
 int main() {
@@ -37,12 +40,20 @@ int main() {
         Uniform uni;
         auto points = uni.generate(nPoints, BOUNDS);
 
-        auto naive = Timer<NaiveYao<Cones, CGALKernel>>::time(points);
+#ifdef WITH_CGAL
+        auto naive = Timer<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>>::time(points);
+#else
+        auto naive = Timer<NaiveYao<Cones, InexactKernel>>::time(points);
+#endif
 
         auto grid = Timer<GridYao<Cones>>::time(points, BOUNDS, cellOcc);
         checkGraph(std::get<1>(grid), std::get<1>(naive));
 
-        auto sl = Timer<SweepLine<Cones, CGALKernel>>::time(points, BOUNDS);
+#ifdef WITH_CGAL
+        auto sl = Timer<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>>::time(points, BOUNDS);
+#else
+        auto sl = Timer<SweepLine<Cones, InexactKernel>>::time(points, BOUNDS);
+#endif
         checkGraph(std::get<1>(sl), std::get<1>(naive));
 
 #ifdef WITH_CAIRO

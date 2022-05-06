@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <CGAL/Exact_predicates_exact_constructions_kernel_with_root_of.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Ray_2.h>
@@ -16,13 +15,16 @@
 #include "Painter.hpp"
 #endif
 
+using ExactPredicatesInexactConstructions = CGAL::Exact_predicates_inexact_constructions_kernel;
+using ExactPredicatesExactConstructions = CGAL::Exact_predicates_exact_constructions_kernel;
+
+template<typename K>
 class CGALKernel {
 
 public:
-    using K = CGAL::Exact_predicates_exact_constructions_kernel;
-    using Float = K::FT;
+    using Float = typename K::FT;
     using Vector = CGAL::Vector_2<K>;
-    using Point = K::Point_2;
+    using Point = typename K::Point_2;
     using Segment = CGAL::Segment_2<K>;
     using Box = CGAL::Bbox_2;
 
@@ -352,11 +354,19 @@ public:
     }
 };
 
-std::ostream &operator<<(std::ostream &os, const CGALKernel::Ray &r) {
+//TODO: there has to be a better way for template deduction
+std::ostream &operator<<(std::ostream &os, const typename CGALKernel<ExactPredicatesInexactConstructions>::Ray &r) {
     os << r.str();
     return os;
 }
+std::string to_string(const typename CGALKernel<ExactPredicatesInexactConstructions>::Ray &r) {
+    return r.str();
+}
 
-std::string to_string(const CGALKernel::Ray &r) {
+std::ostream &operator<<(std::ostream &os, const typename CGALKernel<ExactPredicatesExactConstructions>::Ray &r) {
+    os << r.str();
+    return os;
+}
+std::string to_string(const typename CGALKernel<ExactPredicatesExactConstructions>::Ray &r) {
     return r.str();
 }

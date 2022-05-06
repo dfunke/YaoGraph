@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <memory>
+#include <sstream>
+
 #include "Predicates.hpp"
 #include "Types.hpp"
 
