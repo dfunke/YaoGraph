@@ -391,8 +391,13 @@ private:
                     // bisector line between A and B
                     auto pL = Kernel::mkPoint(iPoints[itBl->leftRegion]);
                     auto pR = Kernel::mkPoint(iPoints[itBr->rightRegion]);
+
                     auto pMid = Kernel::Midpoint(pL, pR);
                     auto aBs = Kernel::Bisector(pL, pR, sl.slDirection);
+
+//                    assert(Kernel::approxEQ(pMid, Kernel::Midpoint(pR, pL)));
+//                    assert(Kernel::approxEQ(aBs.angle(), Kernel::Bisector(pR, pL, sl.slDirection).angle()));
+
                     tRay Bs(pMid, aBs, itBl->leftRegion, itBr->rightRegion);
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)

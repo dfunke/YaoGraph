@@ -327,12 +327,16 @@ public:
         return CGAL::squared_distance(a, b);
     }
 
-//    static Float distance(const Point &a, const Point &b) {
-//        return CGAL::sqrt(distance2(a, b));
-//    }
+    //    static Float distance(const Point &a, const Point &b) {
+    //        return CGAL::sqrt(distance2(a, b));
+    //    }
 
     static bool approxEQ(const Point &a, const Point &b) {
         return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
+
+    static bool approxEQ(const Float &a, const Float &b) {
+        return std::fabs(CGAL::to_double(a) - CGAL::to_double(b)) < MaxError<tFloat>::value;//TODO: use more meaningful test
     }
 
     static bool approxLT(const Float &a, const Float &b) {

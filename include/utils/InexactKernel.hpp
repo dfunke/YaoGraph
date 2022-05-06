@@ -359,6 +359,10 @@ public:
         return distance2(a, b) < MaxError<tFloat>::value;//TODO: use more meaningful test
     }
 
+    static bool approxEQ(const Float &a, const Float &b) {
+        return std::fabs(a - b) < MaxError<tFloat>::value;//TODO: use more meaningful test
+    }
+
     static bool approxLT(const Float &a, const Float &b) {
         return a - b < MaxError<tFloat>::value;//TODO: use more meaningful test
     }
