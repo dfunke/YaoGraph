@@ -103,12 +103,14 @@ public:
         std::string str() const {
             std::stringstream os;
 
+            // use fabs(angle()) to eliminate -0 output
+
             os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
                << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF")
-               << " p: " << p << " a: " << dir.angle();
+               << " p: " << p << " a: " << std::fabs(dir.angle());
             if (ext) {
                 os << " EXT: "
-                   << " p: " << ext->p << " a: " << ext->dir.angle();
+                   << " p: " << ext->p << " a: " << std::fabs(ext->dir.angle());
                 ;
             }
 

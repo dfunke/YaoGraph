@@ -94,11 +94,13 @@ public:
             os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
                << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
 
+            // use fabs(atan2P) to eliminate -0 output
+
             if (ext) {
-                os << " p: " << ext->start() << " a: " << atan2P(CGAL::to_double(ext->direction().dy()), CGAL::to_double(ext->direction().dx()));
+                os << " p: " << ext->start() << " a: " << std::fabs(atan2P(CGAL::to_double(ext->direction().dy()), CGAL::to_double(ext->direction().dx())));
                 os << " EXT: ";
             }
-            os << " p: " << iRay.start() << " a: " << atan2P(CGAL::to_double(iRay.direction().dy()), CGAL::to_double(iRay.direction().dx()));
+            os << " p: " << iRay.start() << " a: " << std::fabs(atan2P(CGAL::to_double(iRay.direction().dy()), CGAL::to_double(iRay.direction().dx())));
 
             return os.str();
         }
