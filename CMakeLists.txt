@@ -47,6 +47,16 @@ if (WITH_CAIRO)
     target_link_libraries(GeoGraph ${Cairomm_LIBRARIES})
 endif ()
 
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    message("debug mode - enable logging")
+    add_compile_definitions(LOG_DEBUG)
+endif ()
+
+option(WITH_VTUNE "Build for Profiling" OFF)
+if (WITH_VTUNE)
+    add_compile_definitions(VTUNE)
+endif ()
+
 add_subdirectory(test)
 
 

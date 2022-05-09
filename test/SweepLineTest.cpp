@@ -1,5 +1,10 @@
 #include <gtest/gtest.h>
 
+//#define LOG_DEBUG
+//#undef LOG_DEBUG
+
+#include "utils/Logging.hpp"
+
 #include "Generators.hpp"
 #include "NaiveYao.hpp"
 #include "SweepLine.hpp"

@@ -16,7 +16,6 @@
 #include "utils/ListIndexTree.hpp"
 #include "utils/PriorityQueue.hpp"
 
-#define LOG_DEBUG
 #include "utils/Logging.hpp"
 
 #include "utils/InexactKernel.hpp"
