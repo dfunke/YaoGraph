@@ -6,8 +6,6 @@
 
 #include <memory>
 
-#include "Types.hpp"
-
 template<typename T>
 class SearchTree {
 
@@ -15,6 +13,8 @@ private:
     // forward declaration of node types
     struct InternalNode;
     struct Leaf;
+
+    using height_type = unsigned short;
 
     // abstract node type
     struct Node {
@@ -56,7 +56,7 @@ private:
 
         Leaf *leftRep = nullptr;
         Leaf *maxRep = nullptr;
-        tIndex height = 0;
+        height_type height = 0;
     };
 
     struct Leaf : public Node {
@@ -504,7 +504,7 @@ private:
         if (node->right) {
             assert(node->left);
             node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
-            node->height = std::max(node->height, 1 + (node->right->isNode() ? node->right->asNode()->height : 0));
+            node->height = std::max(node->height, height_type(1 + (node->right->isNode() ? node->right->asNode()->height : 0)));
         }
     }
 
