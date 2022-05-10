@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include "Generators.hpp"
 #include "Timer.hpp"
@@ -8,7 +9,6 @@
 #include "NaiveYao.hpp"
 #include "SweepLine.hpp"
 
-#include "utils/InexactKernel.hpp"
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
@@ -21,14 +21,20 @@
 #include "utils/CGALKernel.hpp"
 #endif
 
-int main() {
+// constants
+constexpr tBox BOUNDS{{0, 0},
+                      {1, 1}};
+constexpr tIndex minN = 1e3;
+constexpr tIndex maxN = 1e5;
+constexpr tDim Cones = 6;
+constexpr tIndex cellOcc = 1e3;
 
-    constexpr tBox BOUNDS{{0, 0},
-                          {1, 1}};
-    constexpr tIndex minN = 1e3;
-    constexpr tIndex maxN = 1e5;
-    constexpr tDim Cones = 6;
-    constexpr tIndex cellOcc = 1e3;
+template<typename Algorithm>
+void benchmark(){
+    std::ofstream("benchmark_" + Algorithm::name() + ".csv", std::ios::openmode::)
+}
+
+int main() {
 
     std::cout << "n naive grid sl";
 #ifdef WITH_CGAL
@@ -37,7 +43,7 @@ int main() {
     std::cout << std::endl;
 
     for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
-        Uniform uni;
+        Uniform uni(SEED);
         auto points = uni.generate(nPoints, BOUNDS);
 
 #ifdef WITH_CGAL
@@ -47,7 +53,7 @@ int main() {
 #endif
 
 #ifdef WITH_CGAL
-        auto grid = Timer<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>>::time(points, BOUNDS, cellOcc);
+        auto grid = Timer<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>>::time(points, BOUNDS);
 #else
         auto grid = Timer<GridYao<Cones, InexactKernel>>::time(points, BOUNDS, cellOcc);
 #endif
