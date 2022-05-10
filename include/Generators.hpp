@@ -12,7 +12,7 @@ template<typename Dist>
 class Generator {
 
 public:
-    Generator() : gen(SEED) {}
+    Generator(const tIndex &seed) : gen(seed) {}
 
 protected:
     auto rand() {
@@ -28,7 +28,8 @@ class Uniform : public Generator<Uniform> {
     friend class Generator<Uniform>;
 
 public:
-    Uniform() : dist(0, std::nextafter(1, std::numeric_limits<tIFloat>::max())) {}
+    Uniform(const tIndex &seed) : Generator(seed),
+                                  dist(0, std::nextafter(1, std::numeric_limits<tIFloat>::max())) {}
 
     tPoints generate(const tIndex n, const tBox &bounds) {
         tPoints points;
