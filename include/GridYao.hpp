@@ -8,14 +8,14 @@
 #include "Types.hpp"
 #include "utils/InexactKernel.hpp"
 
-template<tDim K, typename Kernel>
+template<tDim K, typename Kernel, tIndex CellOcc>
 class GridYao {
 
 private:
     class Grid {
 
     private:
-        friend class GridYao<K, Kernel>;
+        friend class GridYao<K, Kernel, CellOcc>;
 
         using tGridCell = std::vector<tIndex>;
         using tGrid = std::vector<tGridCell>;
@@ -87,9 +87,9 @@ public:
     using tVertex = tYaoVertex<K>;
     using tGraph = tYaoGraph<tVertex>;
 
-    tGraph operator()(const tPoints &points, const tBox &bounds, const tIndex &cellOcc) const {
+    tGraph operator()(const tPoints &points, const tBox &bounds) const {
         tGraph graph(points.size());
-        Grid grid(bounds, std::ceil(points.size() / static_cast<tIFloat>(cellOcc)));
+        Grid grid(bounds, std::ceil(points.size() / static_cast<tIFloat>(CellOcc)));
         grid.buildGrid(points);
 
         for (tIndex i = 0; i < points.size(); ++i) {
