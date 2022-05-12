@@ -1,5 +1,5 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 #include "Generators.hpp"
 #include "Timer.hpp"
@@ -8,7 +8,6 @@
 #include "GridYao.hpp"
 #include "NaiveYao.hpp"
 #include "SweepLine.hpp"
-
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
@@ -25,83 +24,61 @@
 constexpr tBox BOUNDS{{0, 0},
                       {1, 1}};
 constexpr tIndex minN = 1e3;
-constexpr tIndex maxN = 1e5;
+constexpr tIndex maxN = 5e5;
 constexpr tDim Cones = 6;
-constexpr tIndex cellOcc = 1e3;
+constexpr tIndex cellOcc = 1e2;
+constexpr tDim RepsPerI = 3;
+constexpr tDim RepsPerN = 3;
 
-template<typename Algorithm>
-void benchmark(){
-    std::ofstream("benchmark_" + Algorithm::name() + ".csv", std::ios::openmode::)
+const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 59135, 60315};
+
+template<typename Algorithm, typename Distribution>
+void benchmark() {
+    std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ofstream::out | std::ofstream::app);
+
+    // header
+    file << "dist n seed rep " << Algorithm::name() << std::endl;
+    std::cout << "dist n seed rep " << Algorithm::name() << std::endl;
+
+    for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
+        for (tDim rpn = 0; rpn < RepsPerN; ++rpn) {
+
+            Distribution gen(Seeds[rpn]);
+            auto points = gen.generate(nPoints, BOUNDS);
+
+            for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
+                auto result = Timer<Algorithm>::time(points, BOUNDS);
+                file << Distribution::name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                std::cout << Distribution::name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+            }
+        }
+    }
 }
 
 int main() {
 
-    std::cout << "n naive grid sl";
 #ifdef WITH_CGAL
-    std::cout << " cgal_del cgal_yao cgal_theta";
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesInexactConstructions>, Uniform>();
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesExactConstructions>, Uniform>();
 #endif
-    std::cout << std::endl;
 
-    for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
-        Uniform uni(SEED);
-        auto points = uni.generate(nPoints, BOUNDS);
-
+    benchmark<NaiveYao<Cones, InexactKernel>, Uniform>();
 #ifdef WITH_CGAL
-        auto naive = Timer<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>>::time(points);
-#else
-        auto naive = Timer<NaiveYao<Cones, InexactKernel>>::time(points);
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Uniform>();
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>();
 #endif
 
+    benchmark<GridYao<Cones, InexactKernel, cellOcc>, Uniform>();
 #ifdef WITH_CGAL
-        auto grid = Timer<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>>::time(points, BOUNDS);
-#else
-        auto grid = Timer<GridYao<Cones, InexactKernel>>::time(points, BOUNDS, cellOcc);
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>, Uniform>();
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesExactConstructions>, cellOcc>, Uniform>();
 #endif
 
-        checkGraph(std::get<1>(grid), std::get<1>(naive));
-
+    benchmark<SweepLine<Cones, InexactKernel>, Uniform>();
 #ifdef WITH_CGAL
-        auto sl = Timer<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>>::time(points, BOUNDS);
-#else
-        auto sl = Timer<SweepLine<Cones, InexactKernel>>::time(points, BOUNDS);
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Uniform>();
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>();
 #endif
-        checkGraph(std::get<1>(sl), std::get<1>(naive));
-
-#ifdef WITH_CAIRO
-        Painter basePainter(BOUNDS, 1000);
-        basePainter.draw(points);
-        basePainter.save("01_points");
-
-        Painter naivePainter(basePainter);
-        naivePainter.draw(std::get<1>(naive), points);
-        naivePainter.save("02_naive");
-
-        Painter gridPainter(basePainter);
-        gridPainter.draw(std::get<1>(grid), points);
-        gridPainter.save("03_grid");
-
-        Painter slPainter(basePainter);
-        slPainter.draw(std::get<1>(sl), points);
-        slPainter.save("04_sl");
-#endif
-
-#ifdef WITH_CGAL
-        auto del = Timer<CGAL_Delaunay2D>::time(points);
-        auto yao = Timer<CGAL_Yao2D<Cones>>::time(points);
-        auto theta = Timer<CGAL_Theta2D<Cones>>::time(points);
-#endif
-
-        std::cout << nPoints
-                  << " " << std::get<0>(naive)
-                  << " " << std::get<0>(grid)
-                  << " " << std::get<0>(sl)
-#ifdef WITH_CGAL
-                  << " " << std::get<0>(del)
-                  << " " << std::get<0>(yao)
-                  << " " << std::get<0>(theta)
-#endif
-                  << std::endl;
-    }
 
     return 0;
 }
