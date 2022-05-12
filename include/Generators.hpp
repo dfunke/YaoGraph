@@ -31,6 +31,10 @@ public:
     Uniform(const tIndex &seed) : Generator(seed),
                                   dist(0, std::nextafter(1, std::numeric_limits<tIFloat>::max())) {}
 
+    static std::string name() {
+        return "uni";
+    }
+
     tPoints generate(const tIndex n, const tBox &bounds) {
         tPoints points;
         points.reserve(n);
