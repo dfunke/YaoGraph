@@ -148,6 +148,10 @@ public:
     using tVertex = tYaoVertex<C>;
     using tGraph = tYaoGraph<tVertex>;
 
+    static std::string name() {
+        return "Sweepline_" + Kernel::name();
+    }
+
     tGraph operator()(const tPoints &points, const tBox &bounds) const {
         tGraph g(points.size());
 

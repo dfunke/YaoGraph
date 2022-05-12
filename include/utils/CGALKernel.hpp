@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <CGAL/Compute_cone_boundaries_2.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Ray_2.h>
@@ -19,6 +20,23 @@ using ExactPredicatesInexactConstructions = CGAL::Exact_predicates_inexact_const
 using ExactPredicatesExactConstructions = CGAL::Exact_predicates_exact_constructions_kernel;
 
 template<typename K>
+struct KernelName;
+
+template<>
+struct KernelName<ExactPredicatesExactConstructions> {
+    static std::string name() {
+        return "ExactPredExactCon";
+    }
+};
+
+template<>
+struct KernelName<ExactPredicatesInexactConstructions> {
+    static std::string name() {
+        return "ExactPredInexactCon";
+    }
+};
+
+template<typename K>
 class CGALKernel {
 
 public:
@@ -27,6 +45,11 @@ public:
     using Point = typename K::Point_2;
     using Segment = CGAL::Segment_2<K>;
     using Box = CGAL::Bbox_2;
+    using Line = CGAL::Line_2<K>;
+
+    static std::string name() {
+        return "CGALKernel" + KernelName<K>::name();
+    }
 
     class Direction {
     public:
@@ -91,8 +114,8 @@ public:
         std::string str() const {
             std::stringstream os;
 
-            os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
-               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF");
+            os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF_IDX") << "/"
+               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF_IDX");
 
             // use fabs(atan2P) to eliminate -0 output
 
@@ -367,6 +390,23 @@ public:
 
     static tIFloat to_float(const Float &x) {
         return CGAL::to_double(x);
+    }
+
+    static bool compareDistance(const Point &origin, const Point &newPoint, const Point &oldPoint) {
+        return CGAL::compare_distance_to_point(origin, newPoint, oldPoint) == CGAL::SMALLER;
+    }
+
+    static bool compareDistance(const Point &origin, const Point &newPoint, const Float &oldDist) {
+        return CGAL::compare_squared_distance(origin, newPoint, oldDist) == CGAL::SMALLER;
+    }
+
+    static auto computeCones(const tDim &cones) {
+
+        CGAL::Compute_cone_boundaries_2<K> functor;
+        std::vector<CGAL::Direction_2<K>> rays(cones);
+        functor(cones, CGAL::Direction_2<K>(1, 0), rays.begin());
+
+        return rays;
     }
 };
 

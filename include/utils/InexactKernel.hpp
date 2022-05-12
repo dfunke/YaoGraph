@@ -21,6 +21,10 @@ public:
     using Vector = tIFloatVector;
     using Point = tIFloatVector;
 
+    static std::string name() {
+        return "InexactKernel";
+    }
+
     class Direction {
     public:
         Direction(const tIFloat _dir) : dir(_dir), tanDir(std::tan(dir)), vec({std::cos(dir), std::sin(dir)}) {}
@@ -59,6 +63,15 @@ public:
         Float dir;
         Float tanDir;
         Vector vec;
+    };
+
+    class Line {
+    public:
+        Line(const Point &_a, const Point &_b) : a(_a), b(_b) {}
+
+    private:
+        Point a;
+        Point b;
     };
 
     struct Ray {
@@ -105,8 +118,8 @@ public:
 
             // use fabs(angle()) to eliminate -0 output
 
-            os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF") << "/"
-               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF")
+            os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF_IDX") << "/"
+               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF_IDX")
                << " p: " << p << " a: " << std::fabs(dir.angle());
             if (ext) {
                 os << " EXT: "
@@ -356,9 +369,9 @@ public:
         return dist2;
     }
 
-//    static Float distance(const Point &a, const Point &b) {
-//        return std::sqrt(distance2(a, b));
-//    }
+    //    static Float distance(const Point &a, const Point &b) {
+    //        return std::sqrt(distance2(a, b));
+    //    }
 
     static bool approxEQ(const Point &a, const Point &b) {
         return distance2(a, b) < MaxError<Float>::value;//TODO: use more meaningful test
@@ -378,6 +391,24 @@ public:
 
     static tIFloat to_float(const Float &x) {
         return x;
+    }
+
+    static bool compareDistance(const Point &origin, const Point &newPoint, const Point &oldPoint) {
+        return distance2(origin, newPoint) < distance2(origin, oldPoint);
+    }
+
+    static bool compareDistance(const Point &origin, const Point &newPoint, const Float &oldDist) {
+        return distance2(origin, newPoint) < oldDist;
+    }
+
+    static auto computeCones(const tDim &cones) {
+        std::vector<Direction> rays;
+
+        for (tDim k = 0; k < cones; ++k) {
+            rays.emplace_back(k * (2 * M_PI / cones));
+        }
+
+        return rays;
     }
 };
 
