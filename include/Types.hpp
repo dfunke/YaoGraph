@@ -7,12 +7,13 @@
 #include <unordered_set>
 #include <vector>
 
-using tIFloat = double; // Inexact Float
+using tIFloat = double;// Inexact Float
 using tDim = unsigned short;
 using tIndex = std::size_t;
 
 constexpr tDim X = 0;
 constexpr tDim Y = 1;
+constexpr tIndex INF_IDX = tIndex(-1);
 
 constexpr tDim D = 2;
 constexpr int SEED = 1986;
@@ -58,7 +59,7 @@ struct tYaoVertex {
 
     tYaoVertex() {
         for (tDim i = 0; i < neighbor.size(); ++i) {
-            neighbor[i] = tIndex(-1);
+            neighbor[i] = INF_IDX;
             distance[i] = std::numeric_limits<tIFloat>::max();
         }
     }

@@ -101,7 +101,7 @@ public:
                 }
                 assert(found);
 
-                if (g[i].neighbor[sec] == INF || Kernel::compareDistance(kPoints[i], kPoints[j], kPoints[g[i].neighbor[sec]])) {
+                if (g[i].neighbor[sec] == INF_IDX || Kernel::compareDistance(kPoints[i], kPoints[j], kPoints[g[i].neighbor[sec]])) {
                     g[i].neighbor[sec] = j;
                     g[i].distance[sec] = Kernel::to_float(Kernel::distance2(kPoints[i], kPoints[j]));//TODO: exact solution
                 }
@@ -161,7 +161,7 @@ public:
                 }
                 assert(found);
 
-                if (g[i].neighbor[sec] == INF || Kernel::compareDistance(kPoints[i], kPoints[j], dists[sec])) {
+                if (g[i].neighbor[sec] == INF_IDX || Kernel::compareDistance(kPoints[i], kPoints[j], dists[sec])) {
                     g[i].neighbor[sec] = j;
                     dists[sec] = Kernel::distance2(kPoints[i], kPoints[j]);
                     g[i].distance[sec] = Kernel::to_float(dists[sec]);//TODO: exact solution
