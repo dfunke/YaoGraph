@@ -5,25 +5,29 @@
 #pragma once
 
 #include <CGAL/Construct_yao_graph_2.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
 #include "Types.hpp"
+#include "utils/CGALKernel.hpp"
 
-template<tDim Cones>
+template<tDim Cones, typename Kernel>
 class CGAL_Yao2D {
 
 public:
-    using K = CGAL::Exact_predicates_inexact_constructions_kernel;
-    using Point = K::Point_2;
-    using Direction = K::Direction_2;
+    using K = Kernel;
+    using Point = typename K::Point_2;
+    using Direction = typename K::Direction_2;
     using Graph = boost::adjacency_list<boost::listS,
                                         boost::vecS,
                                         boost::undirectedS,
                                         Point>;
     using Yao = CGAL::Construct_yao_graph_2<K, Graph>;
 
+    static std::string name() {
+        return "CGALYao_" + KernelName<K>::name();
+    }
+
 public:
-    auto operator()(const tPoints &points) {
+    auto operator()(const tPoints &points, [[maybe_unused]] const tBox &bounds) {
 
         Yao yao(Cones);
         Graph g;
