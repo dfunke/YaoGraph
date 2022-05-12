@@ -12,22 +12,24 @@
 #include "utils/CGALKernel.hpp"
 #include "utils/InexactKernel.hpp"
 
-TEST(SweepLineTest, Test) {
-    constexpr tBox BOUNDS{{0, 0},
-                          {1, 1}};
-    constexpr tIndex nPoints = 20000;
-    constexpr tDim K = 6;
+constexpr tDim K = 6;
+constexpr tBox BOUNDS{{0, 0},
+                      {1, 1}};
+constexpr tIndex nPoints = 2000;
 
-    Uniform uni(SEED);
-    auto points = uni.generate(nPoints, BOUNDS);
+template<typename IsAlgorithm, typename ExpAlgorithm, typename Distribution>
+bool performTest() {
 
-    SweepLine<K, InexactKernel> sl;
-    auto is = sl(points, BOUNDS);
+    Distribution gen(SEED);
+    auto points = gen.generate(nPoints, BOUNDS);
+
+    IsAlgorithm isAlg;
+    auto is = isAlg(points, BOUNDS);
 
 #ifndef VTUNE
 
-    NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>> nav;
-    auto exp = nav(points, BOUNDS);
+    ExpAlgorithm expAlg;
+    auto exp = expAlg(points, BOUNDS);
 
     auto [valid, invalidVertices] = checkGraph(is, exp);
 
@@ -41,108 +43,50 @@ TEST(SweepLineTest, Test) {
             for (tDim k = 0; k < K; ++k) {
                 if (exp[idx].neighbor[k] != is[idx].neighbor[k]) {
 
-                    painter.setColor(0, 1, 0);
-                    painter.draw(points[exp[idx].neighbor[k]], exp[idx].neighbor[k], true);
+                    if (exp[idx].neighbor[k] != INF_IDX) {
+                        painter.setColor(0, 1, 0);
+                        painter.draw(points[exp[idx].neighbor[k]], exp[idx].neighbor[k], true);
+                    }
 
-                    painter.setColor(1, 0, 0);
-                    painter.draw(points[is[idx].neighbor[k]], is[idx].neighbor[k], true);
+                    if (is[idx].neighbor[k] != INF_IDX) {
+                        painter.setColor(1, 0, 0);
+                        painter.draw(points[is[idx].neighbor[k]], is[idx].neighbor[k], true);
+                    }
                 }
             }
 
             painter.setColor(1, 0, 0);
             painter.draw(idx, is[idx], points);
             painter.drawCones(points[idx], K);
+
+            break;
         }
-        painter.save("invalidVertices");
+        painter.save("invalidVertices_" + IsAlgorithm::name() + ".png");
     }
 #endif// ifdef WITH_CAIRO
 #else // ifndef VTUNE
     bool valid = true;
 #endif// ifndef VTUNE
 
-    EXPECT_TRUE(valid);
+    return valid;
 }
 
-TEST(NaiveYaoTest, Test) {
-    constexpr tBox BOUNDS{{0, 0},
-                          {1, 1}};
-    constexpr tIndex nPoints = 1000;
-    constexpr tDim K = 6;
+TEST(YaoGraphTest, SweeplineInexact) {
+    ASSERT_TRUE((performTest<SweepLine<K, InexactKernel>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+}
 
-    Uniform uni(SEED);
-    auto points = uni.generate(nPoints, BOUNDS);
+TEST(YaoGraphTest, SweeplineCGALInexact) {
+    ASSERT_TRUE((performTest<SweepLine<K, CGALKernel<ExactPredicatesInexactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+}
 
-    NaiveYao<K, InexactKernel> naive_ie;
-    auto ie = naive_ie(points, BOUNDS);
+TEST(YaoGraphTest, SweeplineCGALExact) {
+    ASSERT_TRUE((performTest<SweepLine<K, CGALKernel<ExactPredicatesExactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+}
 
-    NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>> naive_cgalIE;
-    auto cgalIE = naive_cgalIE(points, BOUNDS);
+TEST(YaoGraphTest, NaiveInexact) {
+    ASSERT_TRUE((performTest<NaiveYao<K, InexactKernel>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+}
 
-    NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>> naive_cgalE;
-    auto cgalE = naive_cgalE(points, BOUNDS);
-
-    auto [valid_ie_cgalE, invalidVertices_ie_cgalE] = checkGraph(ie, cgalE);
-    auto [valid_cgalIE_cgalE, invalidVertices_cgalIE_cgalE] = checkGraph(cgalIE, cgalE);
-
-#ifdef WITH_CAIRO
-    if (!valid_ie_cgalE) {
-
-        auto &is = ie;
-        auto &exp = cgalE;
-        auto &invalidVertices = invalidVertices_ie_cgalE;
-
-        Painter painter(BOUNDS, 1000);
-        painter.draw(points, false);
-        painter.draw(exp, points);
-        for (auto idx : invalidVertices) {
-
-            for (tDim k = 0; k < K; ++k) {
-                if (exp[idx].neighbor[k] != is[idx].neighbor[k]) {
-
-                    painter.setColor(0, 1, 0);
-                    painter.draw(points[exp[idx].neighbor[k]], exp[idx].neighbor[k], true);
-
-                    painter.setColor(1, 0, 0);
-                    painter.draw(points[is[idx].neighbor[k]], is[idx].neighbor[k], true);
-                }
-            }
-
-            painter.setColor(1, 0, 0);
-            painter.draw(idx, is[idx], points);
-            painter.drawCones(points[idx], K);
-        }
-        painter.save("invalidVertices_ie_cgalE");
-    }
-
-    if (!valid_cgalIE_cgalE) {
-
-        auto &is = cgalIE;
-        auto &exp = cgalE;
-        auto &invalidVertices = invalidVertices_cgalIE_cgalE;
-
-        Painter painter(BOUNDS, 1000);
-        painter.draw(points, false);
-        painter.draw(exp, points);
-        for (auto idx : invalidVertices) {
-
-            for (tDim k = 0; k < K; ++k) {
-                if (exp[idx].neighbor[k] != is[idx].neighbor[k]) {
-
-                    painter.setColor(0, 1, 0);
-                    painter.draw(points[exp[idx].neighbor[k]], exp[idx].neighbor[k], true);
-
-                    painter.setColor(1, 0, 0);
-                    painter.draw(points[is[idx].neighbor[k]], is[idx].neighbor[k], true);
-                }
-            }
-
-            painter.setColor(1, 0, 0);
-            painter.draw(idx, is[idx], points);
-            painter.drawCones(points[idx], K);
-        }
-        painter.save("invalidVertices_cgalIE_cgalE");
-    }
-#endif// ifdef WITH_CAIRO
-
-    EXPECT_TRUE(valid_ie_cgalE && valid_cgalIE_cgalE);
+TEST(YaoGraphTest, NaiveCGALInexact) {
+    ASSERT_TRUE((performTest<NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
 }
