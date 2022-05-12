@@ -87,6 +87,10 @@ public:
     using tVertex = tYaoVertex<K>;
     using tGraph = tYaoGraph<tVertex>;
 
+    static std::string name() {
+        return "GridYao_" + std::to_string(CellOcc) + "_" + Kernel::name();
+    }
+
     tGraph operator()(const tPoints &points, const tBox &bounds) const {
         tGraph graph(points.size());
         Grid grid(bounds, std::ceil(points.size() / static_cast<tIFloat>(CellOcc)));
@@ -114,7 +118,7 @@ private:
                 return false;
             } else {
                 // we found a neighbor for given search radius, can we find a closer one still
-                if (v.distance[k] > std::pow((radius - 1) * minLength, 2)) {
+                if (v.distance[k] > std::pow((radius - 1) * minLength, 2)) { //TODO exact calculation
                     // found neighbor is further away than any point for next cell radius could be
                     return false;
                 }
