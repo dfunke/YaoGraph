@@ -88,7 +88,7 @@ public:
     using tGraph = tYaoGraph<tVertex>;
 
     static std::string name() {
-        return "GridYao_" + std::to_string(CellOcc) + "_" + Kernel::name();
+        return "GridYao" + std::to_string(CellOcc) + "_" + Kernel::name();
     }
 
     tGraph operator()(const tPoints &points, const tBox &bounds) const {

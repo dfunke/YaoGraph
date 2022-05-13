@@ -48,7 +48,7 @@ public:
     using Line = CGAL::Line_2<K>;
 
     static std::string name() {
-        return "CGALKernel_" + KernelName<K>::name();
+        return "CGAL" + KernelName<K>::name();
     }
 
     class Direction {
