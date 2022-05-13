@@ -58,26 +58,26 @@ void benchmark() {
 int main() {
 
 #ifdef WITH_CGAL
-    benchmark<CGAL_Yao2D<Cones, ExactPredicatesInexactConstructions>, Uniform>();
-    benchmark<CGAL_Yao2D<Cones, ExactPredicatesExactConstructions>, Uniform>();
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesInexactConstructions>, Gaussian>();
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesExactConstructions>, Gaussian>();
 #endif
 
-    benchmark<NaiveYao<Cones, InexactKernel>, Uniform>();
+    benchmark<NaiveYao<Cones, InexactKernel>, Gaussian>();
 #ifdef WITH_CGAL
-    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Uniform>();
-    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>();
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian>();
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian>();
 #endif
 
-    benchmark<GridYao<Cones, InexactKernel, cellOcc>, Uniform>();
+    benchmark<GridYao<Cones, InexactKernel, cellOcc>, Gaussian>();
 #ifdef WITH_CGAL
-    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>, Uniform>();
-    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesExactConstructions>, cellOcc>, Uniform>();
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>, Gaussian>();
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesExactConstructions>, cellOcc>, Gaussian>();
 #endif
 
-    benchmark<SweepLine<Cones, InexactKernel>, Uniform>();
+    benchmark<SweepLine<Cones, InexactKernel>, Gaussian>();
 #ifdef WITH_CGAL
-    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Uniform>();
-    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>();
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian>();
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian>();
 #endif
 
     return 0;
