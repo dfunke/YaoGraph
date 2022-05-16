@@ -8,6 +8,7 @@
 #include "Generators.hpp"
 #include "NaiveYao.hpp"
 #include "SweepLine.hpp"
+#include "GridYao.hpp"
 
 #include "utils/CGALKernel.hpp"
 #include "utils/InexactKernel.hpp"
@@ -15,12 +16,13 @@
 constexpr tDim K = 6;
 constexpr tBox BOUNDS{{0, 0},
                       {1, 1}};
-constexpr tIndex nPoints = 2000;
+constexpr tIndex nPoints = 4000;
+constexpr tIndex GenSeed = 14030;
 
 template<typename IsAlgorithm, typename ExpAlgorithm, typename Distribution>
 bool performTest() {
 
-    Distribution gen(SEED);
+    Distribution gen(GenSeed);
     auto points = gen.generate(nPoints, BOUNDS);
 
     IsAlgorithm isAlg;
@@ -89,4 +91,16 @@ TEST(YaoGraphTest, NaiveInexact) {
 
 TEST(YaoGraphTest, NaiveCGALInexact) {
     ASSERT_TRUE((performTest<NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+}
+
+TEST(YaoGraphTest, GridYaoInexact) {
+    ASSERT_TRUE((performTest<GridYao<K, InexactKernel,100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Grid>()));
+}
+
+TEST(YaoGraphTest, GridYaoCGALInexact) {
+    ASSERT_TRUE((performTest<GridYao<K, CGALKernel<ExactPredicatesInexactConstructions>,100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+}
+
+TEST(YaoGraphTest, GridYaoCGALExact) {
+    ASSERT_TRUE((performTest<GridYao<K, CGALKernel<ExactPredicatesExactConstructions>,100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
 }
