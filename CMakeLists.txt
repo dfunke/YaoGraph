@@ -57,6 +57,10 @@ if (WITH_VTUNE)
     add_compile_definitions(VTUNE)
 endif ()
 
-add_subdirectory(test)
+find_package(GTest)
+
+if (GTEST_FOUND)
+    add_subdirectory(test)
+endif ()
 
 
