@@ -33,7 +33,7 @@ constexpr tDim RepsPerN = 3;
 const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 59135, 60315};
 
 template<typename Algorithm, typename Distribution>
-void benchmark() {
+void benchmarkImpl() {
     std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ofstream::out | std::ofstream::app);
 
     // header
@@ -55,29 +55,37 @@ void benchmark() {
     }
 }
 
+template<typename Algorithm, typename Distribution, typename... FDists>
+void benchmark() {
+    benchmarkImpl<Algorithm, Distribution>();
+    if constexpr (sizeof...(FDists) > 0) {
+        benchmark<Algorithm, FDists...>();
+    }
+}
+
 int main() {
 
 #ifdef WITH_CGAL
-    benchmark<CGAL_Yao2D<Cones, ExactPredicatesInexactConstructions>, Gaussian>();
-    benchmark<CGAL_Yao2D<Cones, ExactPredicatesExactConstructions>, Gaussian>();
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesInexactConstructions>, Gaussian, Uniform, Grid>();
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesExactConstructions>, Gaussian, Uniform, Grid>();
 #endif
 
-    benchmark<NaiveYao<Cones, InexactKernel>, Gaussian>();
+    benchmark<NaiveYao<Cones, InexactKernel>, Gaussian, Uniform, Grid>();
 #ifdef WITH_CGAL
-    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian>();
-    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian>();
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian, Uniform, Grid>();
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian, Uniform, Grid>();
 #endif
 
-    benchmark<GridYao<Cones, InexactKernel, cellOcc>, Gaussian>();
+    benchmark<GridYao<Cones, InexactKernel, cellOcc>, Gaussian, Uniform, Grid>();
 #ifdef WITH_CGAL
-    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>, Gaussian>();
-    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesExactConstructions>, cellOcc>, Gaussian>();
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>, Gaussian, Uniform, Grid>();
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesExactConstructions>, cellOcc>, Gaussian, Uniform, Grid>();
 #endif
 
-    benchmark<SweepLine<Cones, InexactKernel>, Gaussian>();
+    benchmark<SweepLine<Cones, InexactKernel>, Gaussian, Uniform, Grid>();
 #ifdef WITH_CGAL
-    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian>();
-    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian>();
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian, Uniform, Grid>();
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian, Uniform, Grid>();
 #endif
 
     return 0;

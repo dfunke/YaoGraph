@@ -6,8 +6,8 @@
 
 #include <random>
 
-#include "Types.hpp"
 #include "Predicates.hpp"
+#include "Types.hpp"
 
 template<typename Dist>
 class Generator {
@@ -63,7 +63,7 @@ class Gaussian : public Generator<Gaussian> {
 
 public:
     Gaussian(const tIndex &seed) : Generator(seed),
-                                  dist(0, .25) {}
+                                   dist(0, .25) {}
 
     static std::string name() {
         return "gaussian";
@@ -79,9 +79,11 @@ public:
         for (tIndex i = 0; i < n; ++i) {
 
             tIFloatVector p;
-            for (tDim d = 0; d < D; ++d) {
-                p[d] = midpoint[d] + halfLength[d] * rand();
-            }
+            do {
+                for (tDim d = 0; d < D; ++d) {
+                    p[d] = midpoint[d] + halfLength[d] * rand();
+                }
+            } while (!bounds.contains(p));
 
             points.emplace_back(p);
         }
@@ -91,4 +93,40 @@ public:
 
 private:
     std::normal_distribution<tIFloat> dist;
+};
+
+class Grid : public Generator<Grid> {
+
+    friend class Generator<Grid>;
+
+public:
+    Grid(const tIndex &seed) : Generator(seed) {}
+
+    static std::string name() {
+        return "grid";
+    }
+
+    tPoints generate(const tIndex n, const tBox &bounds) {
+        tPoints points;
+        points.reserve(n);
+
+        tIndex pointsPerDim = std::floor(std::sqrt(n));
+
+        tIFloatVector pointSpacing;
+        for (tDim d = 0; d < bounds.high.size(); ++d) {
+            pointSpacing[d] = (bounds.high[d] - bounds.low[d]) / pointsPerDim;
+        }
+
+        for (tIndex i = 0; i < pointsPerDim; ++i) {
+            for (tIndex j = 0; j < pointsPerDim; ++j) {
+                tIFloatVector p;
+                p[X] = bounds.low[X] + pointSpacing[X] * i;
+                p[Y] = bounds.low[Y] + pointSpacing[Y] * j;
+
+                points.emplace_back(p);
+            }
+        }
+
+        return points;
+    }
 };
