@@ -344,6 +344,16 @@ public:
         return Point(p[X], p[Y]);
     }
 
+    static std::vector<Point> mkPoints(const std::vector<tIFloatVector> &p) {
+        std::vector<Point> points;
+        points.reserve(p.size());
+        for (const auto &i : p) {
+            points.push_back(mkPoint(i));
+        }
+
+        return points;
+    }
+
     static Box mkBBox(const tBox &box) {
         return Box(box.low[X], box.low[Y], box.high[X], box.high[Y]);
     }
@@ -392,6 +402,15 @@ public:
         return CGAL::to_double(x);
     }
 
+    static bool compareDistance(const Point &origin, const Point &newPoint, [[maybe_unused]] const Point &oldPoint, const Float &oldDist) {
+        if constexpr (std::is_same_v<K, ExactPredicatesInexactConstructions>) {
+            return compareDistance(origin, newPoint, oldPoint);
+        } else {
+            // we have exact constructions
+            return compareDistance(origin, newPoint, oldDist);
+        }
+    }
+
     static bool compareDistance(const Point &origin, const Point &newPoint, const Point &oldPoint) {
         return CGAL::compare_distance_to_point(origin, newPoint, oldPoint) == CGAL::SMALLER;
     }
@@ -407,6 +426,41 @@ public:
         functor(cones, CGAL::Direction_2<K>(1, 0), rays.begin());
 
         return rays;
+    }
+
+    static auto computePointCones(const Point &p, const std::vector<CGAL::Direction_2<K>> &rays) {
+        std::vector<Line> cLines;
+        cLines.reserve(rays.size());
+        for (tDim k = 0; k < rays.size(); ++k) {
+            cLines.emplace_back(p, rays[k]);
+        }
+
+        return cLines;
+    }
+
+    static tDim getCone(const Point &origin, const Point &newPoint, const std::vector<Line> &cones) {
+
+        tDim sec, secGuess;
+        sec = secGuess = std::floor(atan2P(to_float(newPoint[1] - origin[1]), to_float(newPoint[0] - origin[0])) / (2 * M_PI / cones.size()));
+
+#ifndef NDEBUG
+        bool found = false;
+#endif
+
+        for (; sec != (secGuess - 1) % cones.size(); ++sec) {
+            auto osL = cones[sec].oriented_side(newPoint);
+            auto osR = cones[(sec + 1) % cones.size()].oriented_side(newPoint);
+
+            if ((osL == CGAL::ON_POSITIVE_SIDE || osL == CGAL::ON_ORIENTED_BOUNDARY) && osR == CGAL::ON_NEGATIVE_SIDE) {
+#ifndef NDEBUG
+                found = true;
+#endif
+                break;
+            }
+        }
+        assert(found);
+
+        return sec;
     }
 };
 

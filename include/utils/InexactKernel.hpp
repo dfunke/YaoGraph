@@ -345,6 +345,10 @@ public:
         return p;
     }
 
+    static std::vector<Point> mkPoints(const std::vector<tIFloatVector> &p) {
+        return p;
+    }
+
     static tBox mkBBox(const tBox &box) {
         return box;
     }
@@ -393,6 +397,10 @@ public:
         return x;
     }
 
+    static bool compareDistance(const Point &origin, const Point &newPoint, [[maybe_unused]] const Point &oldPoint, const Float &oldDist) {
+        return compareDistance(origin, newPoint, oldDist);
+    }
+
     static bool compareDistance(const Point &origin, const Point &newPoint, const Point &oldPoint) {
         return distance2(origin, newPoint) < distance2(origin, oldPoint);
     }
@@ -409,6 +417,14 @@ public:
         }
 
         return rays;
+    }
+
+    static auto computePointCones([[maybe_unused]] const Point &p, const std::vector<Direction> &rays) {
+        return rays;
+    }
+
+    static tDim getCone(const Point &origin, const Point &newPoint, const std::vector<Direction> &cones) {
+        return std::floor(atan2P(to_float(newPoint[1] - origin[1]), to_float(newPoint[0] - origin[0])) / (2 * M_PI / cones.size()));
     }
 };
 
