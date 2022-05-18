@@ -145,7 +145,7 @@ class SweepLine {
     };
 
 public:
-    using tVertex = tYaoVertex<C>;
+    using tVertex = tYaoVertex<C, tEFloat>;
     using tGraph = tYaoGraph<tVertex>;
 
     static std::string name() {
@@ -280,7 +280,7 @@ private:
                         assert(itBl->rightRegion == itBr->leftRegion);
 
                         graph[cPoint.idx].neighbor[k] = itBr->leftRegion;
-                        graph[cPoint.idx].distance[k] = Kernel::to_float(Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])));
+                        graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion]));
 
                         LOG(idx << ": "
                                 << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])) << std::endl);

@@ -12,6 +12,9 @@ template<tDim K, typename Kernel, tIndex CellOcc>
 class GridYao {
 
 private:
+    using tEFloat = typename Kernel::Float;
+    using tEFloatVector = std::array<tEFloat, D>;
+
     class Grid {
 
     private:
@@ -84,7 +87,7 @@ private:
     };
 
 public:
-    using tVertex = tYaoVertex<K>;
+    using tVertex = tYaoVertex<K, tEFloat>;
     using tGraph = tYaoGraph<tVertex>;
 
     static std::string name() {
@@ -118,7 +121,7 @@ private:
                 return false;
             } else {
                 // we found a neighbor for given search radius, can we find a closer one still
-                if (v.distance[k] > std::pow((radius - 1) * minLength, 2)) { //TODO exact calculation
+                if (v.distance[k] > std::pow((radius - 1) * minLength, 2)) {//TODO exact calculation
                     // found neighbor is further away than any point for next cell radius could be
                     return false;
                 }
@@ -164,7 +167,7 @@ private:
 
             if (d < vertex.distance[sec]) {
                 vertex.neighbor[sec] = p;
-                vertex.distance[sec] = Kernel::to_float(d);//TODO: exact solution
+                vertex.distance[sec] = d;//TODO: exact solution
             }
         }
     }

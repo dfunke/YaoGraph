@@ -52,7 +52,7 @@ struct tBox {
     }
 };
 
-template<tDim C>
+template<tDim C, typename Float>
 struct tYaoVertex {
 
     static const tDim K = C;
@@ -65,7 +65,7 @@ struct tYaoVertex {
     }
 
     std::array<tIndex, K> neighbor;
-    std::array<tIFloat, K> distance;
+    std::array<Float, K> distance;
 };
 
 template<typename V>

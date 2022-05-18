@@ -13,7 +13,7 @@ template<tDim C, typename Kernel>
 class NaiveYaoBase {
 
 public:
-    using tVertex = tYaoVertex<C>;
+    using tVertex = tYaoVertex<C, typename Kernel::Float>;
     using tGraph = tYaoGraph<tVertex>;
 
     using tPoint = typename Kernel::Point;
@@ -42,12 +42,11 @@ public:
 
                 if (i == j) continue;
 
-                auto d = Kernel::distance2(Kernel::mkPoint(points[i]), Kernel::mkPoint(points[j]));
                 tDim sec = std::floor(atan2P(points[i], points[j]) / (2 * M_PI / C));
 
-                if (d < g[i].distance[sec]) {
+                if (g[i].neighbor[sec] == INF_IDX || Kernel::compareDistance(points[i], points[j], g[i].distance[sec])) {
                     g[i].neighbor[sec] = j;
-                    g[i].distance[sec] = Kernel::to_float(d);
+                    g[i].distance[sec] = Kernel::distance2(Kernel::mkPoint(points[i]), Kernel::mkPoint(points[j]));
                 }
             }
         }
@@ -103,7 +102,7 @@ public:
 
                 if (g[i].neighbor[sec] == INF_IDX || Kernel::compareDistance(kPoints[i], kPoints[j], kPoints[g[i].neighbor[sec]])) {
                     g[i].neighbor[sec] = j;
-                    g[i].distance[sec] = Kernel::to_float(Kernel::distance2(kPoints[i], kPoints[j]));//TODO: exact solution
+                    g[i].distance[sec] = Kernel::distance2(kPoints[i], kPoints[j]);//TODO: exact solution
                 }
             }
         }
@@ -136,11 +135,8 @@ public:
             std::vector<typename Kernel::Line> cLines;
             cLines.reserve(C);
 
-            std::array<Kernel::Float, C> dists;
-
             for (tDim k = 0; k < C; ++k) {
                 cLines.emplace_back(kPoints[i], rays[k]);
-                dists[k] = std::numeric_limits<tIFloat>::max();
             }
 
             for (tIndex j = 0; j < points.size(); ++j) {
@@ -161,10 +157,9 @@ public:
                 }
                 assert(found);
 
-                if (g[i].neighbor[sec] == INF_IDX || Kernel::compareDistance(kPoints[i], kPoints[j], dists[sec])) {
+                if (g[i].neighbor[sec] == INF_IDX || Kernel::compareDistance(kPoints[i], kPoints[j], g[i].distance[sec])) {
                     g[i].neighbor[sec] = j;
-                    dists[sec] = Kernel::distance2(kPoints[i], kPoints[j]);
-                    g[i].distance[sec] = Kernel::to_float(dists[sec]);//TODO: exact solution
+                    g[i].distance[sec] = Kernel::distance2(kPoints[i], kPoints[j]);//TODO: exact solution
                 }
             }
         }

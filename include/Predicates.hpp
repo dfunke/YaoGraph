@@ -77,8 +77,8 @@ auto operator*(const TA &a, const std::array<TB, D> &b) {
     return result;
 }
 
-template<tDim K>
-bool operator==(const tYaoVertex<K> &a, const tYaoVertex<K> &b) {
+template<tDim K, typename FloatA, typename FloatB>
+bool operator==(const tYaoVertex<K, FloatA> &a, const tYaoVertex<K, FloatB> &b) {
     for (tDim d = 0; d < K; ++d) {
         if (a.neighbor[d] != b.neighbor[d]) {
             return false;
@@ -88,8 +88,8 @@ bool operator==(const tYaoVertex<K> &a, const tYaoVertex<K> &b) {
     return true;
 }
 
-template<tDim K>
-std::ostream &operator<<(std::ostream &os, const tYaoVertex<K> &v) {
+template<tDim K, typename Float>
+std::ostream &operator<<(std::ostream &os, const tYaoVertex<K, Float> &v) {
 
     char sep = 0;
 
@@ -107,8 +107,8 @@ std::ostream &operator<<(std::ostream &os, const tIFloatVector &v) {
     return os;
 }
 
-template<typename YaoGraph>
-std::tuple<bool, tIndexSet> checkGraph(const YaoGraph &is, const YaoGraph &exp) {
+template<typename IS, typename EXP>
+std::tuple<bool, tIndexSet> checkGraph(const IS &is, const EXP &exp) {
 
     bool valid = true;
     tIndexSet invalidVertices;
@@ -125,7 +125,7 @@ std::tuple<bool, tIndexSet> checkGraph(const YaoGraph &is, const YaoGraph &exp) 
 
             std::cerr << "vertex error " << i << ":\n\tis:  " << is[i] << "\n\texp: " << exp[i] << std::endl;
 
-            for (tIndex k = 0; k < YaoGraph::value_type::K; ++k) {
+            for (tIndex k = 0; k < IS::value_type::K; ++k) {
                 if (is[i].neighbor[k] != exp[i].neighbor[k]) {
                     std::cerr << "\tcone " << k << ": is: " << is[i].neighbor[k] << " (" << is[i].distance[k]
                               << ") exp: " << exp[i].neighbor[k] << " (" << exp[i].distance[k] << ")" << std::endl;

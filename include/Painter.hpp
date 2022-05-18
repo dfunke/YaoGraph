@@ -203,8 +203,8 @@ public:
         }
     }
 
-    template<tDim K>
-    void draw(const tIndex &i, const tYaoVertex<K> &v, const tPoints &points) {
+    template<tDim K, typename Float>
+    void draw(const tIndex &i, const tYaoVertex<K, Float> &v, const tPoints &points) {
         for (tDim k = 0; k < K; ++k) {
             if (v.neighbor[k] != INF_IDX) {
                 drawLine(points[i], points[v.neighbor[k]]);
