@@ -402,6 +402,13 @@ public:
         return CGAL::to_double(x);
     }
 
+    static tIFloat to_float_exact(const Float &x) {
+        if constexpr (std::is_same_v<K, ExactPredicatesExactConstructions>) {
+            x.exact();
+        }
+        return CGAL::to_double(x);
+    }
+
     static bool compareDistance(const Point &origin, const Point &newPoint, [[maybe_unused]] const Point &oldPoint, const Float &oldDist) {
         if constexpr (std::is_same_v<K, ExactPredicatesInexactConstructions>) {
             return compareDistance(origin, newPoint, oldPoint);

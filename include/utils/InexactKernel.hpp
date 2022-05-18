@@ -397,6 +397,10 @@ public:
         return x;
     }
 
+    static tIFloat to_float_exact(const Float &x) {
+        return x;
+    }
+
     static bool compareDistance(const Point &origin, const Point &newPoint, [[maybe_unused]] const Point &oldPoint, const Float &oldDist) {
         return compareDistance(origin, newPoint, oldDist);
     }
