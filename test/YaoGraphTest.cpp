@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 
 //#define LOG_DEBUG
-//#undef LOG_DEBUG
+#undef LOG_DEBUG
 
 #include "utils/Logging.hpp"
 
 #include "Generators.hpp"
+#include "GridYao.hpp"
 #include "NaiveYao.hpp"
 #include "SweepLine.hpp"
-#include "GridYao.hpp"
 
 #include "utils/CGALKernel.hpp"
 #include "utils/InexactKernel.hpp"
@@ -16,8 +16,10 @@
 constexpr tDim K = 6;
 constexpr tBox BOUNDS{{0, 0},
                       {1, 1}};
-constexpr tIndex nPoints = 4000;
-constexpr tIndex GenSeed = 14030;
+constexpr tIndex nPoints = 1000;
+constexpr tIndex GenSeed = SEED;
+
+using Dist = Uniform;
 
 template<typename IsAlgorithm, typename ExpAlgorithm, typename Distribution>
 bool performTest() {
@@ -60,10 +62,8 @@ bool performTest() {
             painter.setColor(1, 0, 0);
             painter.draw(idx, is[idx], points);
             painter.drawCones(points[idx], K);
-
-            break;
         }
-        painter.save("invalidVertices_" + IsAlgorithm::name() + ".png");
+        painter.save("invalidVertices_" + IsAlgorithm::name());
     }
 #endif// ifdef WITH_CAIRO
 #else // ifndef VTUNE
@@ -74,33 +74,33 @@ bool performTest() {
 }
 
 TEST(YaoGraphTest, SweeplineInexact) {
-    ASSERT_TRUE((performTest<SweepLine<K, InexactKernel>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+    ASSERT_TRUE((performTest<SweepLine<K, InexactKernel>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
 
 TEST(YaoGraphTest, SweeplineCGALInexact) {
-    ASSERT_TRUE((performTest<SweepLine<K, CGALKernel<ExactPredicatesInexactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+    ASSERT_TRUE((performTest<SweepLine<K, CGALKernel<ExactPredicatesInexactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
 
 TEST(YaoGraphTest, SweeplineCGALExact) {
-    ASSERT_TRUE((performTest<SweepLine<K, CGALKernel<ExactPredicatesExactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+    ASSERT_TRUE((performTest<SweepLine<K, CGALKernel<ExactPredicatesExactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
 
 TEST(YaoGraphTest, NaiveInexact) {
-    ASSERT_TRUE((performTest<NaiveYao<K, InexactKernel>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+    ASSERT_TRUE((performTest<NaiveYao<K, InexactKernel>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
 
 TEST(YaoGraphTest, NaiveCGALInexact) {
-    ASSERT_TRUE((performTest<NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+    ASSERT_TRUE((performTest<NaiveYao<K, CGALKernel<ExactPredicatesInexactConstructions>>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
 
 TEST(YaoGraphTest, GridYaoInexact) {
-    ASSERT_TRUE((performTest<GridYao<K, InexactKernel,100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Grid>()));
+    ASSERT_TRUE((performTest<GridYao<K, InexactKernel, 100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
 
 TEST(YaoGraphTest, GridYaoCGALInexact) {
-    ASSERT_TRUE((performTest<GridYao<K, CGALKernel<ExactPredicatesInexactConstructions>,100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+    ASSERT_TRUE((performTest<GridYao<K, CGALKernel<ExactPredicatesInexactConstructions>, 100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
 
 TEST(YaoGraphTest, GridYaoCGALExact) {
-    ASSERT_TRUE((performTest<GridYao<K, CGALKernel<ExactPredicatesExactConstructions>,100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Uniform>()));
+    ASSERT_TRUE((performTest<GridYao<K, CGALKernel<ExactPredicatesExactConstructions>, 100>, NaiveYao<K, CGALKernel<ExactPredicatesExactConstructions>>, Dist>()));
 }
