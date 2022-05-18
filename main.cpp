@@ -37,7 +37,7 @@ void benchmarkImpl() {
     std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ofstream::out | std::ofstream::app);
 
     // header
-    file << "dist n seed rep t" << std::endl;
+    file << "# dist n seed rep t" << std::endl;
     std::cout << "dist n seed rep t" << std::endl;
 
     for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
