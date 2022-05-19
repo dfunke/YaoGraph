@@ -454,8 +454,8 @@ public:
         bool found = false;
 #endif
 
-        for (; sec != (secGuess - 1) % cones.size(); ++sec) {
-            auto osL = cones[sec].oriented_side(newPoint);
+        for (; sec < cones.size() || sec % cones.size() < secGuess; ++sec) {
+            auto osL = cones[sec % cones.size()].oriented_side(newPoint);
             auto osR = cones[(sec + 1) % cones.size()].oriented_side(newPoint);
 
             if ((osL == CGAL::ON_POSITIVE_SIDE || osL == CGAL::ON_ORIENTED_BOUNDARY) && osR == CGAL::ON_NEGATIVE_SIDE) {
@@ -465,9 +465,9 @@ public:
                 break;
             }
         }
-        ASSERT(found && sec >= 0 && sec < cones.size());
+        ASSERT(found);
 
-        return sec;
+        return sec % cones.size();
     }
 };
 
