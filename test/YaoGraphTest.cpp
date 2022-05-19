@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
 
+#include "utils/ASSERT.hpp"
+
 //#define LOG_DEBUG
 #undef LOG_DEBUG
-
 #include "utils/Logging.hpp"
 
 #include "Generators.hpp"

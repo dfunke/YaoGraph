@@ -97,12 +97,12 @@ public:
               ext(std::make_unique<Ray>(ext_)) {
 
             // the starting points of upper and lower ray should be different
-            assert(!approxEQ(p, ext->p));
+            ASSERT(!approxEQ(p, ext->p));
 
             // the starting point of the lower ray must be on the upper rayl;
-            assert(approxEQ(ext->p, {ext->p[X], dir.tan() * (ext->p[X] - p[X]) + p[Y]}));
-            assert(leftRegion == ext->leftRegion);
-            assert(rightRegion == ext->rightRegion);
+            ASSERT(approxEQ(ext->p, {ext->p[X], dir.tan() * (ext->p[X] - p[X]) + p[Y]}));
+            ASSERT(leftRegion == ext->leftRegion);
+            ASSERT(rightRegion == ext->rightRegion);
         }
 
         Ray(const Ray &o)
@@ -155,7 +155,7 @@ public:
         }
 
         Point extOrigin() const {
-            assert(ext);
+            ASSERT(ext);
             return ext->p;
         }
 
@@ -164,7 +164,7 @@ public:
         }
 
         void foldExtension() {
-            assert(ext);
+            ASSERT(ext);
 
             // we replace the RayUnion with its lower ray, so all intersections pointers should still be valid
             // all intersections processed after this point will be with lower ray
@@ -173,7 +173,7 @@ public:
             // and delete the lower ray
             ext.reset();
 
-            assert(!ext);
+            ASSERT(!ext);
         }
 
         bool leftOf(const Point &x) const {
@@ -251,7 +251,7 @@ public:
         }
 
         static tIntersectionRetVal isUR(const Ray &ua, const Ray &b, const tBox &bounds) {
-            assert(ua.ext);
+            ASSERT(ua.ext);
 
             // check for intersection of main ray of ua and b
             auto is = isRR(ua, b, bounds);
@@ -271,7 +271,7 @@ public:
         }
 
         static tIntersectionRetVal isRU(const Ray &a, const Ray &ub, const tBox &bounds) {
-            assert(ub.ext);
+            ASSERT(ub.ext);
 
             // check for intersection of a and main ray of ub
             auto is = isRR(a, ub, bounds);
@@ -291,7 +291,7 @@ public:
         }
 
         static tIntersectionRetVal isUU(const Ray &ua, const Ray &ub, const tBox &bounds) {
-            assert(ua.ext && ub.ext);
+            ASSERT(ua.ext && ub.ext);
 
             // check for intersection of main ray of ua and ub
             auto is = isRR(ua, ub, bounds);

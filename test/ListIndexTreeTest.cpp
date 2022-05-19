@@ -2,6 +2,7 @@
 
 #include <list>
 
+#include "utils/ASSERT.hpp"
 #include "utils/ListIndexTree.hpp"
 
 TEST(ListIndexTreeTest, Adding) {

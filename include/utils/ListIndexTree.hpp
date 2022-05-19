@@ -29,12 +29,12 @@ private:
         virtual bool isNode() const = 0;
 
         Leaf *asLeaf() {
-            assert(isLeaf());
+            ASSERT(isLeaf());
             return static_cast<Leaf *>(this);
         }
 
         InternalNode *asNode() {
-            assert(isNode());
+            ASSERT(isNode());
             return static_cast<InternalNode *>(this);
         }
 
@@ -154,8 +154,8 @@ private:
         // special case empty list
         if (pos == _begin() && pos == _end()) {
 
-            assert(!m_root->left && !m_root->right);
-            assert(_begin() == _end());
+            ASSERT(!m_root->left && !m_root->right);
+            ASSERT(_begin() == _end());
 
             leaf->prev = _end();
             leaf->next = _end();
@@ -187,9 +187,9 @@ private:
             m_beginLeaf = leaf.get();
         } else {
             leaf->prev = pos->prev;
-            assert(leaf->prev != _end());
+            ASSERT(leaf->prev != _end());
             leaf->next = pos;
-            assert(leaf->next == pos);
+            ASSERT(leaf->next == pos);
 
             leaf->prev->next = leaf.get();
             leaf->next->prev = leaf.get();
@@ -203,7 +203,7 @@ private:
             // we have a left neighbor, join to it from right
             joinFromRight(leaf->prev->parent, std::move(leaf));
         } else {
-            assert(leaf->next != _end());
+            ASSERT(leaf->next != _end());
             // we have no left neighbor but a right one, join to it from left
             joinFromLeft(leaf->next->parent, std::move(leaf));
         }
@@ -214,16 +214,16 @@ private:
 private:
     void joinFromRight(InternalNode *parent, std::unique_ptr<Leaf> &&leaf) {
 
-        assert(parent->left);
-        assert(leaf->prev != _end());
+        ASSERT(parent->left);
+        ASSERT(leaf->prev != _end());
 
         bool prevIsLeftChild = (parent->left.get() == leaf->prev);
-        assert(prevIsLeftChild || (parent->right && parent->right.get() == leaf->prev));
+        ASSERT(prevIsLeftChild || (parent->right && parent->right.get() == leaf->prev));
 
         if (!parent->right) {
             // parent has empty right child, prev must be left child
             // insert new leaf as right child
-            assert(prevIsLeftChild);
+            ASSERT(prevIsLeftChild);
 
             leaf->parent = parent;
 
@@ -249,10 +249,10 @@ private:
 
     void joinFromLeft(InternalNode *parent, std::unique_ptr<Leaf> &&leaf) {
 
-        assert(parent->left);
+        ASSERT(parent->left);
         // this is only called when object is inserted to the beginning of list
         // new leaf must become leftmost leaf
-        assert(leaf->prev == _end());
+        ASSERT(leaf->prev == _end());
 
         if (!parent->right) {
             // parent has empty right child, move left to right, then insert
@@ -286,14 +286,14 @@ public:
 
 private:
     Leaf *erase(Leaf *pos) {
-        assert(pos != nullptr);
-        assert(pos != _end());
-        assert(pos->parent != nullptr);
+        ASSERT(pos != nullptr);
+        ASSERT(pos != _end());
+        ASSERT(pos->parent != nullptr);
 
         // special case singleton list
         if (pos == _begin() && pos == _end()->prev) {
 
-            assert(m_root->left && !m_root->right);
+            ASSERT(m_root->left && !m_root->right);
 
             m_beginLeaf = _end();
             m_endLeaf->prev = _end();
@@ -308,12 +308,12 @@ private:
         Leaf *retValue = nullptr;// save return value -> node after deleted one
 
         if (pos == _end()->prev) {
-            assert(pos->prev != _end());// singleton case already handled above
+            ASSERT(pos->prev != _end());// singleton case already handled above
             pos->prev->next = _end();
             m_endLeaf->prev = pos->prev;
             retValue = _end();
         } else if (pos == _begin()) {
-            assert(pos->next != _end());// singleton case already handled above
+            ASSERT(pos->next != _end());// singleton case already handled above
             pos->next->prev = _end();
             m_beginLeaf = pos->next;
             retValue = _begin();
@@ -331,9 +331,9 @@ private:
 
 private:
     void eraseRec(InternalNode *parent, Node *child) {
-        assert(parent != nullptr);
-        assert(child != nullptr);
-        assert(child->parent == parent);
+        ASSERT(parent != nullptr);
+        ASSERT(child != nullptr);
+        ASSERT(child->parent == parent);
 
         if (parent->left && parent->right) {
             // parent has both children
@@ -341,16 +341,16 @@ private:
                 // we are the right child, simply remove
                 parent->right.reset();
             } else {
-                assert(child == parent->left.get());
+                ASSERT(child == parent->left.get());
                 // we are the left child, move right child into left
                 parent->left = std::move(parent->right);
             }
 
-            assert(parent->left && !parent->right);
+            ASSERT(parent->left && !parent->right);
             updateAndRebalance(parent);
         } else {
-            assert(parent->left && !parent->right);
-            assert(child == parent->left.get());
+            ASSERT(parent->left && !parent->right);
+            ASSERT(child == parent->left.get());
 
             // parent becomes empty node
             parent->left.reset();
@@ -360,7 +360,7 @@ private:
                 eraseRec(parent->parent, parent);
             } else {
                 // we are root
-                assert(parent->isRoot());
+                ASSERT(parent->isRoot());
                 updateAndRebalance(parent);
             }
         }
@@ -376,19 +376,19 @@ private:
         bool leftChild = false;
 
         if (y->parent == nullptr) {
-            assert(y->isRoot() && y == m_root.get());
+            ASSERT(y->isRoot() && y == m_root.get());
             yFromParent = std::move(m_root);
         } else {
             leftChild = (y == y->parent->left.get());
-            assert(leftChild || y == y->parent->right.get());
+            ASSERT(leftChild || y == y->parent->right.get());
             yFromParent = std::move(leftChild ? y->parent->left : y->parent->right);
         }
 
-        assert(yFromParent && y == yFromParent.get());
+        ASSERT(yFromParent && y == yFromParent.get());
 
-        assert(y->left);
+        ASSERT(y->left);
         std::unique_ptr<Node> x = std::move(y->left);
-        assert(x->isNode() && x->asNode()->left);
+        ASSERT(x->isNode() && x->asNode()->left);
         std::unique_ptr<Node> T2 = std::move(x->asNode()->right);
 
         // perform rotation
@@ -419,7 +419,7 @@ private:
 
         // update fromParentPointer
         if (x->parent == nullptr) {
-            assert(x->isRoot());
+            ASSERT(x->isRoot());
             m_root.reset(static_cast<InternalNode *>(x.release()));
 
             // Return new root
@@ -443,19 +443,19 @@ private:
         bool leftChild = false;
 
         if (x->parent == nullptr) {
-            assert(x->isRoot() && x == m_root.get());
+            ASSERT(x->isRoot() && x == m_root.get());
             xFromParent = std::move(m_root);
         } else {
             leftChild = (x == x->parent->left.get());
-            assert(leftChild || x == x->parent->right.get());
+            ASSERT(leftChild || x == x->parent->right.get());
             xFromParent = std::move(leftChild ? x->parent->left : x->parent->right);
         }
 
-        assert(xFromParent && x == xFromParent.get());
+        ASSERT(xFromParent && x == xFromParent.get());
 
-        assert(x->left && x->right);
+        ASSERT(x->left && x->right);
         std::unique_ptr<Node> y = std::move(x->right);
-        assert(y->isNode() && y->asNode()->left);
+        ASSERT(y->isNode() && y->asNode()->left);
         std::unique_ptr<Node> T2 = std::move(y->asNode()->left);
 
         // perform rotation
@@ -475,7 +475,7 @@ private:
 
         // update fromParentPointer
         if (y->parent == nullptr) {
-            assert(y->isRoot());
+            ASSERT(y->isRoot());
             m_root.reset(static_cast<InternalNode *>(y.release()));
 
             // Return new root
@@ -495,14 +495,14 @@ private:
             node->maxRep = node->leftRep;
             node->height = 1 + (node->left->isNode() ? node->left->asNode()->height : 0);
         } else {
-            assert(!node->right);
+            ASSERT(!node->right);
             node->leftRep = nullptr;
             node->maxRep = nullptr;
             node->height = 0;
         }
 
         if (node->right) {
-            assert(node->left);
+            ASSERT(node->left);
             node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
             node->height = std::max(node->height, height_type(1 + (node->right->isNode() ? node->right->asNode()->height : 0)));
         }
@@ -526,7 +526,7 @@ private:
 
         // Left Right Case
         if (balance > 1 && leftBalance < 0) {
-            assert(node->left && node->left->isNode());
+            ASSERT(node->left && node->left->isNode());
             leftRotate(node->left->asNode());
             node = rightRotate(node);
         }
@@ -538,7 +538,7 @@ private:
 
         // Right Left Case
         if (balance < -1 && rightBalance > 0) {
-            assert(node->right && node->right->isNode());
+            ASSERT(node->right && node->right->isNode());
             rightRotate(node->right->asNode());
             node = leftRotate(node);
         }
@@ -561,33 +561,33 @@ private:
     Leaf *find(InternalNode *node, const O &obj, const Compare &cmp) {
 
         if (node->leftRep != nullptr) {
-            assert(node->maxRep != nullptr);
-            assert(node->left);
+            ASSERT(node->maxRep != nullptr);
+            ASSERT(node->left);
 
             if (cmp(obj, *(node->leftRep->obj))) {
-                assert(cmp(obj, *(node->maxRep->obj)));
+                ASSERT(cmp(obj, *(node->maxRep->obj)));
                 if (node->left->isNode()) {
                     return find(node->left->asNode(), obj, cmp);
                 } else {
-                    assert(node->left->isLeaf());
-                    assert(cmp(obj, *(node->left->asLeaf()->obj)));
+                    ASSERT(node->left->isLeaf());
+                    ASSERT(cmp(obj, *(node->left->asLeaf()->obj)));
                     return node->left->asLeaf();
                 }
             } else if (cmp(obj, *(node->maxRep->obj))) {
-                assert(node->right);
+                ASSERT(node->right);
 
                 if (node->right->isNode()) {
                     return find(node->right->asNode(), obj, cmp);
                 } else {
-                    assert(node->right->isLeaf());
-                    assert(cmp(obj, *(node->right->asLeaf()->obj)));
+                    ASSERT(node->right->isLeaf());
+                    ASSERT(cmp(obj, *(node->right->asLeaf()->obj)));
                     return node->right->asLeaf();
                 }
             } else {
                 return _end();
             }
         } else {
-            assert(node->isRoot());// only root may have an empty rep when root is empty
+            ASSERT(node->isRoot());// only root may have an empty rep when root is empty
             return _end();
         }
     }
@@ -612,7 +612,7 @@ private:
             if (node->left->isNode()) {
                 valid = checkInvariants(node->left->asNode());
             } else {
-                assert(node->left->isLeaf());
+                ASSERT(node->left->isLeaf());
                 valid = bool(node->left->asLeaf()->obj);
             }
         }
@@ -623,7 +623,7 @@ private:
             if (node->right->isNode()) {
                 valid = checkInvariants(node->right->asNode());
             } else {
-                assert(node->right->isLeaf());
+                ASSERT(node->right->isLeaf());
                 valid = bool(node->right->asLeaf()->obj);
             }
         }

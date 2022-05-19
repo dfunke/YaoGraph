@@ -1,6 +1,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "utils/ASSERT.hpp"
+
 #include "Generators.hpp"
 #include "Timer.hpp"
 #include "Types.hpp"

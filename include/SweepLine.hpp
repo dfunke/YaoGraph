@@ -82,9 +82,9 @@ class SweepLine {
 
             auto it = slRays.find(p, cmp);
 
-            assert(it == end() || !it->leftOf(p));
-            assert(std::prev(it) == end() || std::prev(it)->leftOf(p));
-            assert(it == linearFind(p));
+            ASSERT(it == end() || !it->leftOf(p));
+            ASSERT(std::prev(it) == end() || std::prev(it)->leftOf(p));
+            ASSERT(it == linearFind(p));
 
             return it;
         }
@@ -201,14 +201,14 @@ private:
 
         tIFloat lTheta = k * (2 * M_PI / C);      // range [0..2PI]
         tIFloat uTheta = (k + 1) * (2 * M_PI / C);// range [0..2PI]
-        assert(lTheta <= uTheta);                // trivial
+        ASSERT(lTheta <= uTheta);                // trivial
 
         tDirection lRay(wrapAngle(lTheta + tIFloat(M_PI)));// range [0..2PI]
         tDirection rRay(wrapAngle(uTheta + tIFloat(M_PI)));// range [0..2PI]
-        //assert(lRay.angle() <= rRay.angle());
+        //ASSERT(lRay.angle() <= rRay.angle());
 
         tDirection slDir(wrapAngle(M_PI + .5 * (lTheta + uTheta)));// range [0..2PI]
-        //assert(lRay.angle() <= slDir.angle() && slDir.angle() <= rRay.angle());
+        //ASSERT(lRay.angle() <= slDir.angle() && slDir.angle() <= rRay.angle());
 
         SweeplineDS sl(slDir);// range [0..2PI]
 
@@ -268,7 +268,7 @@ private:
 
                     auto itBr = sl.find(cPoint.pos);                              // right ray
                     auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
-                    assert(itBl == sl.end() || itBl->leftOf(cPoint.pos));
+                    ASSERT(itBl == sl.end() || itBl->leftOf(cPoint.pos));
 
                     LOG(idx << ": "
                             << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl);
@@ -277,7 +277,7 @@ private:
 
                     // add graph edge
                     if (itBr != sl.end() && itBr->leftRegion != tIndex(-1)) {
-                        assert(itBl->rightRegion == itBr->leftRegion);
+                        ASSERT(itBl->rightRegion == itBr->leftRegion);
 
                         graph[cPoint.idx].neighbor[k] = itBr->leftRegion;
                         graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion]));
@@ -348,8 +348,8 @@ private:
                     stepPainter.save(stepFilename.str());
 #endif
 
-                    assert(std::next(itBl) == itBr);
-                    assert(itBl == std::prev(itBr));
+                    ASSERT(std::next(itBl) == itBr);
+                    ASSERT(itBl == std::prev(itBr));
 
                     LOG(idx << ": "
                             << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl);
@@ -358,12 +358,12 @@ private:
 
                     // delete intersection point from hash map
                     [[maybe_unused]] auto chk = isMap.erase(std::make_pair(itBl, itBr));
-                    assert(chk);
+                    ASSERT(chk);
 
                     // delete intersection points from PQ
                     if (itBl != sl.begin()) {
                         auto itBll = std::prev(itBl);
-                        assert(itBll != sl.end());
+                        ASSERT(itBll != sl.end());
 
                         auto itIs = isMap.find(std::make_pair(itBll, itBl));
                         if (itIs != isMap.end()) {
@@ -398,8 +398,8 @@ private:
                     auto pMid = Kernel::Midpoint(pL, pR);
                     auto aBs = Kernel::Bisector(pL, pR, sl.slDirection);
 
-                    // assert(Kernel::approxEQ(pMid, Kernel::Midpoint(pR, pL)));
-                    // assert(Kernel::approxEQ(aBs.angle(), Kernel::Bisector(pR, pL, sl.slDirection).angle()));
+                    // ASSERT(Kernel::approxEQ(pMid, Kernel::Midpoint(pR, pL)));
+                    // ASSERT(Kernel::approxEQ(aBs.angle(), Kernel::Bisector(pR, pL, sl.slDirection).angle()));
 
                     tRay Bs(pMid, aBs, itBl->leftRegion, itBr->rightRegion);
 
@@ -424,7 +424,7 @@ private:
                     auto BsR = Bs.intersection(rR, bounds);
 
                     if (BsL.valid && BsR.valid && Kernel::approxEQ(BsL.pos, BsR.pos) && Kernel::approxEQ(BsL.pos, cPoint.pos)) {//TODO better way to test?
-                        assert(Kernel::approxEQ(BsR.pos, cPoint.pos));
+                        ASSERT(Kernel::approxEQ(BsR.pos, cPoint.pos));
                         // we don't check for sweepline projection to avoid floating point problems
                     } else {
                         if (BsL.valid && Kernel::approxLT(sl.prj(BsL.pos), cKey)) {// check whether IS is before SL
@@ -450,7 +450,7 @@ private:
                     // check whether rays have extension before deletion: delete delete event
                     if (itBl->isExtended()) {
                         auto pqBl = extMap.find(itBl);
-                        assert(pqBl != extMap.end());
+                        ASSERT(pqBl != extMap.end());
                         pq.remove(pqBl->second);
                         LOG(idx << ": "
                                 << " deleted Deletion event " << itBl->extOrigin() << " key: " << sl.prj(itBl->extOrigin()) << std::endl);
@@ -458,7 +458,7 @@ private:
                     }
                     if (itBr->isExtended()) {
                         auto pqBr = extMap.find(itBr);
-                        assert(pqBr != extMap.end());
+                        ASSERT(pqBr != extMap.end());
                         pq.remove(pqBr->second);
                         LOG(idx << ": "
                                 << " deleted Deletion event " << itBr->extOrigin() << " key: " << sl.prj(itBr->extOrigin()) << std::endl);
@@ -490,9 +490,9 @@ private:
                     } else {
                         if (BsL.valid && BsR.valid) {
                             // bisector intersects both rays - > must be in same point v
-                            assert(Kernel::approxEQ(BsL.pos, BsR.pos));
-                            assert(Kernel::approxEQ(BsL.pos, cPoint.pos));
-                            assert(Kernel::approxEQ(BsR.pos, cPoint.pos));
+                            ASSERT(Kernel::approxEQ(BsL.pos, BsR.pos));
+                            ASSERT(Kernel::approxEQ(BsL.pos, cPoint.pos));
+                            ASSERT(Kernel::approxEQ(BsR.pos, cPoint.pos));
                             LOG(idx << ": "
                                     << " case c) both intersect" << std::endl);
                             // boundary originates at v with bisector angle
@@ -524,7 +524,7 @@ private:
                             }
                         }
                     }
-                    assert(itBn != sl.end());// some boundary was inserted into SL
+                    ASSERT(itBn != sl.end());// some boundary was inserted into SL
 
                     LOG(idx << ": "
                             << "found boundary: " << *itBn << std::endl);
@@ -563,15 +563,15 @@ private:
                             << " type: deletion point" << std::endl);
 
                     auto itB = cPoint.leftRay;// we store the ray to be deleted as left ray
-                    assert(itB != sl.end());
-                    assert(itB->isExtended());
-                    //assert(itB->leftRegion == itB->ext->leftRegion);
-                    //assert(itB->rightRegion == itB->ext->rightRegion);
-                    //assert(!itB->ext->ext);
+                    ASSERT(itB != sl.end());
+                    ASSERT(itB->isExtended());
+                    //ASSERT(itB->leftRegion == itB->ext->leftRegion);
+                    //ASSERT(itB->rightRegion == itB->ext->rightRegion);
+                    //ASSERT(!itB->ext->ext);
 
                     // delete extension point from hash map
                     [[maybe_unused]] auto chk = extMap.erase(itB);
-                    assert(chk);
+                    ASSERT(chk);
 
 #ifdef WITH_CAIRO
                     basePainter.drawLine(itB->origin(), itB->extOrigin());
@@ -586,7 +586,7 @@ private:
 
                     LOG(idx << " new ray: " << *itB << std::endl);
 
-                    assert(!itB->isExtended());
+                    ASSERT(!itB->isExtended());
 
                     break;
                 }

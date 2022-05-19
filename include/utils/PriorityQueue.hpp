@@ -22,7 +22,7 @@ public:
     using handle = size_t;
 
     const T &top() const {
-        assert(!empty());
+        ASSERT(!empty());
         return _heap_element_vec[0];
     }
 
@@ -54,7 +54,7 @@ public:
     }
 
     void pop() {
-        assert(!empty());
+        ASSERT(!empty());
 
         auto temp_element = std::move(_heap_element_vec[_heap_element_vec.size() - 1]);
         auto temp_handle = _heap_hindex_vec[_heap_hindex_vec.size() - 1];
@@ -72,7 +72,7 @@ public:
     }
 
     void remove(handle h) {
-        assert(!empty());
+        ASSERT(!empty());
 
         auto pos = _handle_vec[h];
 

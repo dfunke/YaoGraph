@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "utils/ASSERT.hpp"
 #include "utils/PriorityQueue.hpp"
 
 #include "element_mock.hpp"

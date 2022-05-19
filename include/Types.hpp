@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <cassert>
 #include <limits>
 #include <type_traits>
 #include <unordered_set>
@@ -41,7 +40,7 @@ struct tBox {
     tIFloatVector high;
 
     bool contains(const tIFloatVector &p) const {
-        assert(p.size() == low.size());
+        ASSERT(p.size() == low.size());
         for (tDim d = 0; d < p.size(); ++d) {
             if (p[d] < low[d] || high[d] < p[d]) {
                 return false;
