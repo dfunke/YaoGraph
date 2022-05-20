@@ -13,10 +13,10 @@
 
 #include "Predicates.hpp"
 #include "Types.hpp"
-#include "utils/ListIndexTree.hpp"
-#include "utils/PriorityQueue.hpp"
+#include "Utils/ListIndexTree.hpp"
+#include "Utils/PriorityQueue.hpp"
 
-#include "utils/Logging.hpp"
+#include "Utils/Logging.hpp"
 
 #include "Kernels/InexactKernel.hpp"
 #ifdef WITH_CGAL
