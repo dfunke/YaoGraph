@@ -5,7 +5,7 @@
 
 #include "Generators.hpp"
 #include "Types.hpp"
-#include "utils/Timer.hpp"
+#include "Utils/Timer.hpp"
 
 #include "Algorithms/GridYao.hpp"
 #include "Algorithms/NaiveYao.hpp"
