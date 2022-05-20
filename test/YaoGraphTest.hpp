@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "utils/ASSERT.hpp"
+#include "Utils/ASSERT.hpp"
 
 //#define LOG_DEBUG
 #undef LOG_DEBUG
-#include "utils/Logging.hpp"
+#include "Utils/Logging.hpp"
 
 #include "Algorithms/GridYao.hpp"
 #include "Algorithms/NaiveYao.hpp"
@@ -15,32 +15,32 @@
 #include "Kernels/InexactKernel.hpp"
 
 constexpr tDim K = 6;
-constexpr tBox BOUNDS{{0, 0},
+constexpr tBox YaoTestBOUNDS{{0, 0},
                       {1, 1}};
-constexpr tIndex nPoints = 1000;
-constexpr tIndex GenSeed = SEED;
+constexpr tIndex YaoTestN = 1000;
+constexpr tIndex YaoTestGenSeed = SEED;
 
 using Dist = Uniform;
 
 template<typename IsAlgorithm, typename ExpAlgorithm, typename Distribution>
 bool performTest() {
 
-    Distribution gen(GenSeed);
-    auto points = gen.generate(nPoints, BOUNDS);
+    Distribution gen(YaoTestGenSeed);
+    auto points = gen.generate(YaoTestN, YaoTestBOUNDS);
 
     IsAlgorithm isAlg;
-    auto is = isAlg(points, BOUNDS);
+    auto is = isAlg(points, YaoTestBOUNDS);
 
 #ifndef VTUNE
 
     ExpAlgorithm expAlg;
-    auto exp = expAlg(points, BOUNDS);
+    auto exp = expAlg(points, YaoTestBOUNDS);
 
     auto [valid, invalidVertices] = checkGraph(is, exp);
 
 #ifdef WITH_CAIRO
     if (!valid) {
-        Painter painter(BOUNDS, 1000);
+        Painter painter(YaoTestBOUNDS, 1000);
         painter.draw(points, false);
         painter.draw(exp, points);
         for (auto idx : invalidVertices) {

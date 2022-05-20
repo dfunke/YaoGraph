@@ -1,4 +1,6 @@
-add_executable(GTest_run ListIndexTreeTest.cpp PriorityQueueTest.cpp GeneratorTest.cpp)
+enable_testing()
+
+add_executable(GTest_run test.cpp)
 target_link_libraries(GTest_run GTest::gtest_main)
 
 if (WITH_CAIRO)

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "utils/ASSERT.hpp"
-#include "utils/PriorityQueue.hpp"
+#include "Utils/ASSERT.hpp"
+#include "Utils/PriorityQueue.hpp"
 
 #include "element_mock.hpp"
 
@@ -34,7 +34,7 @@ constexpr D1<Q> D_Helper();
 template<template<class, int, class> class Q>
 constexpr D2<Q> D_Helper();
 
-using D = decltype(D_Helper<PriQueueD>());
+using PQs = decltype(D_Helper<PriQueueD>());
 
 template<class P>
 class PriorityQueueTest : public ::testing::Test {
@@ -46,7 +46,7 @@ protected:
 };
 
 
-using MyTypes = ::testing::Types<D>;
+using MyTypes = ::testing::Types<PQs>;
 TYPED_TEST_CASE(PriorityQueueTest, MyTypes);
 
 TYPED_TEST(PriorityQueueTest, ReportsSize) {
@@ -262,7 +262,7 @@ TEST(PriorityQueueTest, CanIncreaseKey) {
     std::vector<int> values(300);
     std::iota(values.begin(), values.end(), 0);
 
-    auto q = D::make<int, 8>(300);
+    auto q = PQs::make<int, 8>(300);
     std::vector<decltype(q)::handle> handles;
     for (auto v : values) handles.push_back(q.push(v));
     ASSERT_EQ(q.size(), values.size());
@@ -291,7 +291,7 @@ TEST(PriorityQueueTest, CanRemove) {
     std::vector<int> values(300);
     std::iota(values.begin(), values.end(), 0);
 
-    auto q = D::make<int, 8>(300);
+    auto q = PQs::make<int, 8>(300);
     std::vector<decltype(q)::handle> handles;
     for (auto v : values) handles.push_back(q.push(v));
     ASSERT_EQ(q.size(), values.size());
@@ -321,7 +321,7 @@ TEST(PriorityQueueTest, CanRemove) {
 TEST(PriorityQueueTest, CanMixOperations) {
     const std::size_t n = 300;// should be even
 
-    auto q = D::make<std::size_t, 8>(n / 2);
+    auto q = PQs::make<std::size_t, 8>(n / 2);
     std::vector<decltype(q)::handle> handles;
     for (std::size_t i = 0; i < n; ++i)
         handles.push_back(q.push(i));

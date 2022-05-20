@@ -2,8 +2,8 @@
 
 #include <list>
 
-#include "utils/ASSERT.hpp"
-#include "utils/ListIndexTree.hpp"
+#include "Utils/ASSERT.hpp"
+#include "Utils/ListIndexTree.hpp"
 
 TEST(ListIndexTreeTest, Adding) {
 
