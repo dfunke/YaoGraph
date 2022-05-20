@@ -34,7 +34,7 @@ const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 5
 
 template<typename Algorithm, typename Distribution>
 void benchmarkImpl() {
-    std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ofstream::out | std::ofstream::app);
+    std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
 
     // header
     file << "# dist n seed rep t" << std::endl;
