@@ -6,8 +6,8 @@
 
 #include <CGAL/Construct_yao_graph_2.h>
 
+#include "Kernels/CGALKernel.hpp"
 #include "Types.hpp"
-#include "utils/CGALKernel.hpp"
 
 template<tDim Cones, typename Kernel>
 class CGAL_Yao2D {

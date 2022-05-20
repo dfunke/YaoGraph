@@ -6,13 +6,13 @@
 #undef LOG_DEBUG
 #include "utils/Logging.hpp"
 
+#include "Algorithms/GridYao.hpp"
+#include "Algorithms/NaiveYao.hpp"
+#include "Algorithms/SweepLine.hpp"
 #include "Generators.hpp"
-#include "GridYao.hpp"
-#include "NaiveYao.hpp"
-#include "SweepLine.hpp"
 
-#include "utils/CGALKernel.hpp"
-#include "utils/InexactKernel.hpp"
+#include "Kernels/CGALKernel.hpp"
+#include "Kernels/InexactKernel.hpp"
 
 constexpr tDim K = 6;
 constexpr tBox BOUNDS{{0, 0},

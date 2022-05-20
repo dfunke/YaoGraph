@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include "Kernels/InexactKernel.hpp"
 #include "Predicates.hpp"
 #include "Types.hpp"
-#include "utils/InexactKernel.hpp"
 
 template<tDim C, typename Kernel, tIndex CellOcc>
 class GridYao {

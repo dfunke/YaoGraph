@@ -18,9 +18,9 @@
 
 #include "utils/Logging.hpp"
 
-#include "utils/InexactKernel.hpp"
+#include "Kernels/InexactKernel.hpp"
 #ifdef WITH_CGAL
-#include "utils/CGALKernel.hpp"
+#include "Kernels/CGALKernel.hpp"
 #endif
 
 #ifdef WITH_CAIRO

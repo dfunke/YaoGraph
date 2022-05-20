@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include "Kernels/CGALKernel.hpp"
+#include "Kernels/InexactKernel.hpp"
 #include "Predicates.hpp"
 #include "Types.hpp"
-#include "utils/CGALKernel.hpp"
-#include "utils/InexactKernel.hpp"
 
 template<tDim C, typename Kernel>
 class NaiveYao {

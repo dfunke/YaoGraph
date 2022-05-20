@@ -4,22 +4,20 @@
 #include "utils/ASSERT.hpp"
 
 #include "Generators.hpp"
-#include "Timer.hpp"
 #include "Types.hpp"
+#include "utils/Timer.hpp"
 
-#include "GridYao.hpp"
-#include "NaiveYao.hpp"
-#include "SweepLine.hpp"
+#include "Algorithms/GridYao.hpp"
+#include "Algorithms/NaiveYao.hpp"
+#include "Algorithms/SweepLine.hpp"
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
 #endif
 
 #ifdef WITH_CGAL
-#include "CGAL/CGAL_Delaunay.hpp"
-#include "CGAL/CGAL_Theta.hpp"
-#include "CGAL/CGAL_Yao.hpp"
-#include "utils/CGALKernel.hpp"
+#include "Algorithms/CGAL_Yao.hpp"
+#include "Kernels/CGALKernel.hpp"
 #endif
 
 // constants
