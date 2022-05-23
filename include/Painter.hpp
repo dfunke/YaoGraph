@@ -123,6 +123,13 @@ public:
         }
     }
 
+#ifdef WITH_CGAL
+    template<typename K>
+    void draw(const CGAL::Point_2<K> &point, const tIndex &idx, bool label = true) {
+        draw({CGAL::to_double(point[0]), CGAL::to_double(point[1])}, idx, label);
+    }
+#endif
+
     void draw(const tPoints &points, bool label = true) {
         for (tIndex i = 0; i < points.size(); ++i) {
             draw(points[i], i, label);
