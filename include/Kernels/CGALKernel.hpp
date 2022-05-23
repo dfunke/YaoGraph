@@ -114,8 +114,8 @@ public:
         std::string str() const {
             std::stringstream os;
 
-            os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF_IDX") << "/"
-               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF_IDX");
+            os << (leftRegion != INF_IDX ? std::to_string(leftRegion) : "INF_IDX") << "/"
+               << (rightRegion != INF_IDX ? std::to_string(rightRegion) : "INF_IDX");
 
             // use fabs(atan2P) to eliminate -0 output
 
@@ -186,10 +186,7 @@ public:
             ASSERT(!ext);
         }
 
-        struct tIntersectionRetVal {
-            bool valid;
-            Point pos;
-        };
+        using tIntersectionRetVal = std::optional<std::variant<Point, Ray>>;
 
         tIntersectionRetVal intersection(const Ray &b, const Box &bounds) const {
             return intersection(*this, b, bounds);
@@ -200,7 +197,7 @@ public:
 
             if (a.origin() == b.origin()) {
                 // we ignore rays originating at he same source
-                return {false, {}};
+                return std::nullopt;
             } else {
                 if (!a.ext && !b.ext) {
                     return isRR(a, b, bounds);
@@ -228,43 +225,62 @@ public:
 #endif
 
     private:
-        static tIntersectionRetVal isRR(const Ray &a, const Ray &b, const Box &bounds) {
+        template<typename A, typename B>
+        static tIntersectionRetVal CGALintersection(const A &a, const B &b, const Box &bounds) {
 
-            auto result = CGAL::intersection(a.iRay, b.iRay);
+            auto result = CGAL::intersection(a, b);
 
             if (result) {
                 const Point *p = boost::get<Point>(&*result);
                 if (p) {
+                    // intersection is a single point, check whether its within our bounds
+                    //TODO bound check required at all?
                     if (CGAL::do_intersect(*p, bounds)) {
-                        return {true, {p->x(), p->y()}};
+                        return *p;
                     } else {
-                        return {false, {}};
+                        return std::nullopt;
                     }
                 } else {
-                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
-                    ASSERT(false);
-                    return {false, {}};
+                    if constexpr (std::is_same_v<A, CGAL::Ray_2<K>> && std::is_same_v<B, CGAL::Ray_2<K>>) {
+                        const CGAL::Ray_2<K> *r = boost::get<CGAL::Ray_2<K>>(&*result);
+                        if (r) {
+                            // one roy lies on other ray
+                            // direction must be the same
+                            ASSERT(a.direction() == b.direction());
+                            ASSERT(r->direction() == a.direction());
+                            return Ray(r->source(), r->direction(), INF_IDX, INF_IDX);
+                        }
+                    }
+
+                    const CGAL::Segment_2<K> *s = boost::get<CGAL::Segment_2<K>>(&*result);
+                    if (s) {
+                        // a) one ray lies on other ray with opposite direction, segment between origin's
+                        // both inputs are Rays
+                        // => this should not happen
+                        // b) extension segment lies on ray
+                        // one input must be Segment
+                        ASSERT((std::is_same_v<A, CGAL::Segment_2<K>> || std::is_same_v<B, CGAL::Segment_2<K>>));
+                        return Ray(s->source(), s->direction(), INF_IDX, INF_IDX);
+                    }
+                    return std::nullopt;
                 }
             } else {
-                return {false, {}};
+                return std::nullopt;
             }
+        }
+
+        static tIntersectionRetVal isRR(const Ray &a, const Ray &b, const Box &bounds) {
+            return CGALintersection(a.iRay, b.iRay, bounds);
         }
 
         static tIntersectionRetVal isUR(const Ray &ua, const Ray &b, const Box &bounds) {
             ASSERT(ua.ext);
 
             // check for intersection of pre-segment of ua and b
-            auto result = CGAL::intersection(*ua.ext, b.iRay);
+            auto result = CGALintersection(*ua.ext, b.iRay, bounds);
 
             if (result) {
-                if (const Point *p = boost::get<Point>(&*result)) {
-                    ASSERT(CGAL::do_intersect(*p, bounds));
-                    return {true, {p->x(), p->y()}};
-                } else {
-                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
-                    ASSERT(false);
-                    return {false, {}};
-                }
+                return result;
             } else {
                 // check intersecton of main ray of ua and b
                 return isRR(ua, b, bounds);
@@ -275,17 +291,10 @@ public:
             ASSERT(ub.ext);
 
             // check for intersection of pre-segment of ua and b
-            auto result = CGAL::intersection(a.iRay, *ub.ext);
+            auto result = CGALintersection(a.iRay, *ub.ext, bounds);
 
             if (result) {
-                if (const Point *p = boost::get<Point>(&*result)) {
-                    ASSERT(CGAL::do_intersect(*p, bounds));
-                    return {true, {p->x(), p->y()}};
-                } else {
-                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
-                    ASSERT(false);
-                    return {false, {}};
-                }
+                return result;
             } else {
                 // check intersecton of a and main ray of ub
                 return isRR(a, ub, bounds);
@@ -296,43 +305,21 @@ public:
             ASSERT(ua.ext && ub.ext);
 
             // check for intersection of pre-segment of ua and ub
-            auto result = CGAL::intersection(*ua.ext, *ub.ext);
+            auto result = CGALintersection(*ua.ext, *ub.ext, bounds);
             if (result) {
-                if (const Point *p = boost::get<Point>(&*result)) {
-                    ASSERT(CGAL::do_intersect(*p, bounds));
-                    return {true, {p->x(), p->y()}};
-                } else {
-                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
-                    ASSERT(false);
-                    return {false, {}};
-                }
+                return result;
             }
 
-
             // check for intersection of main ray of ua and pre-segment of ub
-            result = CGAL::intersection(ua.iRay, *ub.ext);
+            result = CGALintersection(ua.iRay, *ub.ext, bounds);
             if (result) {
-                if (const Point *p = boost::get<Point>(&*result)) {
-                    ASSERT(CGAL::do_intersect(*p, bounds));
-                    return {true, {p->x(), p->y()}};
-                } else {
-                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
-                    ASSERT(false);
-                    return {false, {}};
-                }
+                return result;
             }
 
             // check for intersection of pre-segment of ua and main ray of ub
-            result = CGAL::intersection(*ua.ext, ub.iRay);
+            result = CGALintersection(*ua.ext, ub.iRay, bounds);
             if (result) {
-                if (const Point *p = boost::get<Point>(&*result)) {
-                    ASSERT(CGAL::do_intersect(*p, bounds));
-                    return {true, {p->x(), p->y()}};
-                } else {
-                    // could also be a Segment_2 or a Ray_2 TODO: handle correctly
-                    ASSERT(false);
-                    return {false, {}};
-                }
+                return result;
             }
 
             // check for intersection of main rays of ua and ub

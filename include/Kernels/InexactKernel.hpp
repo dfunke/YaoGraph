@@ -118,8 +118,8 @@ public:
 
             // use fabs(angle()) to eliminate -0 output
 
-            os << (leftRegion != tIndex(-1) ? std::to_string(leftRegion) : "INF_IDX") << "/"
-               << (rightRegion != tIndex(-1) ? std::to_string(rightRegion) : "INF_IDX")
+            os << (leftRegion != INF_IDX ? std::to_string(leftRegion) : "INF_IDX") << "/"
+               << (rightRegion != INF_IDX ? std::to_string(rightRegion) : "INF_IDX")
                << " p: " << p << " a: " << std::fabs(dir.angle());
             if (ext) {
                 os << " EXT: "
@@ -182,10 +182,7 @@ public:
             return (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X])) > 0;
         }
 
-        struct tIntersectionRetVal {
-            bool valid;
-            Point pos;
-        };
+        using tIntersectionRetVal = std::optional<std::variant<Point, Ray>>;
 
         tIntersectionRetVal intersection(const Ray &b, const tBox &bounds) const {
             return intersection(*this, b, bounds);
@@ -196,7 +193,7 @@ public:
 
             if (a.origin() == b.origin()) {
                 // we ignore rays originating at he same source
-                return {false, {}};
+                return std::nullopt;
             } else {
                 if (!a.ext && !b.ext) {
                     return isRR(a, b, bounds);
@@ -226,15 +223,17 @@ public:
     private:
         static tIntersectionRetVal isRR(const Ray &a, const Ray &b, const tBox &bounds) {
             if (std::fmod(std::fmod(a.dir.angle() - b.dir.angle(), M_PI) + M_PI, M_PI) == 0) {
-                return {false, {}};
+                // parallel lines
+                //TODO compute ray or segment
+                return std::nullopt;
             }
 
             if (std::fmod(std::fmod(a.dir.angle(), M_PI) + M_PI, M_PI) == M_PI_2) {
                 // vertical line this's x
-                return {true, {a.p[X], b.dir.tan() * (a.p[X] - b.p[X]) + b.p[Y]}};
+                return Point{a.p[X], b.dir.tan() * (a.p[X] - b.p[X]) + b.p[Y]};
             } else if (std::fmod(std::fmod(b.dir.angle(), M_PI) + M_PI, M_PI) == M_PI_2) {
                 // vertical line at b's x
-                return {true, {b.p[X], a.dir.tan() * (b.p[X] - a.p[X]) + a.p[Y]}};
+                return Point{b.p[X], a.dir.tan() * (b.p[X] - a.p[X]) + a.p[Y]};
             }
 
             Float m0 = a.dir.tan();// Line 0: y = m0 (x - x0) + y0
@@ -244,10 +243,10 @@ public:
             Float y = m0 * (x - a.p[X]) + a.p[Y];
 
             if (!bounds.contains({x, y})) {
-                return {false, {}};
+                return std::nullopt;
             }
 
-            return {true, {x, y}};
+            return Point{x, y};
         }
 
         static tIntersectionRetVal isUR(const Ray &ua, const Ray &b, const tBox &bounds) {
@@ -256,18 +255,25 @@ public:
             // check for intersection of main ray of ua and b
             auto is = isRR(ua, b, bounds);
             // check whether IS is before starting point of extension ray of ur
-            if (is.valid && distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p)) {
-                return is;
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p && distance2(ua.p, *p) < distance2(ua.p, ua.ext->p)) {
+                    return is;
+                }
+                //TODO handle ray return
             }
 
             // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
             is = isRR(*ua.ext, b, bounds);
             // check whether IS is after starting point of extension ray of ur
-            if (is.valid && distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p)) {
-                return is;
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p && distance2(ua.p, *p) >= distance2(ua.p, ua.ext->p)) {
+                    return is;
+                }
             }
 
-            return {false, {}};
+            return std::nullopt;
         }
 
         static tIntersectionRetVal isRU(const Ray &a, const Ray &ub, const tBox &bounds) {
@@ -276,18 +282,24 @@ public:
             // check for intersection of a and main ray of ub
             auto is = isRR(a, ub, bounds);
             // check whether IS is before starting point of extension ray of ur
-            if (is.valid && distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
-                return is;
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p && distance2(ub.p, *p) < distance2(ub.p, ub.ext->p)) {
+                    return is;
+                }
             }
 
             // upper ray of ur does not intersect r OR intersection is below starting point of extension ray
             is = isRR(a, *ub.ext, bounds);
             // check whether IS is after starting point of extension ray of ur
-            if (is.valid && distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
-                return is;
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p && distance2(ub.p, *p) >= distance2(ub.p, ub.ext->p)) {
+                    return is;
+                }
             }
 
-            return {false, {}};
+            return std::nullopt;
         }
 
         static tIntersectionRetVal isUU(const Ray &ua, const Ray &ub, const tBox &bounds) {
@@ -297,47 +309,56 @@ public:
             auto is = isRR(ua, ub, bounds);
             // check whether IS is before starting point of lowerRay of ua
             // check whether IS is before starting point of lowerRay of ub
-            if (is.valid &&
-                distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p) &&
-                distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p &&
+                    distance2(ua.p, *p) < distance2(ua.p, ua.ext->p) &&
+                    distance2(ub.p, *p) < distance2(ub.p, ub.ext->p)) {
 
-                return is;
+                    return is;
+                }
             }
-
 
             // check for intersection of main ray of ua and lower ray of ub
             is = isRR(ua, *ub.ext, bounds);
             // check whether IS is before starting point of lowerRay of ua
             // check whether IS is after starting point of lowerRay of ub
-            if (is.valid &&
-                distance2(ua.p, is.pos) < distance2(ua.p, ua.ext->p) &&
-                distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
-                return is;
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p &&
+                    distance2(ua.p, *p) < distance2(ua.p, ua.ext->p) &&
+                    distance2(ub.p, *p) >= distance2(ub.p, ub.ext->p)) {
+                    return is;
+                }
             }
-
 
             // check for intersection of lower ray of ua and main ray of ub
             is = isRR(*ua.ext, ub, bounds);
             // check whether IS is after starting point of ua's lowerRay
             // check whether IS is before starting point of ub's lowerRay
-            if (is.valid &&
-                distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p) &&
-                distance2(ub.p, is.pos) < distance2(ub.p, ub.ext->p)) {
-                return is;
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p &&
+                    distance2(ua.p, *p) >= distance2(ua.p, ua.ext->p) &&
+                    distance2(ub.p, *p) < distance2(ub.p, ub.ext->p)) {
+                    return is;
+                }
             }
-
 
             // check for intersection of lower rays of ua and ub
             is = isRR(*ua.ext, *ub.ext, bounds);
             // check whether IS is after starting point of ua's lowerRay
             // check whether IS is after starting point of ub's lowerRay
-            if (is.valid &&
-                distance2(ua.p, is.pos) >= distance2(ua.p, ua.ext->p) &&
-                distance2(ub.p, is.pos) >= distance2(ub.p, ub.ext->p)) {
-                return is;
+            if (is) {
+                const Point *p = std::get_if<Point>(&*is);
+                if (p &&
+                    distance2(ua.p, *p) >= distance2(ua.p, ua.ext->p) &&
+                    distance2(ub.p, *p) >= distance2(ub.p, ub.ext->p)) {
+                    return is;
+                }
             }
 
-            return {false, {}};
+            return std::nullopt;
         }
     };
 

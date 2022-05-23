@@ -94,7 +94,7 @@ std::ostream &operator<<(std::ostream &os, const tYaoVertex<K, Float> &v) {
     char sep = 0;
 
     for (tDim d = 0; d < K; ++d) {
-        os << sep << (v.neighbor[d] != tIndex(-1) ? std::to_string(v.neighbor[d]) : "I");
+        os << sep << (v.neighbor[d] != INF_IDX ? std::to_string(v.neighbor[d]) : "I");
         sep = ' ';
     }
 
