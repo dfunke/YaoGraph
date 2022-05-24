@@ -27,7 +27,7 @@ bool checkWithinBounds(const tPoints &points, const tBox &bounds) {
 
 template<typename Distribution, bool EQ = true>
 void performTest() {
-    Road gen(GeneratorTestGenSeed);
+    Distribution gen(GeneratorTestGenSeed);
     auto points = gen.generate(GeneratorTestN, GeneratorTestBOUNDS);
 
     if constexpr(EQ)
