@@ -25,7 +25,7 @@
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
-//#define PAINT_STEPS
+#define PAINT_STEPS
 #endif
 
 template<tDim C, typename Kernel>
@@ -81,10 +81,16 @@ class SweepLine {
             };
 
             auto it = slRays.find(p, cmp);
+            auto itLin = linearFind(p);
+
+            if (it != itLin) {
+                std::cout << *it << std::endl;
+                std::cout << *itLin << std::endl;
+            }
 
             ASSERT(it == end() || !it->leftOf(p));
             ASSERT(std::prev(it) == end() || std::prev(it)->leftOf(p));
-            ASSERT(it == linearFind(p));
+            RASSERT(it == linearFind(p));
 
             return it;
         }
@@ -260,16 +266,43 @@ private:
             stepPainter.save(stepFilename.str());
 #endif
 
-            auto handleRayIntersection = [&isMap, &pq, &bounds, &sl, &idx, &cKey](const auto &leftRay, const auto &rightRay) {
+            auto handleRayIntersection = [&isMap, &pq, &bounds, &sl, &idx, &cKey](auto &leftRay, auto &rightRay, bool left) {
                 auto is = leftRay->intersection(*rightRay, bounds);
                 if (is) {
                     const tPoint *p = std::get_if<tPoint>(&*is);
                     if (p && sl.prj(*p) > cKey) {
                         isMap[std::make_pair(leftRay, rightRay)] = pq.push({sl.prj(*p), Event({*p, leftRay, rightRay})});
                         LOG(idx << ": "
-                                << " added intersection point at " << *p << " key: " << sl.prj(*p) << std::endl);
+                                << " added " << (left ? "left" : "right")
+                                << " intersection point at " << *p << " key: " << sl.prj(*p) << std::endl);
                     }
                     //TODO handle ray
+                    tRay *r = std::get_if<tRay>(&*is);
+                    if (r) {
+                        LOG(idx << ": "
+                                << "left: " << *leftRay << std::endl);
+                        LOG(idx << ": "
+                                << "right: " << *rightRay << std::endl);
+                        LOG(idx << ": "
+                                << "IS Ray: " << *r << std::endl);
+
+                        ASSERT(leftRay->rightRegion == rightRay->leftRegion);
+                        ASSERT(left);
+
+                        r->leftRegion = leftRay->leftRegion;
+                        r->rightRegion = rightRay->rightRegion;
+
+                        if (left) {
+                            sl.erase(rightRay);
+                            *leftRay = *r;
+                        } else {
+                            sl.erase(leftRay);
+                            *rightRay = *r;
+                        }
+
+                        LOG(idx << ": "
+                                << "new Ray: " << (left ? *leftRay : *rightRay) << std::endl);
+                    }
                 }
             };
 
@@ -326,11 +359,11 @@ private:
 
                     // insert intersection points into PQ
                     if (itBl != sl.end()) {
-                        handleRayIntersection(itBl, itBln);
+                        handleRayIntersection(itBl, itBln, true);
                     }
 
                     if (itBr != sl.end()) {
-                        handleRayIntersection(itBrn, itBr);
+                        handleRayIntersection(itBrn, itBr, false);
                     }
 
                     break;
@@ -546,12 +579,12 @@ private:
                     // insert intersection points into PQ
                     if (itBn != sl.begin()) {
                         auto itL = std::prev(itBn);
-                        handleRayIntersection(itL, itBn);
+                        handleRayIntersection(itL, itBn, true);
                     }
 
                     auto itR = std::next(itBn);
                     if (itR != sl.end()) {
-                        handleRayIntersection(itBn, itR);
+                        handleRayIntersection(itBn, itR, false);
                     }
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)

@@ -3,7 +3,7 @@
 #include "Utils/ASSERT.hpp"
 
 //#define LOG_DEBUG
-#undef LOG_DEBUG
+//#undef LOG_DEBUG
 #include "Utils/Logging.hpp"
 
 #include "Algorithms/GridYao.hpp"
@@ -20,7 +20,7 @@ constexpr tBox YaoTestBOUNDS{{0, 0},
 constexpr tIndex YaoTestN = 1000;
 constexpr tIndex YaoTestGenSeed = SEED;
 
-using Dist = Uniform;
+using Dist = Grid;
 
 template<typename IsAlgorithm, typename ExpAlgorithm, typename Distribution>
 bool performTest() {
