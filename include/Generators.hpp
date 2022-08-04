@@ -126,8 +126,8 @@ public:
         for (tIndex i = 0; i < pointsPerDim; ++i) {
             for (tIndex j = 0; j < pointsPerDim; ++j) {
                 tIFloatVector p;
-                p[X] = bounds.low[X] + pointSpacing[X] * i;
-                p[Y] = bounds.low[Y] + pointSpacing[Y] * j;
+                p[X] = bounds.low[X] + (pointSpacing[X] / 2) + pointSpacing[X] * i;
+                p[Y] = bounds.low[Y] + (pointSpacing[Y] / 2) + pointSpacing[Y] * j;
 
                 ASSERT(bounds.contains(p));
                 points.emplace_back(p);
