@@ -287,7 +287,6 @@ private:
                                 << "IS Ray: " << *r << std::endl);
 
                         ASSERT(leftRay->rightRegion == rightRay->leftRegion);
-                        ASSERT(left);
 
                         r->leftRegion = leftRay->leftRegion;
                         r->rightRegion = rightRay->rightRegion;
