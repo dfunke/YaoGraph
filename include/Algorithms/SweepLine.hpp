@@ -83,6 +83,7 @@ class SweepLine {
             auto it = slRays.find(p, cmp);
             auto itLin = linearFind(p);
 
+            //TODO debug code
             if (it != itLin) {
                 std::cout << *it << std::endl;
                 std::cout << *itLin << std::endl;
@@ -266,7 +267,7 @@ private:
             stepPainter.save(stepFilename.str());
 #endif
 
-            auto handleRayIntersection = [&isMap, &pq, &bounds, &sl, &idx, &cKey](auto &leftRay, auto &rightRay, bool left) {
+            auto handleRayIntersection = [&isMap, &extMap, &pq, &bounds, &sl, &idx, &cKey](auto &leftRay, auto &rightRay, bool left) {
                 auto is = leftRay->intersection(*rightRay, bounds);
                 if (is) {
                     const tPoint *p = std::get_if<tPoint>(&*is);
@@ -280,11 +281,11 @@ private:
                     tRay *r = std::get_if<tRay>(&*is);
                     if (r) {
                         LOG(idx << ": "
-                                << "left: " << *leftRay << std::endl);
+                                << "RI left: " << *leftRay << std::endl);
                         LOG(idx << ": "
-                                << "right: " << *rightRay << std::endl);
+                                << "RI right: " << *rightRay << std::endl);
                         LOG(idx << ": "
-                                << "IS Ray: " << *r << std::endl);
+                                << "RI IS Ray: " << *r << std::endl);
 
                         ASSERT(leftRay->rightRegion == rightRay->leftRegion);
 
@@ -292,9 +293,27 @@ private:
                         r->rightRegion = rightRay->rightRegion;
 
                         if (left) {
+                            if (rightRay->isExtended()) {
+                                auto pqR = extMap.find(rightRay);
+                                ASSERT(pqR != extMap.end());
+                                pq.remove(pqR->second);
+                                LOG(idx << ": "
+                                        << " RI deleted Deletion event " << rightRay->extOrigin() << " key: " << sl.prj(rightRay->extOrigin()) << std::endl);
+                                extMap.erase(pqR);
+                            }
+
                             sl.erase(rightRay);
                             *leftRay = *r;
                         } else {
+                            if (leftRay->isExtended()) {
+                                auto pqL = extMap.find(leftRay);
+                                ASSERT(pqL != extMap.end());
+                                pq.remove(pqL->second);
+                                LOG(idx << ": "
+                                        << " RI deleted Deletion event " << leftRay->extOrigin() << " key: " << sl.prj(leftRay->extOrigin()) << std::endl);
+                                extMap.erase(pqL);
+                            }
+
                             sl.erase(leftRay);
                             *rightRay = *r;
                         }
@@ -458,12 +477,14 @@ private:
                     auto BsL = Bs.intersection(rL, bounds);
                     const tPoint *pBsL = nullptr;
                     if (BsL) {
+                        ASSERT(std::holds_alternative<tPoint>(*BsL));
                         pBsL = std::get_if<tPoint>(&*BsL);
                     }
 
                     auto BsR = Bs.intersection(rR, bounds);
                     const tPoint *pBsR = nullptr;
                     if (BsR) {
+                        ASSERT(std::holds_alternative<tPoint>(*BsR));
                         pBsR = std::get_if<tPoint>(&*BsR);
                     }
 
