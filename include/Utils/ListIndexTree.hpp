@@ -489,7 +489,12 @@ private:
         }
     }
 
-    void updateNodeInfo(InternalNode *node) {
+    bool updateNodeInfo(InternalNode *node) {
+
+        auto oldLeftRep = node->leftRep;
+        auto oldMaxRep = node->maxRep;
+        auto oldHeight = node->height;
+
         if (node->left) {
             node->leftRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
             node->maxRep = node->leftRep;
@@ -506,47 +511,58 @@ private:
             node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
             node->height = std::max(node->height, height_type(1 + (node->right->isNode() ? node->right->asNode()->height : 0)));
         }
+
+        return not(oldHeight == node->height && oldLeftRep == node->leftRep && oldMaxRep == node->maxRep);
     }
 
-    void updateAndRebalance(InternalNode *node) {
+    void updateAndRebalance(InternalNode *node, bool rebalanceRequired = true) {
 
-        updateNodeInfo(node);
+        bool nodeInfoChanged = updateNodeInfo(node);
 
-        int balance = node->getBalance();
-        int leftBalance = (node->left && node->left->isNode() ? node->left->asNode()->getBalance() : 0);
-        int rightBalance = (node->right && node->right->isNode() ? node->right->asNode()->getBalance() : 0);
+        if (rebalanceRequired) {
+            int balance = node->getBalance();
 
-        // If this node becomes unbalanced,
-        // then there are 4 cases
+            // If this node becomes unbalanced,
+            // then there are 4 cases
+            // if this node is unbalanced and we rebalance it, then we do _not_ need to traverese further upward
 
-        // Left Left Case
-        if (balance > 1 && leftBalance >= 0) {
-            node = rightRotate(node);
+            if (balance > 1) {
+                int leftBalance = (node->left && node->left->isNode() ? node->left->asNode()->getBalance() : 0);
+
+                // Left Left Case
+                if (balance > 1 && leftBalance >= 0) {
+                    node = rightRotate(node);
+                }
+
+                // Left Right Case
+                if (balance > 1 && leftBalance < 0) {
+                    ASSERT(node->left && node->left->isNode());
+                    leftRotate(node->left->asNode());
+                    node = rightRotate(node);
+                }
+            } else if (balance < -1) {
+                int rightBalance = (node->right && node->right->isNode() ? node->right->asNode()->getBalance() : 0);
+
+                // Right Right Case
+                if (balance < -1 && rightBalance <= 0) {
+                    node = leftRotate(node);
+                }
+
+                // Right Left Case
+                if (balance < -1 && rightBalance > 0) {
+                    ASSERT(node->right && node->right->isNode());
+                    rightRotate(node->right->asNode());
+                    node = leftRotate(node);
+                }
+            }
+
+            // if we rebalanced the node, we do not need to rebalance further up the tree
+            rebalanceRequired = balance <= std::abs(1);
         }
 
-        // Left Right Case
-        if (balance > 1 && leftBalance < 0) {
-            ASSERT(node->left && node->left->isNode());
-            leftRotate(node->left->asNode());
-            node = rightRotate(node);
-        }
-
-        // Right Right Case
-        if (balance < -1 && rightBalance <= 0) {
-            node = leftRotate(node);
-        }
-
-        // Right Left Case
-        if (balance < -1 && rightBalance > 0) {
-            ASSERT(node->right && node->right->isNode());
-            rightRotate(node->right->asNode());
-            node = leftRotate(node);
-        }
-
-
-        // recursively traverse up
-        if (node->parent != nullptr) {
-            updateAndRebalance(node->parent);
+        if (node->parent != nullptr && (nodeInfoChanged || rebalanceRequired)) {
+            // recursively traverse up to check whether node above became unbalanced
+            updateAndRebalance(node->parent, rebalanceRequired);
         }
     }
 
