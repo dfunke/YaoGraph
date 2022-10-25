@@ -25,7 +25,7 @@
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
-//#define PAINT_STEPS
+#define PAINT_STEPS
 #endif
 
 template<tDim C, typename Kernel>
@@ -89,6 +89,15 @@ class SweepLine {
             };
 
             auto it = slRays.find(p, cmp);
+
+#ifndef NDEBUG
+            //TODO debug code
+            auto itLin = linearFind(p);
+            if (it != itLin) {
+                std::cout << (it != end() ? to_string(*it) : "NULL") << std::endl;
+                std::cout << (itLin != end() ? to_string(*itLin) : "NULL") << std::endl;
+            }
+#endif
 
             ASSERT(it == end() || it->orientedSide(p) != tOrientedSide::LEFT);
             ASSERT(std::prev(it) == end() || std::prev(it)->orientedSide(p) != tOrientedSide::RIGHT);
@@ -350,7 +359,14 @@ private:
                     LOG(idx << ": "
                             << " type: input point" << std::endl);
 
-                    auto itBr = sl.find(cPoint.pos);                              // right ray
+                    auto itBr = sl.find(cPoint.pos);// right ray
+
+                    /*if (itBr != sl.end() && itBr->orientedSide(cPoint.pos) == tOrientedSide::LINE) {// check whether point is ON right boundary
+                        if (itBr->direction() == lRay) {
+                            itBr = std::next(itBr);
+                        }
+                    }*/
+
                     auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
                     ASSERT(itBl == sl.end() || itBl->orientedSide(cPoint.pos) != tOrientedSide::RIGHT);
 
@@ -399,7 +415,7 @@ private:
                             tRay({cPoint.pos, lRay,
                                   itBl != sl.end() ? itBl->rightRegion : INF_IDX, cPoint.idx}),
                             tRay({cPoint.pos, rRay, cPoint.idx,
-                                  itBr != sl.end() ? itBr->leftRegion : INF_IDX}));
+                                        itBr != sl.end() ? itBr->leftRegion : INF_IDX}));
                     auto itBrn = std::next(itBln);
 
                     ASSERT(itBln == std::prev(itBrn));
