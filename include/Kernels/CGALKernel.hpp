@@ -81,6 +81,10 @@ public:
             return Direction(p);
         }
 
+        bool operator==(const Direction &o) const {
+            return dir == o.dir;
+        }
+
     private:
         CGAL::Direction_2<K> dir;
     };
@@ -147,12 +151,12 @@ public:
         }
 
 
-        bool leftOf(const Point &x) const {
+        tOrientedSide orientedSide(const Point &x) const {
             // extension is before ray, as long as its active we check against it
             if (ext) {
-                return ext->supporting_line().oriented_side(x) == CGAL::ON_POSITIVE_SIDE;
+                return static_cast<tOrientedSide>(ext->supporting_line().oriented_side(x));
             } else {
-                return iRay.supporting_line().oriented_side(x) == CGAL::ON_POSITIVE_SIDE;
+                return static_cast<tOrientedSide>(iRay.supporting_line().oriented_side(x));
             }
         }
 
@@ -166,6 +170,14 @@ public:
             } else {
                 return iRay.start();
             }
+        }
+
+        Direction direction() const {
+            if (ext) {
+                return ext->direction();
+            } else {
+                return iRay.direction();
+            };
         }
 
         Point extOrigin() const {
@@ -259,7 +271,7 @@ public:
                         // => this should not happen
                         // b) extension segment lies on ray
                         // one input must be Segment
-                        ASSERT((std::is_same_v<A, CGAL::Segment_2<K>> || std::is_same_v<B, CGAL::Segment_2<K>>));
+                        ASSERT((std::is_same_v<A, CGAL::Segment_2<K>> || std::is_same_v<B, CGAL::Segment_2<K>>) );
                         return Ray(s->source(), s->direction(), INF_IDX, INF_IDX);
                     }
                     return std::nullopt;

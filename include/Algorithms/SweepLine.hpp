@@ -66,7 +66,7 @@ class SweepLine {
 
         tRayHandle linearFind(const tPoint &p) {// TODO: make const?
             auto exp = begin();
-            while (exp != end() && exp->leftOf(p)) {
+            while (exp != end() && exp->orientedSide(p) == tOrientedSide::LEFT) {
                 ++exp;
             }
 
@@ -77,7 +77,7 @@ class SweepLine {
         tRayHandle find(const tPoint &p) {// TODO: make const?
 
             auto cmp = [](const tPoint &p, const tRay &r) {
-                return !r.leftOf(p);
+                return r.orientedSide(p) != tOrientedSide::LEFT;
             };
 
             auto it = slRays.find(p, cmp);
@@ -89,8 +89,8 @@ class SweepLine {
                 std::cout << *itLin << std::endl;
             }
 
-            ASSERT(it == end() || !it->leftOf(p));
-            ASSERT(std::prev(it) == end() || std::prev(it)->leftOf(p));
+            ASSERT(it == end() || it->orientedSide(p) != tOrientedSide::LEFT);
+            ASSERT(std::prev(it) == end() || std::prev(it)->orientedSide(p) != tOrientedSide::RIGHT);
             RASSERT(it == linearFind(p));
 
             return it;
@@ -332,7 +332,7 @@ private:
 
                     auto itBr = sl.find(cPoint.pos);                              // right ray
                     auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
-                    ASSERT(itBl == sl.end() || itBl->leftOf(cPoint.pos));
+                    ASSERT(itBl == sl.end() || itBl->orientedSide(cPoint.pos) != tOrientedSide::RIGHT);
 
                     LOG(idx << ": "
                             << " left ray: " << (itBl != sl.end() ? to_string(*itBl) : "NULL") << std::endl);

@@ -6,6 +6,8 @@
 
 #include <memory>
 #include <sstream>
+#include <optional>
+#include <variant>
 
 #include "Predicates.hpp"
 #include "Types.hpp"
@@ -57,6 +59,10 @@ public:
         Direction perp(const Direction &ref) const {
             auto p = perp();
             return angleBetween(p.dir, ref.dir) <= M_PI_2 ? p : Direction(wrapAngle(p.dir + M_PI));
+        }
+
+        bool operator==(const Direction &o) const {
+            return dir == o.dir;
         }
 
     private:
@@ -154,6 +160,10 @@ public:
             return p;
         }
 
+        Direction direction() const {
+            return dir;
+        }
+
         Point extOrigin() const {
             ASSERT(ext);
             return ext->p;
@@ -176,10 +186,12 @@ public:
             ASSERT(!ext);
         }
 
-        bool leftOf(const Point &x) const {
+        tOrientedSide orientedSide(const Point &x) const {
             // we only consider main ray, when the starting point of lower ray is
             // swept, this ray will be replaced by it
-            return (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X])) > 0;
+            Float res = (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X])) > 0;
+            return res > 0 ? tOrientedSide::LEFT : res < 0 ? tOrientedSide::RIGHT
+                                                           : tOrientedSide::LINE;
         }
 
         using tIntersectionRetVal = std::optional<std::variant<Point, Ray>>;

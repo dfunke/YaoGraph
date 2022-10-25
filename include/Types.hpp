@@ -22,6 +22,13 @@ using tIndexVector = std::array<tIndex, D>;
 using tPoints = std::vector<tIFloatVector>;
 using tIndexSet = std::unordered_set<tIndex>;
 
+enum  tOrientedSide
+{
+    RIGHT = -1,
+    LINE,
+    LEFT
+};
+
 template<typename F>
 struct MaxError;
 
