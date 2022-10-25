@@ -17,10 +17,10 @@
 constexpr tDim K = 6;
 constexpr tBox YaoTestBOUNDS{{0, 0},
                       {1, 1}};
-constexpr tIndex YaoTestN = 100;
+constexpr tIndex YaoTestN = 1e5;
 constexpr tIndex YaoTestGenSeed = SEED;
 
-using Dist = Grid;
+using Dist = Uniform;
 
 template<typename IsAlgorithm, typename ExpAlgorithm, typename Distribution>
 bool performTest() {
