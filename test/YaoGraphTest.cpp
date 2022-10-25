@@ -40,10 +40,13 @@ bool performTest() {
 
 #ifdef WITH_CAIRO
     if (!valid) {
-        Painter painter(YaoTestBOUNDS, 1000);
-        painter.draw(points, false);
-        painter.draw(exp, points);
+        Painter basePainter(YaoTestBOUNDS, 1000);
+        basePainter.draw(points, true);
+        basePainter.draw(exp, points);
+
         for (auto idx : invalidVertices) {
+
+            Painter painter(basePainter);
 
             for (tDim k = 0; k < K; ++k) {
                 if (exp[idx].neighbor[k] != is[idx].neighbor[k]) {
@@ -63,8 +66,9 @@ bool performTest() {
             painter.setColor(1, 0, 0);
             painter.draw(idx, is[idx], points);
             painter.drawCones(points[idx], K);
+
+            painter.save("invalidVertices_" + IsAlgorithm::name() + "_" + std::to_string(idx));
         }
-        painter.save("invalidVertices_" + IsAlgorithm::name());
     }
 #endif// ifdef WITH_CAIRO
 #else // ifndef VTUNE

@@ -101,10 +101,12 @@ class SweepLine {
         void draw(const tPoint &pos, Painter &painter) {
 
             // draw sweepline
+            painter.setDash();
             painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() + tIFloat(M_PI_2)),
                                    pos[Y] + std::sin(slDirection.angle() + tIFloat(M_PI_2))});
             painter.drawLine(pos, {pos[X] + std::cos(slDirection.angle() - tIFloat(M_PI_2)),
                                    pos[Y] + std::sin(slDirection.angle() - tIFloat(M_PI_2))});
+            painter.unsetDash();
 
             // draw direction
             painter.setDash();
@@ -226,14 +228,17 @@ private:
 
 #ifdef WITH_CAIRO
 
-        constexpr std::array<float, 3> BASE = {0, 0, 0};
-        [[maybe_unused]] constexpr std::array<float, 3> SL = {0, 0, 1};
-        [[maybe_unused]] constexpr std::array<float, 3> POINT = {1, 0, 0};
-        [[maybe_unused]] constexpr std::array<float, 3> IS = {0, 1, 0};
-        [[maybe_unused]] constexpr std::array<float, 3> BOUND = {0, 1, 1};
+        [[maybe_unused]] constexpr std::array<float, 3> BLACK = {0, 0, 0};
+        [[maybe_unused]] constexpr std::array<float, 3> BLUE = {0, 0, 1};
+        [[maybe_unused]] constexpr std::array<float, 3> RED = {1, 0, 0};
+        [[maybe_unused]] constexpr std::array<float, 3> GREEN = {0, 1, 0};
+        [[maybe_unused]] constexpr std::array<float, 3> CYAN = {0, 1, 1};
+        [[maybe_unused]] constexpr std::array<float, 3> YELLOW = {1, 1, 0};
+        [[maybe_unused]] constexpr std::array<float, 3> ORANGE = {.8, .4, 0};
+        [[maybe_unused]] constexpr std::array<float, 3> PINK = {.7, .3, .7};
 
         Painter basePainter(iBounds, 1000);
-        basePainter.setColor(BASE);
+        basePainter.setColor(BLACK);
         basePainter.draw(iPoints, true);
 #endif
 
@@ -245,7 +250,7 @@ private:
 
             auto cKey = pq.top().first;
             auto cPoint = pq.top().second;
-            pq.pop();
+            //            pq.pop(); // we need the pq for drawing
 
             LOG(idx << ": "
                     << cPoint.idx << " (" << cPoint.pos[X] << ", " << cPoint.pos[Y] << "): key: " << cKey << std::endl);
@@ -255,17 +260,29 @@ private:
 
             Painter stepPainter(basePainter);
 
-            stepPainter.setColor(POINT);
+            stepPainter.setColor(RED);
             stepPainter.draw(cPoint.pos, idx, false);
 
-            stepPainter.setColor(SL);
+            stepPainter.setColor(BLUE);
             sl.draw(cPoint.pos, stepPainter);
+
+            stepPainter.setColor(ORANGE);
+            for (const auto &is : isMap) {
+                stepPainter.draw(pq.get_key(is.second).second.pos, 0, false);
+            }
+
+            stepPainter.setColor(PINK);
+            for (const auto &ext : extMap) {
+                stepPainter.draw(pq.get_key(ext.second).second.pos, 0, false);
+            }
 
             std::ostringstream stepFilename;
             stepFilename << "img_k" << k << "_s" << std::setfill('0')
                          << std::setw(static_cast<int>(std::ceil(std::log10(iPoints.size()) + 2))) << idx;
             stepPainter.save(stepFilename.str());
 #endif
+            // now pop PQ after drawing
+            pq.pop();
 
             auto handleRayIntersection = [&isMap, &extMap, &pq, &bounds, &sl, &idx, &cKey](auto &leftRay, auto &rightRay, bool left) {
                 auto is = leftRay->intersection(*rightRay, bounds);
@@ -339,6 +356,14 @@ private:
                     LOG(idx << ": "
                             << " right ray: " << (itBr != sl.end() ? to_string(*itBr) : "NULL") << std::endl);
 
+#if defined(WITH_CAIRO) && defined(PAINT_STEPS)
+                    stepPainter.setColor(CYAN);
+                    if (itBl != sl.end()) itBl->draw(stepPainter);
+                    stepPainter.setColor(GREEN);
+                    if (itBr != sl.end()) itBr->draw(stepPainter);
+                    stepPainter.save(stepFilename.str());
+#endif
+
                     // add graph edge
                     if (itBr != sl.end() && itBr->leftRegion != INF_IDX) {
                         ASSERT(itBl->rightRegion == itBr->leftRegion);
@@ -348,6 +373,10 @@ private:
 
                         LOG(idx << ": "
                                 << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])) << std::endl);
+
+#ifdef WITH_CAIRO
+                        basePainter.drawLine(itBr->origin(), cPoint.pos);
+#endif
                     }
 
                     // check if Bl and Br intersect, check only required if they don't originate from same point
@@ -396,7 +425,7 @@ private:
                     auto itBr = cPoint.rightRay;
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
-                    stepPainter.setColor(BOUND);
+                    stepPainter.setColor(CYAN);
                     itBl->draw(stepPainter);
                     itBr->draw(stepPainter);
                     stepPainter.save(stepFilename.str());
@@ -458,9 +487,11 @@ private:
                     tRay Bs(pMid, aBs, itBl->leftRegion, itBr->rightRegion);
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
-                    stepPainter.setColor(IS);
+                    stepPainter.setColor(GREEN);
                     rL.draw(stepPainter);
                     rR.draw(stepPainter);
+
+                    stepPainter.setColor(YELLOW);
                     stepPainter.drawLine(pL, pR);
                     stepPainter.drawSquare(pMid);
                     Bs.draw(stepPainter);
@@ -504,12 +535,12 @@ private:
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     if (pBsL) {
-                        stepPainter.setColor(IS);
+                        stepPainter.setColor(RED);
                         stepPainter.draw(*pBsL, 0);
                     }
 
                     if (pBsR) {
-                        stepPainter.setColor(IS);
+                        stepPainter.setColor(RED);
                         stepPainter.draw(*pBsR, 1);
                     }
 #endif
