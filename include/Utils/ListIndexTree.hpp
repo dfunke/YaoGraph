@@ -4,10 +4,51 @@
 
 #pragma once
 
+#include <forward_list>
 #include <memory>
+#include <vector>
 
 template<typename T>
 class SearchTree {
+
+private:
+    using index_type = std::size_t;
+
+    template<typename N>
+    class MemoryManager {
+
+    public:
+        MemoryManager(const index_type &block_size_ = 512) : block_size(block_size_) {
+            blocks.emplace_front();
+            blocks.front().reserve(block_size);
+        }
+
+        N *acquire() {
+            if (freelist.size()) {
+                N *p = freelist[freelist.size() - 1];
+                freelist.pop_back();
+                return p;
+            } else {
+                if (blocks.begin()->size() == block_size) {
+
+                    blocks.emplace_front();
+                    blocks.front().reserve(block_size);
+                }
+
+                blocks.front().emplace_back();
+                return &blocks.front()[blocks.front().size() - 1];
+            }
+        }
+
+        void release(N *p) {
+            freelist.push_back(p);
+        }
+
+    private:
+        std::forward_list<std::vector<N>> blocks;
+        index_type block_size;
+        std::vector<N *> freelist;
+    };
 
 private:
     // forward declaration of node types
@@ -51,8 +92,8 @@ private:
             return (left && left->isNode() ? left->asNode()->height : 0) - (right && right->isNode() ? right->asNode()->height : 0);
         }
 
-        std::unique_ptr<Node> left;
-        std::unique_ptr<Node> right;
+        Node *left;
+        Node *right;
 
         Leaf *leftRep = nullptr;
         Leaf *maxRep = nullptr;
@@ -113,13 +154,13 @@ public:
 
 public:
     SearchTree() {
-        m_root = std::make_unique<InternalNode>();
+        m_root = newInternalNode();
 
-        m_endLeaf = std::make_unique<Leaf>();
-        m_endLeaf->prev = m_endLeaf.get();
-        m_endLeaf->next = m_endLeaf.get();
+        m_endLeaf = newLeaf();
+        m_endLeaf->prev = m_endLeaf;
+        m_endLeaf->next = m_endLeaf;
 
-        m_beginLeaf = m_endLeaf.get();
+        m_beginLeaf = m_endLeaf;
     }
 
     Iterator begin() {
@@ -136,7 +177,7 @@ private:
     }
 
     Leaf *_end() {
-        return m_endLeaf.get();
+        return m_endLeaf;
     }
 
 public:
@@ -145,10 +186,35 @@ public:
     }
 
 private:
+    Leaf *newLeaf() {
+        return mm_leafs.acquire();
+    }
+
+    InternalNode *newInternalNode() {
+        return mm_inodes.acquire();
+    }
+
+    void deleteNode(Node *p) {
+        if (p->isLeaf()) {
+            deleteLeaf(p->asLeaf());
+        } else {
+            deleteInternalNode(p->asNode());
+        }
+    }
+
+    void deleteLeaf(Leaf *p) {
+        mm_leafs.release(p);
+    }
+
+    void deleteInternalNode(InternalNode *p) {
+        mm_inodes.release(p);
+    }
+
+private:
     Leaf *insert(Leaf *pos, const T &obj) {
 
         // construct new leaf
-        std::unique_ptr<Leaf> leaf = std::make_unique<Leaf>();
+        Leaf *leaf = newLeaf();
         leaf->obj = std::make_unique<T>(obj);
 
         // special case empty list
@@ -159,13 +225,13 @@ private:
 
             leaf->prev = _end();
             leaf->next = _end();
-            leaf->parent = m_root.get();
+            leaf->parent = m_root;
 
-            m_beginLeaf = leaf.get();
-            m_endLeaf->prev = leaf.get();
+            m_beginLeaf = leaf;
+            m_endLeaf->prev = leaf;
 
-            m_root->left = std::move(leaf);
-            updateAndRebalance(m_root.get());
+            m_root->left = leaf;
+            updateAndRebalance(m_root);
 
             return m_root->left->asLeaf();
         }
@@ -175,50 +241,47 @@ private:
             leaf->prev = m_endLeaf->prev;
             leaf->next = _end();
 
-            leaf->prev->next = leaf.get();
+            leaf->prev->next = leaf;
 
-            m_endLeaf->prev = leaf.get();
+            m_endLeaf->prev = leaf;
         } else if (pos == _begin()) {
             leaf->prev = _end();
             leaf->next = m_beginLeaf;
 
-            leaf->next->prev = leaf.get();
+            leaf->next->prev = leaf;
 
-            m_beginLeaf = leaf.get();
+            m_beginLeaf = leaf;
         } else {
             leaf->prev = pos->prev;
             ASSERT(leaf->prev != _end());
             leaf->next = pos;
             ASSERT(leaf->next == pos);
 
-            leaf->prev->next = leaf.get();
-            leaf->next->prev = leaf.get();
+            leaf->prev->next = leaf;
+            leaf->next->prev = leaf;
         }
-
-        // save pointer to leaf, as leaf object looses ownership in join
-        Leaf *pLeaf = leaf.get();
 
         // insert leaf into tree
         if (leaf->prev != _end()) {
             // we have a left neighbor, join to it from right
-            joinFromRight(leaf->prev->parent, std::move(leaf));
+            joinFromRight(leaf->prev->parent, leaf);
         } else {
             ASSERT(leaf->next != _end());
             // we have no left neighbor but a right one, join to it from left
-            joinFromLeft(leaf->next->parent, std::move(leaf));
+            joinFromLeft(leaf->next->parent, leaf);
         }
 
-        return pLeaf;
+        return leaf;
     }
 
 private:
-    void joinFromRight(InternalNode *parent, std::unique_ptr<Leaf> &&leaf) {
+    void joinFromRight(InternalNode *parent, Leaf *leaf) {
 
         ASSERT(parent->left);
         ASSERT(leaf->prev != _end());
 
-        bool prevIsLeftChild = (parent->left.get() == leaf->prev);
-        ASSERT(prevIsLeftChild || (parent->right && parent->right.get() == leaf->prev));
+        bool prevIsLeftChild = (parent->left == leaf->prev);
+        ASSERT(prevIsLeftChild || (parent->right && parent->right == leaf->prev));
 
         if (!parent->right) {
             // parent has empty right child, prev must be left child
@@ -227,27 +290,27 @@ private:
 
             leaf->parent = parent;
 
-            parent->right = std::move(leaf);
+            parent->right = leaf;
 
             updateAndRebalance(parent);
 
             return;
         }
 
-        std::unique_ptr<InternalNode> newNode = std::make_unique<InternalNode>();
+        InternalNode *newNode = newInternalNode();
         newNode->parent = parent;
 
-        newNode->left = std::move(prevIsLeftChild ? parent->left : parent->right);
-        newNode->left->parent = newNode.get();
+        newNode->left = prevIsLeftChild ? parent->left : parent->right;
+        newNode->left->parent = newNode;
 
-        newNode->right = std::move(leaf);
-        newNode->right->parent = newNode.get();
+        newNode->right = leaf;
+        newNode->right->parent = newNode;
 
-        (prevIsLeftChild ? parent->left : parent->right) = std::move(newNode);
+        (prevIsLeftChild ? parent->left : parent->right) = newNode;
         updateAndRebalance((prevIsLeftChild ? parent->left : parent->right)->asNode());
     }
 
-    void joinFromLeft(InternalNode *parent, std::unique_ptr<Leaf> &&leaf) {
+    void joinFromLeft(InternalNode *parent, Leaf *leaf) {
 
         ASSERT(parent->left);
         // this is only called when object is inserted to the beginning of list
@@ -259,23 +322,23 @@ private:
 
             leaf->parent = parent;
 
-            parent->right = std::move(parent->left);
-            parent->left = std::move(leaf);
+            parent->right = parent->left;
+            parent->left = leaf;
 
             updateAndRebalance(parent);
 
             return;
         }
 
-        std::unique_ptr<InternalNode> newNode = std::make_unique<InternalNode>();
+        InternalNode *newNode = newInternalNode();
         newNode->parent = parent;
-        newNode->left = std::move(leaf);
-        newNode->left->parent = newNode.get();
+        newNode->left = leaf;
+        newNode->left->parent = newNode;
 
-        newNode->right = std::move(parent->left);
-        newNode->right->parent = newNode.get();
+        newNode->right = parent->left;
+        newNode->right->parent = newNode;
 
-        parent->left = std::move(newNode);
+        parent->left = newNode;
         updateAndRebalance(parent->left->asNode());
     }
 
@@ -294,12 +357,14 @@ private:
         if (pos == _begin() && pos == _end()->prev) {
 
             ASSERT(m_root->left && !m_root->right);
+            ASSERT(m_root->left->isLeaf());
 
             m_beginLeaf = _end();
             m_endLeaf->prev = _end();
 
-            m_root->left.reset();
-            updateAndRebalance(m_root.get());
+            deleteLeaf(m_root->left->asLeaf());
+            m_root->left = nullptr;
+            updateAndRebalance(m_root);
 
             return _end();
         }
@@ -337,23 +402,26 @@ private:
 
         if (parent->left && parent->right) {
             // parent has both children
-            if (child == parent->right.get()) {
+            if (child == parent->right) {
                 // we are the right child, simply remove
-                parent->right.reset();
+                deleteNode(parent->right);
+                parent->right = nullptr;
             } else {
-                ASSERT(child == parent->left.get());
+                ASSERT(child == parent->left);
                 // we are the left child, move right child into left
-                parent->left = std::move(parent->right);
+                parent->left = parent->right;
+                parent->right = nullptr;
             }
 
             ASSERT(parent->left && !parent->right);
             updateAndRebalance(parent);
         } else {
             ASSERT(parent->left && !parent->right);
-            ASSERT(child == parent->left.get());
+            ASSERT(child == parent->left);
 
             // parent becomes empty node
-            parent->left.reset();
+            deleteNode(parent->left);
+            parent->left = nullptr;
 
             if (parent->parent != nullptr) {
                 // for non-root delete node recursively
@@ -372,45 +440,47 @@ private:
     // See the diagram given above.
     InternalNode *rightRotate(InternalNode *y) {
 
-        std::unique_ptr<Node> yFromParent;
+        //        Node *yFromParent;
         bool leftChild = false;
 
         if (y->parent == nullptr) {
-            ASSERT(y->isRoot() && y == m_root.get());
-            yFromParent = std::move(m_root);
+            ASSERT(y->isRoot() && y == m_root);
+            //            yFromParent = m_root;
         } else {
-            leftChild = (y == y->parent->left.get());
-            ASSERT(leftChild || y == y->parent->right.get());
-            yFromParent = std::move(leftChild ? y->parent->left : y->parent->right);
+            leftChild = (y == y->parent->left);
+            ASSERT(leftChild || y == y->parent->right);
+            //            yFromParent = (leftChild ? y->parent->left : y->parent->right);
         }
 
-        ASSERT(yFromParent && y == yFromParent.get());
+        //        ASSERT(yFromParent && y == yFromParent);
 
         ASSERT(y->left);
-        std::unique_ptr<Node> x = std::move(y->left);
+        Node *x = y->left;
         ASSERT(x->isNode() && x->asNode()->left);
-        std::unique_ptr<Node> T2 = std::move(x->asNode()->right);
+        Node *T2 = x->asNode()->right;
 
         // perform rotation
         x->parent = y->parent;
 
         if (T2) {
-            y->left = std::move(T2);
+            y->left = T2;
             y->left->parent = y;
         } else if (y->right) {
             // if T2 is empty move right child over
-            y->left = std::move(y->right);
+            y->left = y->right;
+            y->right = nullptr;
         } else {
             // y becomes empty, delete it
-            yFromParent.reset();
+            deleteInternalNode(y);
+            y = nullptr;
         }
 
-        if (yFromParent) {
+        // perform rotation
+        x->asNode()->right = y;
+
+        if (y) {
             // update info
             updateNodeInfo(y);
-
-            // perform rotation
-            x->asNode()->right = std::move(yFromParent);
             x->asNode()->right->parent = x->asNode();
         }
 
@@ -420,14 +490,14 @@ private:
         // update fromParentPointer
         if (x->parent == nullptr) {
             ASSERT(x->isRoot());
-            m_root.reset(static_cast<InternalNode *>(x.release()));
+            m_root = static_cast<InternalNode *>(x);
 
             // Return new root
-            return m_root.get();
+            return m_root;
 
         } else {
-            std::unique_ptr<Node> *pPtr = (leftChild ? &(x->parent->left) : &(x->parent->right));
-            (*pPtr) = std::move(x);
+            Node **pPtr = (leftChild ? &(x->parent->left) : &(x->parent->right));
+            (*pPtr) = x;
 
             // Return new root
             return (*pPtr)->asNode();
@@ -439,27 +509,27 @@ private:
     // See the diagram given above.
     InternalNode *leftRotate(InternalNode *x) {
 
-        std::unique_ptr<Node> xFromParent;
+        //        Node *xFromParent;
         bool leftChild = false;
 
         if (x->parent == nullptr) {
-            ASSERT(x->isRoot() && x == m_root.get());
-            xFromParent = std::move(m_root);
+            ASSERT(x->isRoot() && x == m_root);
+            //            xFromParent = m_root;
         } else {
-            leftChild = (x == x->parent->left.get());
-            ASSERT(leftChild || x == x->parent->right.get());
-            xFromParent = std::move(leftChild ? x->parent->left : x->parent->right);
+            leftChild = (x == x->parent->left);
+            ASSERT(leftChild || x == x->parent->right);
+            //            xFromParent = (leftChild ? x->parent->left : x->parent->right);
         }
 
-        ASSERT(xFromParent && x == xFromParent.get());
+        //        ASSERT(xFromParent && x == xFromParent);
 
         ASSERT(x->left && x->right);
-        std::unique_ptr<Node> y = std::move(x->right);
+        Node *y = x->right;
         ASSERT(y->isNode() && y->asNode()->left);
-        std::unique_ptr<Node> T2 = std::move(y->asNode()->left);
+        Node *T2 = y->asNode()->left;
 
         // perform rotation
-        x->right = std::move(T2);
+        x->right = T2;
         x->right->parent = x;
 
         // update info
@@ -467,7 +537,7 @@ private:
 
         // perform rotation
         y->parent = x->parent;
-        y->asNode()->left = std::move(xFromParent);
+        y->asNode()->left = x;
         y->asNode()->left->parent = y->asNode();
 
         // update info
@@ -476,13 +546,13 @@ private:
         // update fromParentPointer
         if (y->parent == nullptr) {
             ASSERT(y->isRoot());
-            m_root.reset(static_cast<InternalNode *>(y.release()));
+            m_root = static_cast<InternalNode *>(y);
 
             // Return new root
-            return m_root.get();
+            return m_root;
         } else {
-            std::unique_ptr<Node> *pPtr = (leftChild ? &(y->parent->left) : &(y->parent->right));
-            (*pPtr) = std::move(y);
+            Node **pPtr = (leftChild ? &(y->parent->left) : &(y->parent->right));
+            (*pPtr) = y;
 
             // Return new root
             return (*pPtr)->asNode();
@@ -569,7 +639,7 @@ private:
 public:
     template<typename O, typename Compare>
     Iterator find(const O &obj, const Compare &cmp) {
-        return Iterator(find(m_root.get(), obj, cmp));
+        return Iterator(find(m_root, obj, cmp));
     }
 
 private:
@@ -610,7 +680,7 @@ private:
 
 public:
     bool checkInvariants() const {
-        return checkInvariants(m_root.get());
+        return checkInvariants(m_root);
     }
 
 private:
@@ -648,8 +718,11 @@ private:
     }
 
 private:
-    std::unique_ptr<InternalNode> m_root;
+    InternalNode *m_root;
 
     Leaf *m_beginLeaf = nullptr;
-    std::unique_ptr<Leaf> m_endLeaf;
+    Leaf *m_endLeaf;
+
+    MemoryManager<Leaf> mm_leafs;
+    MemoryManager<InternalNode> mm_inodes;
 };
