@@ -25,7 +25,7 @@
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
-#define PAINT_STEPS
+//#define PAINT_STEPS
 #endif
 
 template<tDim C, typename Kernel>
@@ -81,13 +81,6 @@ class SweepLine {
             };
 
             auto it = slRays.find(p, cmp);
-            auto itLin = linearFind(p);
-
-            //TODO debug code
-            if (it != itLin) {
-                std::cout << *it << std::endl;
-                std::cout << *itLin << std::endl;
-            }
 
             ASSERT(it == end() || it->orientedSide(p) != tOrientedSide::LEFT);
             ASSERT(std::prev(it) == end() || std::prev(it)->orientedSide(p) != tOrientedSide::RIGHT);
