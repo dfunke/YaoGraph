@@ -18,7 +18,7 @@ private:
     class MemoryManager {
 
     public:
-        MemoryManager(const index_type &block_size_ = 512) : block_size(block_size_) {
+        MemoryManager(const index_type &block_size_ = 1e5) : block_size(block_size_) {
             blocks.emplace_front();
             blocks.front().reserve(block_size);
         }
@@ -565,21 +565,22 @@ private:
         auto oldMaxRep = node->maxRep;
         auto oldHeight = node->height;
 
-        if (node->left) {
+        if (node->right) {
+            ASSERT(node->left);
+            node->leftRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
+            node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
+            node->height = 1 + std::max(height_type(node->left->isNode() ? node->left->asNode()->height : 0),
+                                        height_type(node->right->isNode() ? node->right->asNode()->height : 0));
+        } else if (node->left) {
+            ASSERT(!node->right);
             node->leftRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
             node->maxRep = node->leftRep;
             node->height = 1 + (node->left->isNode() ? node->left->asNode()->height : 0);
         } else {
-            ASSERT(!node->right);
+            ASSERT(!node->left && !node->right);
             node->leftRep = nullptr;
             node->maxRep = nullptr;
             node->height = 0;
-        }
-
-        if (node->right) {
-            ASSERT(node->left);
-            node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
-            node->height = std::max(node->height, height_type(1 + (node->right->isNode() ? node->right->asNode()->height : 0)));
         }
 
         return not(oldHeight == node->height && oldLeftRep == node->leftRep && oldMaxRep == node->maxRep);
