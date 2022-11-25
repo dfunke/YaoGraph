@@ -95,8 +95,7 @@ private:
         Node *left;
         Node *right;
 
-        Leaf *leftRep = nullptr;
-        Leaf *maxRep = nullptr;
+        Leaf *rep = nullptr;
         height_type height = 0;
     };
 
@@ -561,29 +560,25 @@ private:
 
     bool updateNodeInfo(InternalNode *node) {
 
-        auto oldLeftRep = node->leftRep;
-        auto oldMaxRep = node->maxRep;
+        auto oldRep = node->rep;
         auto oldHeight = node->height;
 
         if (node->right) {
             ASSERT(node->left);
-            node->leftRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
-            node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
+            node->rep = (node->right->isNode() ? node->right->asNode()->rep : node->right->asLeaf());
             node->height = 1 + std::max(height_type(node->left->isNode() ? node->left->asNode()->height : 0),
                                         height_type(node->right->isNode() ? node->right->asNode()->height : 0));
         } else if (node->left) {
             ASSERT(!node->right);
-            node->leftRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
-            node->maxRep = node->leftRep;
+            node->rep = (node->left->isNode() ? node->left->asNode()->rep : node->left->asLeaf());
             node->height = 1 + (node->left->isNode() ? node->left->asNode()->height : 0);
         } else {
             ASSERT(!node->left && !node->right);
-            node->leftRep = nullptr;
-            node->maxRep = nullptr;
+            node->rep = nullptr;
             node->height = 0;
         }
 
-        return not(oldHeight == node->height && oldLeftRep == node->leftRep && oldMaxRep == node->maxRep);
+        return not(oldHeight == node->height && oldRep == node->rep);
     }
 
     void updateAndRebalance(InternalNode *node, bool rebalanceRequired = true) {
@@ -647,34 +642,35 @@ private:
     template<typename O, typename Compare>
     Leaf *find(InternalNode *node, const O &obj, const Compare &cmp) {
 
-        if (node->leftRep != nullptr) {
-            ASSERT(node->maxRep != nullptr);
+        if (node->rep != nullptr && cmp(obj, *(node->rep->obj))) {
             ASSERT(node->left);
 
-            if (cmp(obj, *(node->leftRep->obj))) {
-                ASSERT(cmp(obj, *(node->maxRep->obj)));
-                if (node->left->isNode()) {
+            if (node->left->isNode()) {
+                if (cmp(obj, *(node->left->asNode()->rep->obj))) {
                     return find(node->left->asNode(), obj, cmp);
                 } else {
-                    ASSERT(node->left->isLeaf());
-                    ASSERT(cmp(obj, *(node->left->asLeaf()->obj)));
-                    return node->left->asLeaf();
-                }
-            } else if (cmp(obj, *(node->maxRep->obj))) {
-                ASSERT(node->right);
+                    ASSERT(node->right);
 
-                if (node->right->isNode()) {
-                    return find(node->right->asNode(), obj, cmp);
-                } else {
-                    ASSERT(node->right->isLeaf());
-                    ASSERT(cmp(obj, *(node->right->asLeaf()->obj)));
-                    return node->right->asLeaf();
+                    if (node->right->isNode()) {
+                        return find(node->right->asNode(), obj, cmp);
+                    } else {
+                        return node->right->asLeaf();
+                    }
                 }
             } else {
-                return _end();
+                if (cmp(obj, *(node->left->asLeaf()->obj))) {
+                    return node->left->asLeaf();
+                } else {
+                    ASSERT(node->right);
+
+                    if (node->right->isNode()) {
+                        return find(node->right->asNode(), obj, cmp);
+                    } else {
+                        return node->right->asLeaf();
+                    }
+                }
             }
         } else {
-            ASSERT(node->isRoot());// only root may have an empty rep when root is empty
             return _end();
         }
     }
