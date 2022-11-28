@@ -184,6 +184,10 @@ public:
         return Iterator(insert(pos.leaf_, obj));
     }
 
+    Iterator insert_pair(Iterator pos, const T &left, const T &right) {
+        return Iterator(insert_pair(pos.leaf_, left, right));
+    }
+
 private:
     Leaf *newLeaf() {
         return mm_leafs.acquire();
@@ -273,6 +277,77 @@ private:
         return leaf;
     }
 
+    Leaf *insert_pair(Leaf *pos, const T &left, const T &right) {
+
+        // construct new leafs
+        Leaf *leftLeaf = newLeaf();
+        leftLeaf->obj = std::make_unique<T>(left);
+
+        Leaf *rightLeaf = newLeaf();
+        rightLeaf->obj = std::make_unique<T>(right);
+
+        leftLeaf->next = rightLeaf;
+        rightLeaf->prev = leftLeaf;
+
+        // special case empty list
+        if (pos == _begin() && pos == _end()) {
+
+            ASSERT(!m_root->left && !m_root->right);
+            ASSERT(_begin() == _end());
+
+            leftLeaf->prev = _end();
+            rightLeaf->next = _end();
+            leftLeaf->parent = m_root;
+            rightLeaf->parent = m_root;
+
+            m_beginLeaf = leftLeaf;
+            m_endLeaf->prev = rightLeaf;
+
+            m_root->left = leftLeaf;
+            m_root->right = rightLeaf;
+            updateAndRebalance(m_root);
+
+            return m_root->left->asLeaf();
+        }
+
+        // take care of the leaf double linked list
+        if (pos == _end()) {
+            leftLeaf->prev = m_endLeaf->prev;
+            rightLeaf->next = _end();
+
+            leftLeaf->prev->next = leftLeaf;
+
+            m_endLeaf->prev = rightLeaf;
+        } else if (pos == _begin()) {
+            leftLeaf->prev = _end();
+            rightLeaf->next = m_beginLeaf;
+
+            rightLeaf->next->prev = rightLeaf;
+
+            m_beginLeaf = leftLeaf;
+        } else {
+            leftLeaf->prev = pos->prev;
+            ASSERT(leftLeaf->prev != _end());
+            rightLeaf->next = pos;
+            ASSERT(rightLeaf->next == pos);
+
+            leftLeaf->prev->next = leftLeaf;
+            rightLeaf->next->prev = rightLeaf;
+        }
+
+        // insert leaf into tree
+        if (leftLeaf->prev != _end()) {
+            // we have a left neighbor, join to it from right
+            joinFromRight(leftLeaf->prev->parent, leftLeaf, rightLeaf);
+        } else {
+            ASSERT(leftLeaf->next != _end());
+            // we have no left neighbor but a right one, join to it from left
+            joinFromLeft(rightLeaf->next->parent, leftLeaf, rightLeaf);
+        }
+
+        return leftLeaf;
+    }
+
 private:
     void joinFromRight(InternalNode *parent, Leaf *leaf) {
 
@@ -304,6 +379,52 @@ private:
 
         newNode->right = leaf;
         newNode->right->parent = newNode;
+
+        updateNodeInfo(newNode);
+
+        (prevIsLeftChild ? parent->left : parent->right) = newNode;
+        updateAndRebalance((prevIsLeftChild ? parent->left : parent->right)->asNode());
+    }
+
+    void joinFromRight(InternalNode *parent, Leaf *leftLeaf, Leaf *rightLeaf) {
+
+        ASSERT(parent->left);
+        ASSERT(leftLeaf->prev != _end());
+
+        bool prevIsLeftChild = (parent->left == leftLeaf->prev);
+        ASSERT(prevIsLeftChild || (parent->right && parent->right == leftLeaf->prev));
+
+        InternalNode *pNode = newInternalNode();
+        pNode->left = leftLeaf;
+        leftLeaf->parent = pNode;
+        pNode->right = rightLeaf;
+        rightLeaf->parent = pNode;
+        updateNodeInfo(pNode);
+
+        if (!parent->right) {
+            // parent has empty right child, prev must be left child
+            // insert new leaf as right child
+            ASSERT(prevIsLeftChild);
+
+            pNode->parent = parent;
+
+            parent->right = pNode;
+
+            updateAndRebalance(parent);
+
+            return;
+        }
+
+        InternalNode *newNode = newInternalNode();
+        newNode->parent = parent;
+
+        newNode->left = prevIsLeftChild ? parent->left : parent->right;
+        newNode->left->parent = newNode;
+
+        newNode->right = pNode;
+        newNode->right->parent = newNode;
+
+        updateNodeInfo(newNode);
 
         (prevIsLeftChild ? parent->left : parent->right) = newNode;
         updateAndRebalance((prevIsLeftChild ? parent->left : parent->right)->asNode());
@@ -337,6 +458,49 @@ private:
         newNode->right = parent->left;
         newNode->right->parent = newNode;
 
+        updateNodeInfo(newNode);
+
+        parent->left = newNode;
+        updateAndRebalance(parent->left->asNode());
+    }
+
+    void joinFromLeft(InternalNode *parent, Leaf *leftLeaf, Leaf *rightLeaf) {
+
+        ASSERT(parent->left);
+        // this is only called when object is inserted to the beginning of list
+        // new leaf must become leftmost leaf
+        ASSERT(leftLeaf->prev == _end());
+
+        InternalNode *pNode = newInternalNode();
+        pNode->left = leftLeaf;
+        leftLeaf->parent = pNode;
+        pNode->right = rightLeaf;
+        rightLeaf->parent = pNode;
+        updateNodeInfo(pNode);
+
+        if (!parent->right) {
+            // parent has empty right child, move left to right, then insert
+
+            pNode->parent = parent;
+
+            parent->right = parent->left;
+            parent->left = pNode;
+
+            updateAndRebalance(parent);
+
+            return;
+        }
+
+        InternalNode *newNode = newInternalNode();
+        newNode->parent = parent;
+        newNode->left = pNode;
+        newNode->left->parent = newNode;
+
+        newNode->right = parent->left;
+        newNode->right->parent = newNode;
+
+        updateNodeInfo(newNode);
+
         parent->left = newNode;
         updateAndRebalance(parent->left->asNode());
     }
@@ -344,6 +508,10 @@ private:
 public:
     Iterator erase(Iterator pos) {
         return Iterator(erase(pos.leaf_));
+    }
+
+    Iterator replace(Iterator pos, const T &obj) {
+        return Iterator(replace(pos.leaf_, obj));
     }
 
 private:
@@ -391,6 +559,18 @@ private:
         eraseRec(pos->parent, pos);
 
         return retValue;
+    }
+
+    Leaf *replace(Leaf *pos, const T &obj) {
+        ASSERT(pos != nullptr);
+        ASSERT(pos != _end());
+        ASSERT(pos->parent != nullptr);
+        ASSERT(pos->isLeaf());
+        ASSERT(pos->obj);
+
+        pos->obj = std::make_unique<T>(obj);
+
+        return pos;
     }
 
 private:

@@ -56,8 +56,16 @@ class SweepLine {
             return slRays.insert(pos, ray);
         }
 
+        auto insert_pair(tRayHandle &pos, const tRay &left, const tRay &right) {
+            return slRays.insert_pair(pos, left, right);
+        }
+
         auto erase(tRayHandle &pos) {
             return slRays.erase(pos);
+        }
+
+        auto replace(tRayHandle &pos, const tRay &ray) {
+            return slRays.replace(pos, ray);
         }
 
         tEFloat prj(const tPoint &p) {
@@ -384,13 +392,16 @@ private:
                     }
 
                     // create new rays and insert them into SL
-                    auto itBln = sl.insert(
+                    auto itBln = sl.insert_pair(
                             itBr,
                             tRay({cPoint.pos, lRay,
-                                  itBl != sl.end() ? itBl->rightRegion : INF_IDX, cPoint.idx}));
-                    auto itBrn = sl.insert(
-                            itBr, tRay({cPoint.pos, rRay, cPoint.idx,
-                                        itBr != sl.end() ? itBr->leftRegion : INF_IDX}));
+                                  itBl != sl.end() ? itBl->rightRegion : INF_IDX, cPoint.idx}),
+                            tRay({cPoint.pos, rRay, cPoint.idx,
+                                  itBr != sl.end() ? itBr->leftRegion : INF_IDX}));
+                    auto itBrn = std::next(itBln);
+
+                    ASSERT(itBln == std::prev(itBrn));
+                    ASSERT(itBrn == std::next(itBln));
 
                     LOG(idx << ": "
                             << " left ray " << *itBln << std::endl);
@@ -564,7 +575,7 @@ private:
 
                     // remove old Rays from list
                     sl.erase(itBl);
-                    auto itInsertPos = sl.erase(itBr);
+                    //auto itInsertPos = sl.erase(itBr);
                     auto itBn = sl.end();
 
                     if (!pBsL && !pBsR) {
@@ -573,10 +584,10 @@ private:
                         // bisector intersects no ray from P
                         if (sl.prj(pR) < sl.prj(pL)) {
                             // right point is further from v -> right ray becomes border
-                            itBn = sl.insert(itInsertPos, rR);
+                            itBn = sl.replace(itBr, rR);
                         } else {
                             // left point is further from v -> left ray becomes border
-                            itBn = sl.insert(itInsertPos, rL);
+                            itBn = sl.replace(itBr, rL);
                         }
                     } else {
                         if (pBsL && pBsR) {
@@ -588,7 +599,7 @@ private:
                                     << " case c) both intersect" << std::endl);
                             // boundary originates at v with bisector angle
                             Bs.setOrigin(cPoint.pos);
-                            itBn = sl.insert(itInsertPos, Bs);
+                            itBn = sl.replace(itBr, Bs);
                         } else {
                             LOG(idx << ": "
                                     << " case b) one intersection" << std::endl);
@@ -597,20 +608,20 @@ private:
                                 // boundary to intersection point, then ray with bisector angle
                                 Bs.setOrigin(*pBsL);
                                 if (!Kernel::approxEQ(rL.origin(), Bs.origin())) {
-                                    itBn = sl.insert(itInsertPos, tRay({rL, Bs}));
+                                    itBn = sl.replace(itBr, tRay({rL, Bs}));
                                     extMap[itBn] = pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
                                 } else {// if they are almost equal immediately use bisector ray
-                                    itBn = sl.insert(itInsertPos, Bs);
+                                    itBn = sl.replace(itBr, Bs);
                                 }
                             } else {
                                 // bisector intersects right ray
                                 // boundary to intersection point, then ray with bisector angle
                                 Bs.setOrigin(*pBsR);
                                 if (!Kernel::approxEQ(rR.origin(), Bs.origin())) {
-                                    itBn = sl.insert(itInsertPos, tRay({rR, Bs}));
+                                    itBn = sl.replace(itBr, tRay({rR, Bs}));
                                     extMap[itBn] = pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
                                 } else {// if they are almost equal immediately use bisector ray
-                                    itBn = sl.insert(itInsertPos, Bs);
+                                    itBn = sl.replace(itBr, Bs);
                                 }
                             }
                         }
