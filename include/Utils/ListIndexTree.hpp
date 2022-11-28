@@ -95,7 +95,7 @@ private:
         Node *left;
         Node *right;
 
-        Leaf *rep = nullptr;
+        Leaf *maxRep = nullptr;
         height_type height = 0;
     };
 
@@ -560,25 +560,25 @@ private:
 
     bool updateNodeInfo(InternalNode *node) {
 
-        auto oldRep = node->rep;
+        auto oldRep = node->maxRep;
         auto oldHeight = node->height;
 
         if (node->right) {
             ASSERT(node->left);
-            node->rep = (node->right->isNode() ? node->right->asNode()->rep : node->right->asLeaf());
+            node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
             node->height = 1 + std::max(height_type(node->left->isNode() ? node->left->asNode()->height : 0),
                                         height_type(node->right->isNode() ? node->right->asNode()->height : 0));
         } else if (node->left) {
             ASSERT(!node->right);
-            node->rep = (node->left->isNode() ? node->left->asNode()->rep : node->left->asLeaf());
+            node->maxRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
             node->height = 1 + (node->left->isNode() ? node->left->asNode()->height : 0);
         } else {
             ASSERT(!node->left && !node->right);
-            node->rep = nullptr;
+            node->maxRep = nullptr;
             node->height = 0;
         }
 
-        return not(oldHeight == node->height && oldRep == node->rep);
+        return not(oldHeight == node->height && oldRep == node->maxRep);
     }
 
     void updateAndRebalance(InternalNode *node, bool rebalanceRequired = true) {
@@ -642,11 +642,11 @@ private:
     template<typename O, typename Compare>
     Leaf *find(InternalNode *node, const O &obj, const Compare &cmp) {
 
-        if (node->rep != nullptr && cmp(obj, *(node->rep->obj))) {
+        if (node->maxRep != nullptr && cmp(obj, *(node->maxRep->obj))) {
             ASSERT(node->left);
 
             if (node->left->isNode()) {
-                if (cmp(obj, *(node->left->asNode()->rep->obj))) {
+                if (cmp(obj, *(node->left->asNode()->maxRep->obj))) {
                     return find(node->left->asNode(), obj, cmp);
                 } else {
                     ASSERT(node->right);
