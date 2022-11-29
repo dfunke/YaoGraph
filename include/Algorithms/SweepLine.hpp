@@ -200,9 +200,7 @@ private:
             return a.first > b.first;
         };
 
-        using PQ = PriQueueD<pqItem, decltype(pqCmp)>;
-        PQ pq(iPoints.size());
-
+        using PQ = PriQueueAdapter<pqItem, decltype(pqCmp)>;
         using isKey = std::pair<typename Event::tRayHandle, typename Event::tRayHandle>;
         std::unordered_map<isKey, typename PQ::handle, pair_hash> isMap;
         std::unordered_map<typename Event::tRayHandle, typename PQ::handle, it_hash> extMap;
@@ -222,10 +220,14 @@ private:
 
         SweeplineDS sl(slDir);// range [0..2PI]
 
+        typename PQ::arrType pqArr;
+        pqArr.reserve(iPoints.size());
         for (tIndex i = 0; i < iPoints.size(); ++i) {
             auto p = Kernel::mkPoint(iPoints[i]);
-            pq.push({sl.prj(p), Event(p, i)});
+            pqArr.push_back({sl.prj(p), Event(p, i)});
         }
+
+        PQ pq(std::move(pqArr), std::sqrt(iPoints.size()));
 
 #ifdef WITH_CAIRO
 

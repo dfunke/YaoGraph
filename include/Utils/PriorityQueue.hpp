@@ -207,3 +207,104 @@ private:
         return true;
     }
 };
+
+
+template<class T, class Comp = std::less<T>>
+class PriQueueAdapter {
+
+public:
+    using pqType = PriQueueD<T, Comp>;
+    using arrType = std::vector<T>;
+    using handle = typename pqType::handle;
+
+    PriQueueAdapter(arrType &&static_elements, size_t capacityPQ, size_t log_degree = 3)
+        : arr(std::move(static_elements)), pq(capacityPQ, log_degree) {
+
+        // initially sort the static_elements according to Comp
+        std::sort(arr.begin(), arr.end(), comp);
+        arrIdx = arr.size();
+    }
+
+public:
+    const T &top() const {
+        ASSERT(!empty());
+
+        if (arrIdx > 0 && !pq.empty()) {
+            // both are not empty, we need to compare
+
+            if (compare(arr[arrIdx - 1], pq.top())) {
+                return arr[arrIdx - 1];
+            } else {
+                return pq.top();
+            }
+        } else {
+            // one is empty, can't be both per ASSERT
+
+            if (!pq.empty()) {
+                ASSERT(arrIdx == 0);
+                return pq.top();
+            } else {
+                ASSERT(arrIdx > 0);
+                return arr[arrIdx - 1];
+            }
+        }
+    }
+
+    bool empty() const { return arrIdx == 0 && pq.empty(); }
+    size_t size() const { return arrIdx + pq.size(); }
+
+    handle push(T value) {
+        return pq.push(value);
+    }
+
+    void pop() {
+        ASSERT(!empty());
+
+        if (arrIdx > 0 && !pq.empty()) {
+            // both are not empty, we need to compare
+
+            if (compare(arr[arrIdx - 1], pq.top())) {
+                arrIdx--;
+            } else {
+                pq.pop();
+            }
+        } else {
+            // one is empty, can't be both per ASSERT
+
+            if (!pq.empty()) {
+                ASSERT(arrIdx == 0);
+                pq.pop();
+            } else {
+                ASSERT(arrIdx > 0);
+                arrIdx--;
+            }
+        }
+    }
+
+    void remove(handle h) {
+        pq.remove(h);
+    }
+
+    void change_key(handle h, T newvalue) {
+        pq.change_key(h, newvalue);
+    }
+
+    const T &get_key(handle h) {
+        return pq.get_key(h);
+    }
+
+    bool verify() const {
+        return pq.verify();
+    }
+
+private:
+    bool compare(const T &v1, const T &v2) const {
+        return comp(v2, v1);
+    }
+
+private:
+    arrType arr;
+    pqType pq;
+    typename arrType::size_type arrIdx;
+    Comp comp;
+};
