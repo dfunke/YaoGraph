@@ -380,8 +380,6 @@ private:
         newNode->right = leaf;
         newNode->right->parent = newNode;
 
-        updateNodeInfo(newNode);
-
         (prevIsLeftChild ? parent->left : parent->right) = newNode;
         updateAndRebalance((prevIsLeftChild ? parent->left : parent->right)->asNode());
     }
@@ -424,8 +422,6 @@ private:
         newNode->right = pNode;
         newNode->right->parent = newNode;
 
-        updateNodeInfo(newNode);
-
         (prevIsLeftChild ? parent->left : parent->right) = newNode;
         updateAndRebalance((prevIsLeftChild ? parent->left : parent->right)->asNode());
     }
@@ -457,8 +453,6 @@ private:
 
         newNode->right = parent->left;
         newNode->right->parent = newNode;
-
-        updateNodeInfo(newNode);
 
         parent->left = newNode;
         updateAndRebalance(parent->left->asNode());
@@ -498,8 +492,6 @@ private:
 
         newNode->right = parent->left;
         newNode->right->parent = newNode;
-
-        updateNodeInfo(newNode);
 
         parent->left = newNode;
         updateAndRebalance(parent->left->asNode());
@@ -761,9 +753,11 @@ private:
         return not(oldHeight == node->height && oldRep == node->maxRep);
     }
 
-    void updateAndRebalance(InternalNode *node, bool rebalanceRequired = true) {
+    void updateAndRebalance(InternalNode *node, bool rebalanceRequired = true, bool updateRequired = true) {
 
-        bool nodeInfoChanged = updateNodeInfo(node);
+        if (updateRequired) {
+            updateRequired = updateNodeInfo(node);
+        }
 
         if (rebalanceRequired) {
             int balance = node->getBalance();
@@ -804,11 +798,14 @@ private:
 
             // if we rebalanced the node, we do not need to rebalance further up the tree
             rebalanceRequired = balance <= std::abs(1);
+
+            // if we rebalanced we need to update
+            updateRequired = updateRequired || balance >= std::abs(1);
         }
 
-        if (node->parent != nullptr && (nodeInfoChanged || rebalanceRequired)) {
+        if (node->parent != nullptr && (updateRequired || rebalanceRequired)) {
             // recursively traverse up to check whether node above became unbalanced
-            updateAndRebalance(node->parent, rebalanceRequired);
+            updateAndRebalance(node->parent, rebalanceRequired, updateRequired);
         }
     }
 
