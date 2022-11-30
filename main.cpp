@@ -66,26 +66,26 @@ void benchmark() {
 int main() {
 
 #ifdef WITH_CGAL
-    benchmark<CGAL_Yao2D<Cones, ExactPredicatesInexactConstructions>, Gaussian, Uniform, Grid>();
-    benchmark<CGAL_Yao2D<Cones, ExactPredicatesExactConstructions>, Gaussian, Uniform, Grid>();
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesInexactConstructions>, Gaussian, Uniform, Grid, Road>();
+    benchmark<CGAL_Yao2D<Cones, ExactPredicatesExactConstructions>, Gaussian, Uniform, Grid, Road>();
 #endif
 
-    benchmark<NaiveYao<Cones, InexactKernel>, Gaussian, Uniform, Grid>();
+    benchmark<NaiveYao<Cones, InexactKernel>, Gaussian, Uniform, Grid, Road>();
 #ifdef WITH_CGAL
-    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian, Uniform, Grid>();
-    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian, Uniform, Grid>();
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian, Uniform, Grid, Road>();
+    benchmark<NaiveYao<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian, Uniform, Grid, Road>();
 #endif
 
-    benchmark<GridYao<Cones, InexactKernel, cellOcc>, Gaussian, Uniform, Grid>();
+    benchmark<GridYao<Cones, InexactKernel, cellOcc>, Gaussian, Uniform, Grid, Road>();
 #ifdef WITH_CGAL
-    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>, Gaussian, Uniform, Grid>();
-    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesExactConstructions>, cellOcc>, Gaussian, Uniform, Grid>();
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesInexactConstructions>, cellOcc>, Gaussian, Uniform, Grid, Road>();
+    benchmark<GridYao<Cones, CGALKernel<ExactPredicatesExactConstructions>, cellOcc>, Gaussian, Uniform, Grid, Road>();
 #endif
 
-    benchmark<SweepLine<Cones, InexactKernel>, Gaussian, Uniform, Grid>();
+    benchmark<SweepLine<Cones, InexactKernel>, Gaussian, Uniform, Grid, Road>();
 #ifdef WITH_CGAL
-    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian, Uniform, Grid>();
-    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian, Uniform, Grid>();
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesInexactConstructions>>, Gaussian, Uniform, Grid, Road>();
+    benchmark<SweepLine<Cones, CGALKernel<ExactPredicatesExactConstructions>>, Gaussian, Uniform, Grid, Road>();
 #endif
 
     return 0;
