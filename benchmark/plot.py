@@ -6,17 +6,24 @@ import matplotlib.pylab as plt
 import seaborn as sns
 
 reFilename = re.compile("benchmark_([a-zA-Z0-9]+)_([a-zA-Z]+).csv")
+isRunningInPyCharm = "PYCHARM_HOSTED" in os.environ
 
 DIR = '/home/funke/devel/geograph/benchmark/data'
 EXT = 'png'
+
+def saveFig(f : str):
+    plt.savefig(f)
+    if isRunningInPyCharm:
+        plt.show()
+    plt.close()
 
 KernelPalette = {'InexactKernel': 'r', 'CGALExactPredInexactCon': 'g', 'CGALExactPredExactCon': 'b'}
 AlgorithmDash = {'NaiveYao': (0, 1, 1), 'Sweepline': (None, None), 'GridYao100': (0, 5, 10), 'CGALYao': (0, 3, 5, 1, 5)}
 AlgorithmMarkers = {'NaiveYao': 'o', 'Sweepline': 'D', 'GridYao100': '*', 'CGALYao': '^'}
 
-######################################################################################################
-# Priority Queue plots
 
+######################################################################################################
+# %% Priority Queue plots
 pqDataFile = os.path.join(DIR, 'pq.csv')
 if os.path.exists(pqDataFile):
 
@@ -30,26 +37,22 @@ if os.path.exists(pqDataFile):
 
     plt.stackplot(lPQ['step'], lPQ['ipPro'], lPQ['isPro'], lPQ['delPro'], labels=['input points', 'intersections', 'deletions'])
     plt.legend(loc='upper left')
-    plt.savefig("60_pq_events_processed.%s" % (EXT))
-    plt.close()
+    saveFig("60_pq_events_processed.%s" % (EXT))
 
     plt.stackplot(lPQ['step'], lPQ['ipQ'], lPQ['isQ'], lPQ['delQ'], labels=['input points', 'intersections', 'deletions'])
     plt.legend()
-    plt.savefig("60_pq_events_inQueue.%s" % (EXT))
-    plt.close()
+    saveFig("60_pq_events_inQueue.%s" % (EXT))
 
     plt.stackplot(lPQ['step'], lPQ['isQ'], lPQ['delQ'], labels=['intersections', 'deletions'])
     plt.legend()
-    plt.savefig("60_pq_events_inQueue_noInput.%s" % (EXT))
-    plt.close()
+    saveFig("60_pq_events_inQueue_noInput.%s" % (EXT))
 
     plt.stackplot(lPQ['step'], lPQ['slSize'], labels=['rays'])
     plt.legend()
-    plt.savefig("60_rays_inSL.%s" % (EXT))
-    plt.close()
+    saveFig("60_rays_inSL.%s" % (EXT))
 
 ######################################################################################################
-# Sweepline tree update operations plots
+# %% Sweepline tree update operations plots
 
 upDataFile = os.path.join(DIR, 'update.csv')
 if os.path.exists(upDataFile):
@@ -58,14 +61,13 @@ if os.path.exists(upDataFile):
 
     header = header[1:].strip().split()
 
-    gUp = pd.read_csv(upDataFile, sep=' ', comment='#', names=upHeader)
+    gUp = pd.read_csv(upDataFile, sep=' ', comment='#', names=header)
     sns.displot(gUp, x='change', col='op', discrete=True, stat='probability', common_norm=False)
 
-    plt.savefig("50_tree_updates.%s" % (EXT))
-    plt.close()
+    saveFig("50_tree_updates.%s" % (EXT))
 
 ######################################################################################################
-# Runtime plots
+# %% Runtime plots
 
 llData = []
 for f in os.listdir(DIR):
@@ -95,30 +97,26 @@ for dist in gData['dist'].unique():
                  markers=AlgorithmMarkers,
                  palette=KernelPalette)
     plt.figtext(.7, .89, 'Distribution: %s' % (dist))
-    plt.savefig("01_%s_runtime.%s" % (dist, EXT))
-    plt.close()
+    saveFig("01_%s_runtime.%s" % (dist, EXT))
 
     for alg in fData['algorithm'].unique():
         sns.lineplot(data=fData[fData['algorithm'] == alg], x='n', y='t', style='algorithm', hue='kernel',
                      dashes=AlgorithmDash,
                      markers=AlgorithmMarkers, palette=KernelPalette)
         plt.figtext(.7, .89, 'Distribution: %s' % (dist))
-        plt.savefig("02_%s_runtime_alg_%s.%s" % (dist, alg, EXT))
-        plt.close()
+        saveFig("02_%s_runtime_alg_%s.%s" % (dist, alg, EXT))
 
     for kernel in fData['kernel'].unique():
         sns.lineplot(data=fData[fData['kernel'] == kernel], x='n', y='t', style='algorithm', hue='kernel',
                      dashes=AlgorithmDash,
                      markers=AlgorithmMarkers, palette=KernelPalette)
         plt.figtext(.7, .89, 'Distribution: %s' % (dist))
-        plt.savefig("03_%s_runtime_kernel_%s.%s" % (dist, kernel, EXT))
-        plt.close()
+        saveFig("03_%s_runtime_kernel_%s.%s" % (dist, kernel, EXT))
 
     sns.lineplot(data=fData[~fData['algorithm'].isin(['NaiveYao', 'CGALYao'])], x='n', y='t', style='algorithm',
                  hue='kernel', dashes=AlgorithmDash, markers=AlgorithmMarkers, palette=KernelPalette)
     plt.figtext(.7, .89, 'Distribution: %s' % (dist))
-    plt.savefig("04_%s_runtime_sweepline_grid.%s" % (dist, EXT))
-    plt.close()
+    saveFig("04_%s_runtime_sweepline_grid.%s" % (dist, EXT))
 
     sns.lineplot(
         data=fData[
@@ -126,5 +124,4 @@ for dist in gData['dist'].unique():
         x='n', y='t', style='algorithm', hue='kernel', dashes=AlgorithmDash, markers=AlgorithmMarkers,
         palette=KernelPalette)
     plt.figtext(.7, .89, 'Distribution: %s' % (dist))
-    plt.savefig("05_%s_runtime_sweepline_grid_noExactCon.%s" % (dist, EXT))
-    plt.close()
+    saveFig("05_%s_runtime_sweepline_grid_noExactCon.%s" % (dist, EXT))
