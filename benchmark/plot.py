@@ -14,6 +14,59 @@ KernelPalette = {'InexactKernel': 'r', 'CGALExactPredInexactCon': 'g', 'CGALExac
 AlgorithmDash = {'NaiveYao': (0, 1, 1), 'Sweepline': (None, None), 'GridYao100': (0, 5, 10), 'CGALYao': (0, 3, 5, 1, 5)}
 AlgorithmMarkers = {'NaiveYao': 'o', 'Sweepline': 'D', 'GridYao100': '*', 'CGALYao': '^'}
 
+######################################################################################################
+# Priority Queue plots
+
+pqDataFile = os.path.join(DIR, 'pq.csv')
+if os.path.exists(pqDataFile):
+
+    with open(pqDataFile, 'r') as file:
+        header = file.readline()
+
+    header = header[1:].strip().split()
+
+    gPQ = pd.read_csv(pqDataFile, sep=' ', comment='#', names=header)
+    lPQ = gPQ[gPQ['k'] == 0]
+
+    plt.stackplot(lPQ['step'], lPQ['ipPro'], lPQ['isPro'], lPQ['delPro'], labels=['input points', 'intersections', 'deletions'])
+    plt.legend(loc='upper left')
+    plt.savefig("60_pq_events_processed.%s" % (EXT))
+    plt.close()
+
+    plt.stackplot(lPQ['step'], lPQ['ipQ'], lPQ['isQ'], lPQ['delQ'], labels=['input points', 'intersections', 'deletions'])
+    plt.legend()
+    plt.savefig("60_pq_events_inQueue.%s" % (EXT))
+    plt.close()
+
+    plt.stackplot(lPQ['step'], lPQ['isQ'], lPQ['delQ'], labels=['intersections', 'deletions'])
+    plt.legend()
+    plt.savefig("60_pq_events_inQueue_noInput.%s" % (EXT))
+    plt.close()
+
+    plt.stackplot(lPQ['step'], lPQ['slSize'], labels=['rays'])
+    plt.legend()
+    plt.savefig("60_rays_inSL.%s" % (EXT))
+    plt.close()
+
+######################################################################################################
+# Sweepline tree update operations plots
+
+upDataFile = os.path.join(DIR, 'update.csv')
+if os.path.exists(upDataFile):
+    with open(upDataFile, 'r') as file:
+        header = file.readline()
+
+    header = header[1:].strip().split()
+
+    gUp = pd.read_csv(upDataFile, sep=' ', comment='#', names=upHeader)
+    sns.displot(gUp, x='change', col='op', discrete=True, stat='probability', common_norm=False)
+
+    plt.savefig("50_tree_updates.%s" % (EXT))
+    plt.close()
+
+######################################################################################################
+# Runtime plots
+
 llData = []
 for f in os.listdir(DIR):
     match = reFilename.match(f)
