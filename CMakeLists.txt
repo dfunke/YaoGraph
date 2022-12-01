@@ -63,4 +63,5 @@ if (GTEST_FOUND)
     add_subdirectory(test)
 endif ()
 
-
+set(ROAD_GRAPH_DIR "${PROJECT_SOURCE_DIR}/data" CACHE PATH "Path to road networks")
+add_compile_definitions(ROAD_DATA="${ROAD_GRAPH_DIR}")

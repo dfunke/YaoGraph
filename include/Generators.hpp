@@ -151,7 +151,7 @@ public:
 
     tPoints generate(const tIndex n, const tBox &bounds) override {
 
-        std::string fileName = "/Users/funke/Development/GeoGraph/data/USA-road-d.NY.co";
+        std::string fileName = ROAD_DATA "/USA-road-d.NY.co";
         std::ifstream file(fileName, std::ios::in);
         std::string line;
 
