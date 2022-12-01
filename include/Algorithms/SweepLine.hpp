@@ -25,7 +25,7 @@
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
-#define PAINT_STEPS
+//#define PAINT_STEPS
 #endif
 
 template<tDim C, typename Kernel>
@@ -101,7 +101,7 @@ class SweepLine {
 
             ASSERT(it == end() || it->orientedSide(p) != tOrientedSide::LEFT);
             ASSERT(std::prev(it) == end() || std::prev(it)->orientedSide(p) != tOrientedSide::RIGHT);
-            RASSERT(it == linearFind(p));
+            ASSERT(it == linearFind(p));
 
             return it;
         }
@@ -361,11 +361,12 @@ private:
 
                     auto itBr = sl.find(cPoint.pos);// right ray
 
-                    /*if (itBr != sl.end() && itBr->orientedSide(cPoint.pos) == tOrientedSide::LINE) {// check whether point is ON right boundary
+                    if (itBr != sl.end() && itBr->orientedSide(cPoint.pos) == tOrientedSide::LINE) {// check whether point is ON right boundary
                         if (itBr->direction() == lRay) {
                             itBr = std::next(itBr);
+                            LOG(idx << ": point ON right boundary that is aleft ray" << std::endl);
                         }
-                    }*/
+                    }
 
                     auto itBl = (itBr == sl.begin() ? sl.end() : std::prev(itBr));// left ray
                     ASSERT(itBl == sl.end() || itBl->orientedSide(cPoint.pos) != tOrientedSide::RIGHT);
@@ -384,11 +385,15 @@ private:
 #endif
 
                     // add graph edge
+                    // if p lies on right boundary, it does not belong to this cone
                     if (itBr != sl.end() && itBr->leftRegion != INF_IDX) {
                         ASSERT(itBl->rightRegion == itBr->leftRegion);
 
-                        graph[cPoint.idx].neighbor[k] = itBr->leftRegion;
-                        graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion]));
+                        auto r = itBr->orientedSide(cPoint.pos) != tOrientedSide::LINE ? itBr->leftRegion : itBr->rightRegion;
+                        if(r != INF_IDX) {
+                            graph[cPoint.idx].neighbor[k] = r;
+                            graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[r]));
+                        }
 
                         LOG(idx << ": "
                                 << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])) << std::endl);
