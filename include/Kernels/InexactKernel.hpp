@@ -189,7 +189,7 @@ public:
         tOrientedSide orientedSide(const Point &x) const {
             // we only consider main ray, when the starting point of lower ray is
             // swept, this ray will be replaced by it
-            Float res = (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X])) > 0;
+            Float res = (((p[X] + dir.cos()) - p[X]) * (x[Y] - p[Y]) - ((p[Y] + dir.sin()) - p[Y]) * (x[X] - p[X]));
             return res > 0 ? tOrientedSide::LEFT : res < 0 ? tOrientedSide::RIGHT
                                                            : tOrientedSide::LINE;
         }
