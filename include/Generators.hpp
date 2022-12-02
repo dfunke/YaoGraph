@@ -9,6 +9,7 @@
 #include <numeric>
 #include <random>
 #include <sstream>
+#include <iterator>
 
 #include "Predicates.hpp"
 #include "Types.hpp"
@@ -306,11 +307,17 @@ public:
         // start with 45 - 55 quantile for zslice and grow if necessary
         double zSliceSize = .05;
 
-        while (slicePoints.size() < n && zSliceSize <= .25) {
+        while (slicePoints.size() < n && zSliceSize <= .5) {
             slicePoints.clear();//TODO: this can be done smarter
 
-            for (tIndex i = zSort[zSort.size() * (.5 - zSliceSize)]; i < zSort[zSort.size() * (.5 + zSliceSize)]; ++i) {
-                const auto &p = inPoints[i];
+            auto begin = zSort.begin();
+            std::advance(begin, zSort.size() * (.5 - zSliceSize));
+
+            auto end = zSort.begin();
+            std::advance(end, zSort.size() * (.5 + zSliceSize));
+
+            for (auto it = begin; it != end; ++it) {
+                const auto &p = inPoints[*it];
                 if (xMin <= p[X] && p[X] <= xMax && yMin <= p[Y] && p[Y] <= yMax) {
                     slicePoints.push_back(p);
 
