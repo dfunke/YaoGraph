@@ -25,6 +25,47 @@ protected:
         return static_cast<Dist &>(*this).dist(gen);
     }
 
+    // See https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+    std::vector<tIndex> FisherYatesShuffle(const tIndex &sample_size, const tIndex &pop_size) {
+        if (sample_size > pop_size) {
+            std::vector<tIndex> sample(pop_size);
+            std::iota(sample.begin(), sample.end(), 0);
+
+            return sample;
+        }
+
+        std::vector<tIndex> sample(sample_size);
+
+        for (tIndex i = 0; i != pop_size; ++i) {
+            auto lDist = std::uniform_int_distribution<tIndex>(0, i);
+            tIndex j = lDist(gen);
+            if (j < sample.size()) {
+                if (i < sample.size()) {
+                    sample[i] = sample[j];
+                }
+                sample[j] = i;
+            }
+        }
+        return sample;
+    }
+
+    template<typename T, typename Compare>
+    std::vector<tIndex> sort_indices(const std::vector<T> &v, Compare comp) {
+
+        // initialize original index locations
+        std::vector<tIndex> idx(v.size());
+        std::iota(idx.begin(), idx.end(), 0);
+
+        // sort indexes based on comparing values in v
+        // using std::stable_sort instead of std::sort
+        // to avoid unnecessary index re-orderings
+        // when v contains elements of equal values
+        std::stable_sort(idx.begin(), idx.end(),
+                         [&v, &comp](tIndex i1, tIndex i2) { return comp(v[i1], v[i2]); });
+
+        return idx;
+    }
+
 private:
     std::mt19937 gen;
 };
@@ -211,31 +252,6 @@ public:
     }
 
 private:
-    // See https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
-    std::vector<tIndex> FisherYatesShuffle(const tIndex &sample_size, const tIndex &pop_size) {
-        if (sample_size > pop_size) {
-            std::vector<tIndex> sample(pop_size);
-            std::iota(sample.begin(), sample.end(), 0);
-
-            return sample;
-        }
-
-        std::vector<tIndex> sample(sample_size);
-
-        for (tIndex i = 0; i != pop_size; ++i) {
-            dist = std::uniform_int_distribution<tIndex>(0, i);
-            tIndex j = rand();
-            if (j < sample.size()) {
-                if (i < sample.size()) {
-                    sample[i] = sample[j];
-                }
-                sample[j] = i;
-            }
-        }
-        return sample;
-    }
-
-private:
     std::uniform_int_distribution<tIndex> dist;
 };
 
@@ -326,48 +342,6 @@ public:
         }
 
         return points;
-    }
-
-private:
-    // See https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
-    std::vector<tIndex> FisherYatesShuffle(const tIndex &sample_size, const tIndex &pop_size) {
-        if (sample_size > pop_size) {
-            std::vector<tIndex> sample(pop_size);
-            std::iota(sample.begin(), sample.end(), 0);
-
-            return sample;
-        }
-
-        std::vector<tIndex> sample(sample_size);
-
-        for (tIndex i = 0; i != pop_size; ++i) {
-            dist = std::uniform_int_distribution<tIndex>(0, i);
-            tIndex j = rand();
-            if (j < sample.size()) {
-                if (i < sample.size()) {
-                    sample[i] = sample[j];
-                }
-                sample[j] = i;
-            }
-        }
-        return sample;
-    }
-
-    template<typename T, typename Compare>
-    std::vector<tIndex> sort_indices(const std::vector<T> &v, Compare comp) {
-
-        // initialize original index locations
-        std::vector<tIndex> idx(v.size());
-        std::iota(idx.begin(), idx.end(), 0);
-
-        // sort indexes based on comparing values in v
-        // using std::stable_sort instead of std::sort
-        // to avoid unnecessary index re-orderings
-        // when v contains elements of equal values
-        std::stable_sort(idx.begin(), idx.end(),
-                         [&v, &comp](tIndex i1, tIndex i2) { return comp(v[i1], v[i2]); });
-
-        return idx;
     }
 
 private:
