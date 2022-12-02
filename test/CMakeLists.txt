@@ -1,6 +1,7 @@
 enable_testing()
 
-add_compile_definitions(ROAD_DATA="${ROAD_GRAPH_DIR}")
+add_compile_definitions(ROAD_DATA="${ROAD_DIR}")
+add_compile_definitions(STAR_DATA="${STAR_DIR}")
 
 add_executable(YaoGraphTest YaoGraphTest.cpp)
 target_link_libraries(YaoGraphTest GTest::gtest_main)

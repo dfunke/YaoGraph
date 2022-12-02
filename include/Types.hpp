@@ -12,6 +12,7 @@ using tIndex = std::size_t;
 
 constexpr tDim X = 0;
 constexpr tDim Y = 1;
+constexpr tDim Z = 2;
 constexpr tIndex INF_IDX = tIndex(-1);
 
 constexpr tDim D = 2;

@@ -63,5 +63,8 @@ if (GTEST_FOUND)
     add_subdirectory(test)
 endif ()
 
-set(ROAD_GRAPH_DIR "${PROJECT_SOURCE_DIR}/data" CACHE PATH "Path to road networks")
-add_compile_definitions(ROAD_DATA="${ROAD_GRAPH_DIR}")
+set(ROAD_DIR "${PROJECT_SOURCE_DIR}/data" CACHE PATH "Path to road networks")
+add_compile_definitions(ROAD_DATA="${ROAD_DIR}")
+
+set(STAR_DIR "/global_data/funke/Gaia/" CACHE PATH "Path to gaia data")
+add_compile_definitions(STAR_DATA="${STAR_DIR}")

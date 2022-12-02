@@ -4,10 +4,11 @@
 
 #pragma once
 
+#include <algorithm>
 #include <fstream>
+#include <numeric>
 #include <random>
 #include <sstream>
-#include <algorithm>
 
 #include "Predicates.hpp"
 #include "Types.hpp"
@@ -195,7 +196,7 @@ public:
 
         auto samples = FisherYatesShuffle(n, inPoints.size());
 
-        for (const auto & i : samples) {
+        for (const auto &i : samples) {
 
             tIFloatVector p;
             for (tDim d = 0; d < D; ++d) {
@@ -212,7 +213,7 @@ public:
 private:
     // See https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
     std::vector<tIndex> FisherYatesShuffle(const tIndex &sample_size, const tIndex &pop_size) {
-        if(sample_size > pop_size){
+        if (sample_size > pop_size) {
             std::vector<tIndex> sample(pop_size);
             std::iota(sample.begin(), sample.end(), 0);
 
@@ -232,6 +233,141 @@ private:
             }
         }
         return sample;
+    }
+
+private:
+    std::uniform_int_distribution<tIndex> dist;
+};
+
+class Stars : public Generator<Stars> {
+
+    friend class Generator<Stars>;
+
+public:
+    Stars(const tIndex &seed) : Generator(seed) {}
+
+    static std::string name() {
+        return "stars";
+    }
+
+    tPoints generate(const tIndex n, const tBox &bounds) override {
+
+        std::string fileName = STAR_DATA "/gaia_1.points";
+        std::ifstream file(fileName, std::ios::in);
+        std::string line;
+
+        using tInPoint = std::array<double, 3>;
+        std::vector<tInPoint> inPoints;
+
+        while (std::getline(file, line)) {
+            // star line
+            // x y z
+
+            std::istringstream iss(line);
+            double x, y, z;
+            if (!(iss >> x >> y >> z)) { continue; }// error in file
+
+            inPoints.push_back({x, y, z});
+        }
+
+        auto xSort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[X] < b[X]; });
+        auto ySort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[Y] < b[Y]; });
+        auto zSort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[Z] < b[Z]; });
+
+        // use 25 - 75 quantiles for X and Y to reject outliers
+        double xMin = inPoints[xSort[xSort.size() * .25]][X];
+        double xMax = inPoints[xSort[xSort.size() * .75]][X];
+
+        double yMin = inPoints[ySort[xSort.size() * .25]][Y];
+        double yMax = inPoints[ySort[xSort.size() * .75]][Y];
+
+        std::vector<tInPoint> slicePoints;
+        slicePoints.reserve(n);
+
+        tInPoint minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
+        tInPoint maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
+
+        // start with 45 - 55 quantile for zslice and grow if necessary
+        double zSliceSize = .05;
+
+        while (slicePoints.size() < n && zSliceSize <= .25) {
+            slicePoints.clear();//TODO: this can be done smarter
+
+            for (tIndex i = zSort[zSort.size() * (.5 - zSliceSize)]; i < zSort[zSort.size() * (.5 + zSliceSize)]; ++i) {
+                const auto &p = inPoints[i];
+                if (xMin <= p[X] && p[X] <= xMax && yMin <= p[Y] && p[Y] <= yMax) {
+                    slicePoints.push_back(p);
+
+                    if (p[X] < minPoint[X]) minPoint[X] = p[X];
+                    if (p[Y] < minPoint[Y]) minPoint[Y] = p[Y];
+                    if (p[X] > maxPoint[X]) maxPoint[X] = p[X];
+                    if (p[Y] > maxPoint[Y]) maxPoint[Y] = p[Y];
+                }
+            }
+
+            if (slicePoints.size() < n) {
+                zSliceSize += .05;
+            }
+        }
+
+        tPoints points;
+        points.reserve(n);
+
+        auto samples = FisherYatesShuffle(n, slicePoints.size());
+
+        for (const auto &i : samples) {
+            tIFloatVector p;
+            for (tDim d = 0; d < D; ++d) {
+                p[d] = bounds.low[d] + (bounds.high[d] - bounds.low[d]) * ((slicePoints[i][d] - minPoint[d]) / static_cast<tIFloat>((maxPoint[d] - minPoint[d])));
+            }
+
+            ASSERT(bounds.contains(p));
+            points.emplace_back(p);
+        }
+
+        return points;
+    }
+
+private:
+    // See https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+    std::vector<tIndex> FisherYatesShuffle(const tIndex &sample_size, const tIndex &pop_size) {
+        if (sample_size > pop_size) {
+            std::vector<tIndex> sample(pop_size);
+            std::iota(sample.begin(), sample.end(), 0);
+
+            return sample;
+        }
+
+        std::vector<tIndex> sample(sample_size);
+
+        for (tIndex i = 0; i != pop_size; ++i) {
+            dist = std::uniform_int_distribution<tIndex>(0, i);
+            tIndex j = rand();
+            if (j < sample.size()) {
+                if (i < sample.size()) {
+                    sample[i] = sample[j];
+                }
+                sample[j] = i;
+            }
+        }
+        return sample;
+    }
+
+    template<typename T, typename Compare>
+    std::vector<tIndex> sort_indices(const std::vector<T> &v, Compare comp) {
+
+        // initialize original index locations
+        std::vector<tIndex> idx(v.size());
+        std::iota(idx.begin(), idx.end(), 0);
+
+        // sort indexes based on comparing values in v
+        // using std::stable_sort instead of std::sort
+        // to avoid unnecessary index re-orderings
+        // when v contains elements of equal values
+        std::stable_sort(idx.begin(), idx.end(),
+                         [&v, &comp](tIndex i1, tIndex i2) { return comp(v[i1], v[i2]); });
+
+        return idx;
     }
 
 private:
