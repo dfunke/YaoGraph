@@ -23,6 +23,8 @@
 #include "Kernels/CGALKernel.hpp"
 #endif
 
+#include "Utils/robin_hood.h"
+
 #ifdef WITH_CAIRO
 #include "Painter.hpp"
 //#define PAINT_STEPS
@@ -190,7 +192,8 @@ private:
             auto h1 = std::hash<typename IT::const_pointer>{}(&*p.first);
             auto h2 = std::hash<typename IT::const_pointer>{}(&*p.second);
 
-            return h1 ^ h2;//TODO better hash combination
+            // from Boost HashCombine
+            return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h2 >> 2));
         }
     };
 
@@ -211,8 +214,8 @@ private:
 
         using PQ = PriQueueAdapter<pqItem, decltype(pqCmp)>;
         using isKey = std::pair<typename Event::tRayHandle, typename Event::tRayHandle>;
-        std::unordered_map<isKey, typename PQ::handle, pair_hash> isMap;
-        std::unordered_map<typename Event::tRayHandle, typename PQ::handle, it_hash> extMap;
+        robin_hood::unordered_map<isKey, typename PQ::handle, pair_hash> isMap;
+        robin_hood::unordered_map<typename Event::tRayHandle, typename PQ::handle, it_hash> extMap;
 
         auto bounds = Kernel::mkBBox(iBounds);
 
@@ -390,7 +393,7 @@ private:
                         ASSERT(itBl->rightRegion == itBr->leftRegion);
 
                         auto r = itBr->orientedSide(cPoint.pos) != tOrientedSide::LINE ? itBr->leftRegion : itBr->rightRegion;
-                        if(r != INF_IDX) {
+                        if (r != INF_IDX) {
                             graph[cPoint.idx].neighbor[k] = r;
                             graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[r]));
                         }
@@ -420,7 +423,7 @@ private:
                             tRay({cPoint.pos, lRay,
                                   itBl != sl.end() ? itBl->rightRegion : INF_IDX, cPoint.idx}),
                             tRay({cPoint.pos, rRay, cPoint.idx,
-                                        itBr != sl.end() ? itBr->leftRegion : INF_IDX}));
+                                  itBr != sl.end() ? itBr->leftRegion : INF_IDX}));
                     auto itBrn = std::next(itBln);
 
                     ASSERT(itBln == std::prev(itBrn));
