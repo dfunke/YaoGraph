@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
     auto sBenchmark = op.add<popl::Switch>("b", "benchmark", "run benchmark suite");
 
     // generate points
-    auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]");
+    auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]", 'u');
     auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
 
     // points file
@@ -192,12 +192,15 @@ int main(int argc, char **argv) {
     // get points
     tPoints points;
     tBox bounds;
-    if (oDist->is_set() && oN->is_set()) {
+    if (oN->is_set()) {
         auto gen = getGen(oDist->value());
         points = gen->generate(oN->value(), BOUNDS);
         bounds = BOUNDS;
     } else if (oPointsFile->is_set()) {
         std::tie(points, bounds) = readPointsFile(oPointsFile->value());
+    } else {
+        std::cout << "Either specify input point file or point generation option" << std::endl;
+        return 0;
     }
 
     // run algorithm
