@@ -23,7 +23,7 @@
 #include "Kernels/CGALKernel.hpp"
 #endif
 
-#include "Utils/robin_hood.h"
+#include "contrib/robin_hood.h"
 
 #ifdef WITH_CAIRO
 #include "Painter.hpp"

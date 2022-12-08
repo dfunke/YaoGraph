@@ -6,20 +6,24 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iterator>
 #include <numeric>
 #include <random>
 #include <sstream>
-#include <iterator>
 
 #include "Predicates.hpp"
 #include "Types.hpp"
 
+class GeneratorBase {
+public:
+    virtual tPoints generate(const tIndex n, const tBox &bounds) = 0;
+};
+
 template<typename Dist>
-class Generator {
+class Generator : public GeneratorBase {
 
 public:
     Generator(const tIndex &seed) : gen(seed) {}
-    virtual tPoints generate(const tIndex n, const tBox &bounds) = 0;
 
 protected:
     auto rand() {
