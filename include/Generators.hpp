@@ -17,6 +17,8 @@
 class GeneratorBase {
 public:
     virtual tPoints generate(const tIndex n, const tBox &bounds) = 0;
+
+    virtual ~GeneratorBase() = default;
 };
 
 template<typename Dist>

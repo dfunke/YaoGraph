@@ -54,7 +54,7 @@ std::unique_ptr<GeneratorBase> getGen(const char &dist) {
         default:
             return nullptr;
     }
-};
+}
 
 std::tuple<tPoints, tBox> readPointsFile(const std::string &fileName) {
     std::ifstream file(fileName, std::ios::in);
