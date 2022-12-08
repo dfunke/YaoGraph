@@ -5,30 +5,34 @@
 #pragma once
 
 #include <CGAL/Construct_theta_graph_2.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
+#include "Kernels/CGALKernel.hpp"
 #include "Types.hpp"
 
-template<tDim Cones>
+template<typename Kernel>
 class CGAL_Theta2D {
 
 public:
-    using K = CGAL::Exact_predicates_inexact_constructions_kernel;
-    using Point = K::Point_2;
-    using Direction = K::Direction_2;
+    using K = Kernel;
+    using Point = typename K::Point_2;
+    using Direction = typename K::Direction_2;
     using Graph = boost::adjacency_list<boost::listS,
                                         boost::vecS,
                                         boost::undirectedS,
                                         Point>;
     using Theta = CGAL::Construct_theta_graph_2<K, Graph>;
 
-public:
-    auto operator()(const tPoints &points) {
+    static std::string name() {
+        return "CGALTheta_CGAL" + KernelName<K>::name();
+    }
 
-        Theta theta(Cones);
+public:
+    auto operator()(const tDim &K, const tPoints &points, [[maybe_unused]] const tBox &bounds) {
+
+        Theta theta(K);
         Graph g;
 
-        auto transform = [](const auto &p) -> auto {
+        auto transform = [](const auto &p) -> auto{
             return Point(p[0], p[1]);
         };
 

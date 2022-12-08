@@ -8,7 +8,7 @@
 #include "Predicates.hpp"
 #include "Types.hpp"
 
-template<tDim C, typename Kernel, tIndex CellOcc>
+template<typename Kernel>
 class GridYao {
 
 private:
@@ -21,7 +21,7 @@ private:
     class Grid {
 
     private:
-        friend class GridYao<C, Kernel, CellOcc>;
+        friend class GridYao<Kernel>;
 
         using tGridCell = std::vector<tIndex>;
         using tGrid = std::vector<tGridCell>;
@@ -92,20 +92,17 @@ private:
     };
 
 public:
-    using tVertex = tYaoVertex<C, tEFloat>;
-    using tGraph = tYaoGraph<tVertex>;
-
     static std::string name() {
-        return "GridYao" + std::to_string(CellOcc) + "_" + Kernel::name();
+        return "GridYao_" + Kernel::name();
     }
 
-    tGraph operator()(const tPoints &iPoints, const tBox &bounds) const {
-        tGraph graph(iPoints.size());
+    auto operator()(const tDim &K, const tPoints &iPoints, const tBox &bounds, const tIndex &cellOcc) const {
+        tYaoGraph graph(iPoints.size(), K);
 
-        auto rays = Kernel::computeCones(C);
+        auto rays = Kernel::computeCones(K);
         auto kPoints = Kernel::mkPoints(iPoints);
 
-        Grid grid(bounds, std::ceil(kPoints.size() / static_cast<tIFloat>(CellOcc)));
+        Grid grid(bounds, std::ceil(kPoints.size() / static_cast<tIFloat>(cellOcc)));
         grid.buildGrid(kPoints);
 
         for (tIndex i = 0; i < kPoints.size(); ++i) {
@@ -122,7 +119,7 @@ public:
     }
 
 private:
-    bool isFinalized(const tVertex &v, const tIndex &radius, const tEFloat &minCellSize) const {
+    bool isFinalized(const tYaoVertex &v, const tIndex &radius, const tEFloat &minCellSize) const {
 
         auto d = static_cast<int>(radius - 1) * minCellSize;//TODO better type handling, exact computation;
         auto d2 = d * d;
@@ -144,7 +141,7 @@ private:
     }
 
     void searchRadius(const tIndex &point, const int &radius,
-                      tGraph &graph, const Grid &grid, const tKPoints &points, const auto &cLines) const {
+                      tYaoGraph &graph, const Grid &grid, const tKPoints &points, const auto &cLines) const {
 
         auto idx = grid.getIndexVector(points[point]);
 
@@ -166,7 +163,7 @@ private:
     }
 
     void visitGridCell(const tIndex &point, const tIndexVector &cell,
-                       tGraph &graph, const Grid &grid, const tKPoints &points, const auto &cLines) const {
+                       tYaoGraph &graph, const Grid &grid, const tKPoints &points, const auto &cLines) const {
 
         auto &vertex = graph[point];
 
@@ -178,7 +175,7 @@ private:
 
             if (vertex.neighbor[sec] == INF_IDX || Kernel::compareDistance(points[point], points[p], points[vertex.neighbor[sec]], vertex.distance[sec])) {
                 vertex.neighbor[sec] = p;
-                vertex.distance[sec] = Kernel::distance2(points[point], points[p]);
+                vertex.distance[sec] = Kernel::to_float(Kernel::distance2(points[point], points[p]));
             }
         }
     }

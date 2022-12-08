@@ -23,8 +23,7 @@ using tIndexVector = std::array<tIndex, D>;
 using tPoints = std::vector<tIFloatVector>;
 using tIndexSet = std::unordered_set<tIndex>;
 
-enum  tOrientedSide
-{
+enum tOrientedSide {
     RIGHT = -1,
     LINE,
     LEFT
@@ -59,21 +58,14 @@ struct tBox {
     }
 };
 
-template<tDim C, typename Float>
 struct tYaoVertex {
 
-    static const tDim K = C;
+    explicit tYaoVertex(const tDim &k) : neighbor(k, INF_IDX), distance(k, std::numeric_limits<tIFloat>::max()) {}
 
-    tYaoVertex() {
-        for (tDim i = 0; i < neighbor.size(); ++i) {
-            neighbor[i] = INF_IDX;
-            distance[i] = std::numeric_limits<tIFloat>::max();
-        }
-    }
-
-    std::array<tIndex, K> neighbor;
-    std::array<Float, K> distance;
+    std::vector<tIndex> neighbor;
+    std::vector<tIFloat> distance;
 };
 
-template<typename V>
-using tYaoGraph = std::vector<V>;
+struct tYaoGraph : public std::vector<tYaoVertex> {
+    tYaoGraph(const tIndex &n, const tDim &k) : std::vector<tYaoVertex>(n, tYaoVertex(k)) {}
+};

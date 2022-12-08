@@ -30,7 +30,7 @@
 //#define PAINT_STEPS
 #endif
 
-template<tDim C, typename Kernel>
+template<typename Kernel>
 class SweepLine {
 
     using tEFloat = typename Kernel::Float;// possibly exact float
@@ -166,18 +166,15 @@ class SweepLine {
     };
 
 public:
-    using tVertex = tYaoVertex<C, tEFloat>;
-    using tGraph = tYaoGraph<tVertex>;
-
     static std::string name() {
         return "Sweepline_" + Kernel::name();
     }
 
-    tGraph operator()(const tPoints &points, const tBox &bounds) const {
-        tGraph g(points.size());
+    auto operator()(const tDim &K, const tPoints &points, const tBox &bounds) const {
+        tYaoGraph g(points.size(), K);
 
-        for (tDim k = 0; k < C; ++k) {
-            sweepline(points, k, g, bounds);
+        for (tDim k = 0; k < K; ++k) {
+            sweepline(points, k, K, g, bounds);
         }
 
         return g;
@@ -204,7 +201,7 @@ private:
         }
     };
 
-    void sweepline(const tPoints &iPoints, tDim k, tGraph &graph,
+    void sweepline(const tPoints &iPoints, tDim k, const tDim &K, tYaoGraph &graph,
                    const tBox &iBounds) const {
 
         using pqItem = std::pair<tEFloat, Event>;
@@ -219,8 +216,8 @@ private:
 
         auto bounds = Kernel::mkBBox(iBounds);
 
-        tIFloat lTheta = k * (2 * M_PI / C);      // range [0..2PI]
-        tIFloat uTheta = (k + 1) * (2 * M_PI / C);// range [0..2PI]
+        tIFloat lTheta = k * (2 * M_PI / K);      // range [0..2PI]
+        tIFloat uTheta = (k + 1) * (2 * M_PI / K);// range [0..2PI]
         ASSERT(lTheta <= uTheta);                 // trivial
 
         tDirection lRay(wrapAngle(lTheta + tIFloat(M_PI)));// range [0..2PI]
@@ -395,7 +392,7 @@ private:
                         auto r = itBr->orientedSide(cPoint.pos) != tOrientedSide::LINE ? itBr->leftRegion : itBr->rightRegion;
                         if (r != INF_IDX) {
                             graph[cPoint.idx].neighbor[k] = r;
-                            graph[cPoint.idx].distance[k] = Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[r]));
+                            graph[cPoint.idx].distance[k] = Kernel::to_float(Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[r])));
                         }
 
                         LOG(idx << ": "

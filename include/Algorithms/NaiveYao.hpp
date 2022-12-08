@@ -9,23 +9,18 @@
 #include "Predicates.hpp"
 #include "Types.hpp"
 
-template<tDim C, typename Kernel>
+template<typename Kernel>
 class NaiveYao {
 
 public:
-    using tVertex = tYaoVertex<C, typename Kernel::Float>;
-    using tGraph = tYaoGraph<tVertex>;
-
-    using tPoint = typename Kernel::Point;
-
     static std::string name() {
         return "NaiveYao_" + Kernel::name();
     }
 
-    auto operator()(const tPoints &iPoints, [[maybe_unused]] const tBox &bounds) const {
-        tGraph g(iPoints.size());
+    auto operator()(const tDim &K, const tPoints &iPoints, [[maybe_unused]] const tBox &bounds) const {
+        tYaoGraph g(iPoints.size(), K);
 
-        auto rays = Kernel::computeCones(C);
+        auto rays = Kernel::computeCones(K);
         auto kPoints = Kernel::mkPoints(iPoints);
 
         for (tIndex i = 0; i < kPoints.size(); ++i) {
@@ -40,7 +35,7 @@ public:
 
                 if (g[i].neighbor[sec] == INF_IDX || Kernel::compareDistance(kPoints[i], kPoints[j], kPoints[g[i].neighbor[sec]], g[i].distance[sec])) {
                     g[i].neighbor[sec] = j;
-                    g[i].distance[sec] = Kernel::distance2(kPoints[i], kPoints[j]);
+                    g[i].distance[sec] = Kernel::to_float(Kernel::distance2(kPoints[i], kPoints[j]));
                 }
             }
         }

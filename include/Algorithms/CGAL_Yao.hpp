@@ -9,7 +9,7 @@
 #include "Kernels/CGALKernel.hpp"
 #include "Types.hpp"
 
-template<tDim Cones, typename Kernel>
+template<typename Kernel>
 class CGAL_Yao2D {
 
 public:
@@ -27,12 +27,12 @@ public:
     }
 
 public:
-    auto operator()(const tPoints &points, [[maybe_unused]] const tBox &bounds) {
+    auto operator()(const tDim &K, const tPoints &points, [[maybe_unused]] const tBox &bounds) {
 
-        Yao yao(Cones);
+        Yao yao(K);
         Graph g;
 
-        auto transform = [](const auto &p) -> auto {
+        auto transform = [](const auto &p) -> auto{
             return Point(p[0], p[1]);
         };
 

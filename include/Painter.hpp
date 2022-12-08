@@ -179,9 +179,9 @@ public:
 
     void drawCone(const tIFloatVector &apex, const tIFloat &lowerPhi, const tIFloat &upperPhi, const tIFloat length = 1) {
         drawLine(apex, apex + tIFloatVector({length * std::cos(lowerPhi),
-                                            length * std::sin(lowerPhi)}));
+                                             length * std::sin(lowerPhi)}));
         drawLine(apex, apex + tIFloatVector({length * std::cos(upperPhi),
-                                            length * std::sin(upperPhi)}));
+                                             length * std::sin(upperPhi)}));
     }
 
     void drawGrid(const tIndex _nCells) {
@@ -210,17 +210,15 @@ public:
         }
     }
 
-    template<tDim K, typename Float>
-    void draw(const tIndex &i, const tYaoVertex<K, Float> &v, const tPoints &points) {
-        for (tDim k = 0; k < K; ++k) {
+    void draw(const tIndex &i, const tYaoVertex &v, const tPoints &points) {
+        for (tDim k = 0; k < v.neighbor.size(); ++k) {
             if (v.neighbor[k] != INF_IDX) {
                 drawLine(points[i], points[v.neighbor[k]]);
             }
         }
     }
 
-    template<typename V>
-    void draw(const tYaoGraph<V> &g, const tPoints &points) {
+    void draw(const tYaoGraph &g, const tPoints &points) {
         for (tIndex i = 0; i < g.size(); ++i) {
             draw(i, g[i], points);
         }
