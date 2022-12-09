@@ -140,12 +140,12 @@ KernelPalette = {'InexactKernel': snsPalette[0], 'CGALExactPredInexactCon': snsP
 
 snsPalette = sns.color_palette(n_colors=5)
 DistPalette = {'gaussian': snsPalette[0], 'uni': snsPalette[1], 'grid': snsPalette[2], 'road': snsPalette[3],
-               'star': snsPalette[4]}
+               'stars': snsPalette[4]}
 
 snsPalette = sns.color_palette(n_colors=4)
-AlgorithmDash = {'NaiveYao': (0, 5, 10), 'Sweepline': (None, None), 'GridYao100': (0, 1, 1), 'CGALYao': (0, 3, 5, 1, 5)}
-AlgorithmMarkers = {'NaiveYao': 's', 'Sweepline': 'D', 'GridYao100': 'o', 'CGALYao': '^'}
-AlgorithmPalette = {'NaiveYao': snsPalette[0], 'Sweepline': snsPalette[1], 'GridYao100': snsPalette[2],
+AlgorithmDash = {'NaiveYao': (0, 5, 10), 'Sweepline': (None, None), 'GridYao': (0, 1, 1), 'CGALYao': (0, 3, 5, 1, 5)}
+AlgorithmMarkers = {'NaiveYao': 's', 'Sweepline': 'D', 'GridYao': 'o', 'CGALYao': '^'}
+AlgorithmPalette = {'NaiveYao': snsPalette[0], 'Sweepline': snsPalette[1], 'GridYao': snsPalette[2],
                     'CGALYao': snsPalette[3]}
 
 figTextX = .94
