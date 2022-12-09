@@ -96,7 +96,7 @@ template<typename Algorithm, typename Distribution, typename... Args>
 void benchmarkImpl(Args... args) {
     std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
 
-    std::cout << "Benchmarking " << Algorithm::name() << std::endl;
+    std::cout << "Benchmarking " << Algorithm::name() << " with " << Distribution::name() << " distribution" << std::endl;
 
     // header
     file << "# dist n seed rep t" << std::endl;
