@@ -230,7 +230,7 @@ public:
                 int idx, x, y;
                 if (!(iss >> c >> idx >> x >> y)) { continue; }// error in file
 
-                inPoints[idx] = {x, y};
+                inPoints[idx-1] = {x, y};
 
                 if (x < minPoint[X]) minPoint[X] = x;
                 if (y < minPoint[Y]) minPoint[Y] = y;
