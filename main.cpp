@@ -36,20 +36,20 @@ const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 5
 
 #define DISTS Gaussian, Uniform, Grid, Road, Stars
 
-std::unique_ptr<GeneratorBase> getGen(const char &dist) {
+std::unique_ptr<GeneratorBase> getGen(const char &dist, const tIndex& seed) {
     // [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]
 
     switch (dist) {
         case 'u':
-            return std::make_unique<Uniform>(Seeds[0]);
+            return std::make_unique<Uniform>(seed);
         case 'g':
-            return std::make_unique<Gaussian>(Seeds[0]);
+            return std::make_unique<Gaussian>(seed);
         case 'd':
-            return std::make_unique<Grid>(Seeds[0]);
+            return std::make_unique<Grid>(seed);
         case 'r':
-            return std::make_unique<Road>(Seeds[0]);
+            return std::make_unique<Road>(seed);
         case 's':
-            return std::make_unique<Stars>(Seeds[0]);
+            return std::make_unique<Stars>(seed);
 
         default:
             return nullptr;
@@ -161,6 +161,7 @@ int main(int argc, char **argv) {
     // generate points
     auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]", 'u');
     auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
+    auto oSeed = op.add<popl::Value<tIndex>>("s", "seed", "seed for RNG", Seeds[0]);
 
     // points file
     auto oPointsFile = op.add<popl::Value<std::string>>("f", "infile", "file with points");
@@ -193,7 +194,7 @@ int main(int argc, char **argv) {
     tPoints points;
     tBox bounds;
     if (oN->is_set()) {
-        auto gen = getGen(oDist->value());
+        auto gen = getGen(oDist->value(), oSeed->value());
         points = gen->generate(oN->value(), BOUNDS);
         bounds = BOUNDS;
     } else if (oPointsFile->is_set()) {
