@@ -255,7 +255,7 @@ private:
 #endif
 
         LOG("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl);
-        LOG("Processing cone " << k << " (" << lRay.angle() << ", " << rRay.angle() << ")" << std::endl);
+        LOG("Processing cone " << k << " (" << lRay.angle() << ", " << rRay.angle() << ") - sweepline " << slDir.angle() << std::endl);
 
         tIndex idx = 0;
         while (!pq.empty()) {
