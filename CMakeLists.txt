@@ -12,7 +12,7 @@ include_directories("${PROJECT_SOURCE_DIR}/include/")
 
 # set default for MARCH
 if (NOT MARCH)
-    set(MARCH native CACHE PATH "ARCH to use")
+    set(MARCH native CACHE STRING "ARCH to use")
 endif ()
 
 set(CMAKE_CXX_STANDARD 20)
