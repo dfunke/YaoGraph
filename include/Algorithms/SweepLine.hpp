@@ -173,8 +173,10 @@ public:
     auto operator()(const tDim &K, const tPoints &points, const tBox &bounds) const {
         tYaoGraph g(points.size(), K);
 
+        auto rays = Kernel::computeCones(K);
+
         for (tDim k = 0; k < K; ++k) {
-            sweepline(points, k, K, g, bounds);
+            sweepline(points, k, K, rays, g, bounds);
         }
 
         return g;
@@ -201,7 +203,7 @@ private:
         }
     };
 
-    void sweepline(const tPoints &iPoints, tDim k, const tDim &K, tYaoGraph &graph,
+    void sweepline(const tPoints &iPoints, tDim k, const tDim &K, const auto &rays, tYaoGraph &graph,
                    const tBox &iBounds) const {
 
         using pqItem = std::pair<tEFloat, Event>;
@@ -216,15 +218,11 @@ private:
 
         auto bounds = Kernel::mkBBox(iBounds);
 
-        tIFloat lTheta = k * (2 * M_PI / K);      // range [0..2PI]
-        tIFloat uTheta = (k + 1) * (2 * M_PI / K);// range [0..2PI]
-        ASSERT(lTheta <= uTheta);                 // trivial
-
-        tDirection lRay(wrapAngle(lTheta + tIFloat(M_PI)));// range [0..2PI]
-        tDirection rRay(wrapAngle(uTheta + tIFloat(M_PI)));// range [0..2PI]
+        tDirection lRay(-rays[k]);          // range [0..2PI]
+        tDirection rRay(-rays[(k + 1) % K]);// range [0..2PI]
         //ASSERT(lRay.angle() <= rRay.angle());
 
-        tDirection slDir(wrapAngle(M_PI + .5 * (lTheta + uTheta)));// range [0..2PI]
+        tDirection slDir(Kernel::Bisector(lRay, rRay));// range [0..2PI]
         //ASSERT(lRay.angle() <= slDir.angle() && slDir.angle() <= rRay.angle());
 
         SweeplineDS sl(slDir);// range [0..2PI]

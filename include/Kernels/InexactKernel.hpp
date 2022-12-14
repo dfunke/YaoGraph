@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <optional>
+#include <sstream>
 #include <variant>
 
 #include "Predicates.hpp"
@@ -50,6 +51,10 @@ public:
 
         tIFloat angle() const {
             return dir;
+        }
+
+        Direction operator-() const {
+            return Direction(wrapAngle(dir + M_PI));
         }
 
         Direction perp() const {
@@ -388,6 +393,11 @@ public:
 
     static Point Midpoint(const Point &a, const Point &b) {
         return 0.5 * (a + b);
+    }
+
+    static Direction Bisector(const Direction &l, const Direction &r) {
+        auto dir = Direction(wrapAngle(0.5 * (l.angle() + r.angle())));
+        return l.angle() < dir.angle() && dir.angle() < r.angle() ? dir : -dir;
     }
 
     static Direction Bisector(const Point &l, const Point &r) {

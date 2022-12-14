@@ -69,6 +69,10 @@ public:
             return dir;
         }
 
+        Direction operator-() const {
+            return Direction(-dir);
+        }
+
         Direction perp() const {
             return {dir.perpendicular(CGAL::CLOCKWISE)};// TODO: check angle orientation
         }
@@ -359,6 +363,10 @@ public:
 
     static Point Midpoint(const Point &a, const Point &b) {
         return CGAL::midpoint(a, b);
+    }
+
+    static Direction Bisector(const Direction &l, const Direction &r) {
+        return Direction(0.5 * (l.base().vector() + r.base().vector()));
     }
 
     static Direction Bisector(const Point &l, const Point &r) {
