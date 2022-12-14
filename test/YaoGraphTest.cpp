@@ -65,6 +65,7 @@ bool performTest(Args... args) {
 
             painter.setColor(1, 0, 0);
             painter.draw(idx, is[idx], points);
+            painter.setColor(0, 0, 1);
             painter.drawCones(points[idx], K);
 
             painter.save("invalidVertices_" + IsAlgorithm::name() + "_" + std::to_string(idx));
