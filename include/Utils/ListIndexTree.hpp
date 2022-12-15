@@ -592,6 +592,7 @@ private:
         ASSERT(parent != nullptr);
         ASSERT(child != nullptr);
         ASSERT(child->parent == parent);
+        ASSERT(std::abs(parent->getBalance() <= 1));
 
         if (parent->left && parent->right) {
             // parent has both children
@@ -602,6 +603,7 @@ private:
             } else {
                 ASSERT(child == parent->left);
                 // we are the left child, move right child into left
+                deleteNode(parent->left);
                 parent->left = parent->right;
                 parent->right = nullptr;
             }
@@ -618,6 +620,7 @@ private:
 
             if (parent->parent != nullptr) {
                 // for non-root delete node recursively
+                updateAndRebalance(parent);
                 eraseRec(parent->parent, parent);
             } else {
                 // we are root
