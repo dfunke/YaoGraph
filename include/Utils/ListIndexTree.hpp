@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+#include "Utils/ASSERT.hpp"
+
 template<typename T>
 class SearchTree {
 
@@ -181,11 +183,21 @@ private:
 
 public:
     Iterator insert(Iterator pos, const T &obj) {
-        return Iterator(insert(pos.leaf_, obj));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        auto it = Iterator(insert(pos.leaf_, obj));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        return it;
     }
 
     Iterator insert_pair(Iterator pos, const T &left, const T &right) {
-        return Iterator(insert_pair(pos.leaf_, left, right));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        auto it = Iterator(insert_pair(pos.leaf_, left, right));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        return it;
     }
 
 private:
@@ -499,11 +511,21 @@ private:
 
 public:
     Iterator erase(Iterator pos) {
-        return Iterator(erase(pos.leaf_));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        auto it = Iterator(erase(pos.leaf_));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        return it;
     }
 
     Iterator replace(Iterator pos, const T &obj) {
-        return Iterator(replace(pos.leaf_, obj));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        auto it = Iterator(replace(pos.leaf_, obj));
+        ASSERT(checkInvariants());
+        ASSERT(checkList());
+        return it;
     }
 
 private:
@@ -857,6 +879,20 @@ public:
         return checkInvariants(m_root);
     }
 
+    bool checkList() {
+        bool valid = true;
+        auto it = begin();
+        valid &= (std::prev(it) == end());
+
+        it = std::next(it);
+        for (; it != end() && valid; ++it) {
+            valid &= (it == std::next(std::prev(it)));
+            valid &= (it == std::prev(std::next(it)));
+        }
+
+        return valid;
+    }
+
 private:
     bool checkInvariants(InternalNode *node) const {
         if (std::abs(node->getBalance()) > 1) {
@@ -867,7 +903,7 @@ private:
             return false;
         }
 
-        bool valid = false;
+        bool valid = true;
         if (node->left) {
             if (node->left->isNode()) {
                 valid = checkInvariants(node->left->asNode());
