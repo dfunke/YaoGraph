@@ -5,7 +5,6 @@
 #pragma once
 
 #include <memory>
-#include <sstream>
 #include <optional>
 #include <sstream>
 #include <variant>
@@ -137,6 +136,17 @@ public:
                    << " p: " << ext->p << " a: " << std::fabs(ext->dir.angle());
                 ;
             }
+
+            return os.str();
+        }
+
+        std::string sstr() const {
+            std::stringstream os;
+
+            // use fabs(angle()) to eliminate -0 output
+
+            os << (leftRegion != INF_IDX ? std::to_string(leftRegion) : "INF_IDX") << "/"
+               << (rightRegion != INF_IDX ? std::to_string(rightRegion) : "INF_IDX");
 
             return os.str();
         }
