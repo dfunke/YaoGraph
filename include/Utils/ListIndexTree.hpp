@@ -802,59 +802,61 @@ private:
         return not(oldHeight == node->height && oldRep == node->maxRep);
     }
 
-    void updateAndRebalance(InternalNode *node, bool rebalanceRequired = true, bool updateRequired = true) {
+    void updateAndRebalance(InternalNode *node /*, bool rebalanceRequired = true, bool updateRequired = true*/) {
 
-        if (updateRequired) {
-            updateRequired = updateNodeInfo(node);
-        }
+        //if (updateRequired) {
+        /*updateRequired = */ updateNodeInfo(node);
+        // }
 
-        if (rebalanceRequired) {
-            int balance = node->getBalance();
+        //if (rebalanceRequired) {
+        int balance = node->getBalance();
 
-            // If this node becomes unbalanced,
-            // then there are 4 cases
-            // if this node is unbalanced and we rebalance it, then we do _not_ need to traverese further upward
+        // If this node becomes unbalanced,
+        // then there are 4 cases
+        // if this node is unbalanced and we rebalance it, then we do _not_ need to traverese further upward
 
-            if (balance > 1) {
-                int leftBalance = (node->left && node->left->isNode() ? node->left->asNode()->getBalance() : 0);
+        if (balance > 1) {
+            int leftBalance = (node->left && node->left->isNode() ? node->left->asNode()->getBalance() : 0);
 
-                // Left Left Case
-                if (balance > 1 && leftBalance >= 0) {
-                    node = rightRotate(node);
-                }
-
-                // Left Right Case
-                if (balance > 1 && leftBalance < 0) {
-                    ASSERT(node->left && node->left->isNode());
-                    leftRotate(node->left->asNode());
-                    node = rightRotate(node);
-                }
-            } else if (balance < -1) {
-                int rightBalance = (node->right && node->right->isNode() ? node->right->asNode()->getBalance() : 0);
-
-                // Right Right Case
-                if (balance < -1 && rightBalance <= 0) {
-                    node = leftRotate(node);
-                }
-
-                // Right Left Case
-                if (balance < -1 && rightBalance > 0) {
-                    ASSERT(node->right && node->right->isNode());
-                    rightRotate(node->right->asNode());
-                    node = leftRotate(node);
-                }
+            // Left Left Case
+            if (balance > 1 && leftBalance >= 0) {
+                node = rightRotate(node);
             }
 
+            // Left Right Case
+            if (balance > 1 && leftBalance < 0) {
+                ASSERT(node->left && node->left->isNode());
+                leftRotate(node->left->asNode());
+                node = rightRotate(node);
+            }
+        } else if (balance < -1) {
+            int rightBalance = (node->right && node->right->isNode() ? node->right->asNode()->getBalance() : 0);
+
+            // Right Right Case
+            if (balance < -1 && rightBalance <= 0) {
+                node = leftRotate(node);
+            }
+
+            // Right Left Case
+            if (balance < -1 && rightBalance > 0) {
+                ASSERT(node->right && node->right->isNode());
+                rightRotate(node->right->asNode());
+                node = leftRotate(node);
+            }
+        }
+
+        /*
             // if we rebalanced the node, we do not need to rebalance further up the tree
             rebalanceRequired = balance <= std::abs(1);
 
             // if we rebalanced we need to update
             updateRequired = updateRequired || balance >= std::abs(1);
-        }
+            */
+        //}
 
-        if (node->parent != nullptr && (updateRequired || rebalanceRequired)) {
+        if (node->parent != nullptr /* && (updateRequired || rebalanceRequired)*/) {
             // recursively traverse up to check whether node above became unbalanced
-            updateAndRebalance(node->parent, rebalanceRequired, updateRequired);
+            updateAndRebalance(node->parent /*, rebalanceRequired, updateRequired*/);
         }
     }
 
