@@ -575,8 +575,29 @@ private:
             retValue = pos->next;
         }
 
-        // recursivley delete InternalNodes if they become empty
-        eraseRec(pos->parent, pos);
+        // delete actual leaf
+        auto parent = pos->parent;
+        ASSERT(parent != nullptr);
+        ASSERT(parent->left == pos || parent->right == pos);
+
+        if (parent->right == pos) {
+            ASSERT(parent->left);
+            // parent has two children and we are the right child, simply remove
+            deleteNode(parent->right);
+            parent->right = nullptr;
+        } else {
+            ASSERT(parent->left == pos);
+            // we are the left child, move right child into left, maybe nullptr
+            deleteNode(parent->left);
+            parent->left = parent->right;//maybe nullptr
+            parent->right = nullptr;
+        }
+
+        //parent cannot have a right child anymore
+        ASSERT(!parent->right);
+
+        // recursivley delete InternalNodes if they become empty or singletons
+        eraseRec(parent);
 
         return retValue;
     }
@@ -594,45 +615,42 @@ private:
     }
 
 private:
-    void eraseRec(InternalNode *parent, Node *child) {
+    void eraseRec(InternalNode *node) {
+        ASSERT(node != nullptr);
+
+        if (node->isRoot()) {
+            ASSERT(node->parent == nullptr);
+            updateAndRebalance(node);
+            return;
+        }
+
+        auto parent = node->parent;
         ASSERT(parent != nullptr);
-        ASSERT(child != nullptr);
-        ASSERT(child->parent == parent);
-        ASSERT(std::abs(parent->getBalance() <= 1));
 
-        if (parent->left && parent->right) {
-            // parent has both children
-            if (child == parent->right) {
-                // we are the right child, simply remove
-                deleteNode(parent->right);
-                parent->right = nullptr;
-            } else {
-                ASSERT(child == parent->left);
-                // we are the left child, move right child into left
-                deleteNode(parent->left);
-                parent->left = parent->right;
-                parent->right = nullptr;
-            }
-
-            ASSERT(parent->left && !parent->right);
-            updateAndRebalance(parent);
+        if (node->left && node->right) {
+            // node has both children, abort deletion recursion and just update and rebalance
+            updateAndRebalance(node);
         } else {
-            ASSERT(parent->left && !parent->right);
-            ASSERT(child == parent->left);
+            // node has definitely no right child
+            ASSERT(!node->right);
 
-            // parent becomes empty node
-            deleteNode(parent->left);
-            parent->left = nullptr;
+            ASSERT(parent->left == node || parent->right == node);
 
-            if (parent->parent != nullptr) {
-                // for non-root delete node recursively
-                updateAndRebalance(parent);
-                eraseRec(parent->parent, parent);
+            if (parent->right == node) {
+                parent->right = node->left;// maybe nullptr
+                if (parent->right) {
+                    parent->right->parent = parent;
+                }
             } else {
-                // we are root
-                ASSERT(parent->isRoot());
-                updateAndRebalance(parent);
+                ASSERT(parent->left == node);
+                parent->left = node->left;// maybe nullptr
+                if (parent->left) {
+                    parent->left->parent = parent;
+                }
             }
+
+            deleteNode(node);
+            eraseRec(parent);
         }
     }
 
