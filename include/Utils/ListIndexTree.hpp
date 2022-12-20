@@ -62,6 +62,8 @@ private:
     // abstract node type
     struct Node {
 
+        Node(const height_type &h) : height(h) {}
+
         virtual ~Node() {}
 
         bool isRoot() const {
@@ -83,25 +85,29 @@ private:
 
         // parent is always a internal node
         InternalNode *parent = nullptr;
+        height_type height;
     };
 
     struct InternalNode : public Node {
+
+        InternalNode() : Node(0) {}
 
         bool isLeaf() const override { return false; }
         bool isNode() const override { return true; }
 
         int getBalance() const {
-            return (left && left->isNode() ? left->asNode()->height : 0) - (right && right->isNode() ? right->asNode()->height : 0);
+            return (left ? left->height : 0) - (right ? right->height : 0);
         }
 
-        Node *left;
-        Node *right;
+        Node *left = nullptr;
+        Node *right = nullptr;
 
         Leaf *maxRep = nullptr;
-        height_type height = 0;
     };
 
     struct Leaf : public Node {
+
+        Leaf() : Node(1) {}
 
         bool isLeaf() const override { return true; }
         bool isNode() const override { return false; }
@@ -763,12 +769,12 @@ private:
         if (node->right) {
             ASSERT(node->left);
             node->maxRep = (node->right->isNode() ? node->right->asNode()->maxRep : node->right->asLeaf());
-            node->height = 1 + std::max(height_type(node->left->isNode() ? node->left->asNode()->height : 0),
-                                        height_type(node->right->isNode() ? node->right->asNode()->height : 0));
+            node->height = 1 + std::max(height_type(node->left->height),
+                                        height_type(node->right->height));
         } else if (node->left) {
             ASSERT(!node->right);
             node->maxRep = (node->left->isNode() ? node->left->asNode()->maxRep : node->left->asLeaf());
-            node->height = 1 + (node->left->isNode() ? node->left->asNode()->height : 0);
+            node->height = 1 + (node->left->height);
         } else {
             ASSERT(!node->left && !node->right);
             node->maxRep = nullptr;
