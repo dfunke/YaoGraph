@@ -896,6 +896,10 @@ public:
         return valid;
     }
 
+    std::string to_string() {
+        return to_string(m_root, 0);
+    }
+
 private:
     bool checkInvariants(InternalNode *node) const {
         if (std::abs(node->getBalance()) > 1) {
@@ -928,6 +932,48 @@ private:
         }
 
         return valid;
+    }
+
+    std::string to_string(Node *root, int space) {
+        // Base case
+        if (root == NULL)
+            return "";
+
+        // Increase distance between levels
+        const int SINC = 20;
+        space += SINC;
+        std::stringstream ss;
+
+        // Process right child first
+        if (root->isNode()) {
+            ss << to_string(root->asNode()->right, space);
+        }
+
+        // Print current node after space
+        // count
+        ss << '\n';
+        for (int i = SINC; i < space; i++)
+            ss << ' ';
+
+        if (root->isNode()) {
+            ss << root << "(" << root->height << ", " << root->asNode()->getBalance() << ")";
+        } else {
+            ASSERT(root->isLeaf());
+            if constexpr (std::is_class_v<T>) {
+                ss << root->asLeaf()->obj->sstr();
+            } else {
+                ss << *(root->asLeaf()->obj);
+            }
+        }
+
+        ss << "\n";
+
+        // Process left child
+        if (root->isNode()) {
+            ss << to_string(root->asNode()->left, space);
+        }
+
+        return ss.str();
     }
 
 private:
