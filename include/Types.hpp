@@ -29,6 +29,19 @@ enum tOrientedSide {
     LEFT
 };
 
+std::string to_string(const tOrientedSide &o) {
+    switch (o) {
+        case RIGHT:
+            return "Right";
+        case LINE:
+            return "Line";
+        case LEFT:
+            return "Left";
+        default:
+            return "";
+    }
+}
+
 template<typename F>
 struct MaxError;
 

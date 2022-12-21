@@ -192,8 +192,16 @@ public:
                 return ext->direction();
             } else {
                 return iRay.direction();
-            };
+            }
         }
+
+        void invert() {
+            if (ext) {
+                *ext = ext->opposite();
+            }
+            iRay = iRay.opposite();
+        }
+
 
         Point extOrigin() const {
             ASSERT(ext);
@@ -242,10 +250,13 @@ public:
 
         void draw(Painter &painter) const {
             if (!ext) {
-                painter.drawLine(iRay.start(), iRay.point(1));
+                painter.draw(iRay.start(), 0, false);
+                painter.drawLine(iRay.start(), iRay.point(2));
             } else {
+                painter.draw(ext->start(), 0, false);
                 painter.drawLine(ext->start(), ext->end());
-                painter.drawLine(iRay.start(), iRay.point(1));
+                painter.drawSquare(ext->end());
+                painter.drawLine(iRay.start(), iRay.point(2));
             }
         }
 

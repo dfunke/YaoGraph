@@ -179,6 +179,14 @@ public:
             return dir;
         }
 
+        void invert() {
+            if (ext) {
+                ext->dir = -ext->dir;
+            }
+
+            dir = -dir;
+        }
+
         Point extOrigin() const {
             ASSERT(ext);
             return ext->p;
@@ -238,9 +246,12 @@ public:
 
         void draw(Painter &painter) const {
             if (!ext) {
+                painter.draw(p, 0, false);
                 painter.drawLine(p, {p[X] + dir.cos(), p[Y] + dir.sin()});
             } else {
+                painter.draw(p, 0, false);
                 painter.drawLine(p, ext->p);
+                painter.drawSquare(ext->p);
                 painter.drawLine(ext->p, {ext->p[X] + ext->dir.cos(), ext->p[Y] + ext->dir.sin()});
             }
         }

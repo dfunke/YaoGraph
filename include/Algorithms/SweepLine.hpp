@@ -314,7 +314,12 @@ private:
                         LOG(idx << ": "
                                 << "RI IS Ray: " << *r << std::endl);
 
+                        if (r->direction() != leftRay->direction()) {
+                            r->invert();
+                        }
+
                         ASSERT(leftRay->rightRegion == rightRay->leftRegion);
+                        ASSERT(r->direction() == leftRay->direction() && r->direction() == rightRay->direction());
 
                         r->leftRegion = leftRay->leftRegion;
                         r->rightRegion = rightRay->rightRegion;
@@ -361,8 +366,12 @@ private:
 
                     if (itBr != sl.end() && itBr->orientedSide(cPoint.pos) == tOrientedSide::LINE) {// check whether point is ON right boundary
                         if (itBr->direction() == lRay) {
+                            LOG(idx << ": point ON right boundary that is a left ray" << std::endl);
+                            LOG(idx << ": old Ray " << *itBr << std::endl);
+
                             itBr = std::next(itBr);
-                            LOG(idx << ": point ON right boundary that is aleft ray" << std::endl);
+
+                            LOG(idx << ": new Ray " << *itBr << std::endl);
                         }
                     }
 
