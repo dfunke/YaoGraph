@@ -936,6 +936,28 @@ private:
             return false;
         }
 
+        if (node->maxRep) {
+            Node *n = node;
+            while (!n->isLeaf()) {
+                ASSERT(n && n->isNode());
+                if (n->asNode()->right) {
+                    n = n->asNode()->right;
+                } else {
+                    n = n->asNode()->left;
+                }
+            }
+            ASSERT(n && n->isLeaf());
+
+            if (node->maxRep->obj != n->asLeaf()->obj) {
+                return false;
+            }
+        } else {
+            // only root my not have a rep if it is empty
+            if (!node->isRoot() && !node->left && !node->right) {
+                return false;
+            }
+        }
+
         bool valid = true;
         if (node->left) {
             if (node->left->isNode()) {
