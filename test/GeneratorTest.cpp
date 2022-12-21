@@ -28,13 +28,13 @@ bool checkWithinBounds(const tPoints &points, const tBox &bounds) {
 template<typename Distribution, bool EQ = true>
 void performTest() {
     Distribution gen(GeneratorTestGenSeed);
-    auto points = gen.generate(GeneratorTestN, GeneratorTestBOUNDS);
+    auto [points,bounds] = gen.generate(GeneratorTestN, GeneratorTestBOUNDS);
 
     if constexpr(EQ)
         EXPECT_EQ(points.size(), GeneratorTestN);
     else
         EXPECT_LE(points.size(), GeneratorTestN);
-    EXPECT_TRUE(checkWithinBounds(points, GeneratorTestBOUNDS));
+    EXPECT_TRUE(checkWithinBounds(points, bounds));
 }
 
 TEST(GeneratorTest, Uniform) {

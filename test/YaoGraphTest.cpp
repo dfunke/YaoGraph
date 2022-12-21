@@ -26,15 +26,15 @@ template<typename IsAlgorithm, typename ExpAlgorithm, typename Distribution, typ
 bool performTest(Args... args) {
 
     Distribution gen(YaoTestGenSeed);
-    auto points = gen.generate(YaoTestN, YaoTestBOUNDS);
+    auto [points, bounds] = gen.generate(YaoTestN, YaoTestBOUNDS);
 
     IsAlgorithm isAlg;
-    auto is = isAlg(K, points, YaoTestBOUNDS, args...);
+    auto is = isAlg(K, points, bounds, args...);
 
 #ifndef VTUNE
 
     ExpAlgorithm expAlg;
-    auto exp = expAlg(K, points, YaoTestBOUNDS);
+    auto exp = expAlg(K, points, bounds);
 
     auto [valid, invalidVertices] = checkGraph(is, exp);
 
