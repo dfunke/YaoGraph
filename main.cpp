@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
     auto sBenchmark = op.add<popl::Switch>("b", "benchmark", "run benchmark suite");
 
 #ifndef NDEBUG
-    auto sDebug = op.add<popl::Switch>("d", "debug", "find offending instance");
+    auto sDebug = op.add<popl::Switch>("x", "debug", "find offending instance");
 #endif
 
     // generate points
