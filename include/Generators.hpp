@@ -16,9 +16,11 @@
 
 class GeneratorBase {
 public:
-    virtual tPoints generate(const tIndex n, const tBox &bounds) = 0;
+    virtual std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) = 0;
 
     virtual ~GeneratorBase() = default;
+
+    virtual std::string name() = 0;
 };
 
 template<typename Dist>
@@ -85,11 +87,11 @@ public:
     Uniform(const tIndex &seed) : Generator(seed),
                                   dist(0, std::nextafter(1, std::numeric_limits<tIFloat>::max())) {}
 
-    static std::string name() {
+    std::string name() {
         return "uni";
     }
 
-    tPoints generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
         tPoints points;
         points.reserve(n);
 
@@ -104,7 +106,7 @@ public:
             points.emplace_back(p);
         }
 
-        return points;
+        return std::make_tuple(points, bounds);
     }
 
 private:
@@ -119,11 +121,11 @@ public:
     Gaussian(const tIndex &seed) : Generator(seed),
                                    dist(0, .25) {}
 
-    static std::string name() {
+    std::string name() {
         return "gaussian";
     }
 
-    tPoints generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
         tPoints points;
         points.reserve(n);
 
@@ -143,7 +145,7 @@ public:
             points.emplace_back(p);
         }
 
-        return points;
+        return std::make_tuple(points, bounds);;
     }
 
 private:
@@ -157,11 +159,11 @@ class Grid : public Generator<Grid> {
 public:
     Grid(const tIndex &seed) : Generator(seed) {}
 
-    static std::string name() {
+    std::string name() {
         return "grid";
     }
 
-    tPoints generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
         tPoints points;
         points.reserve(n);
 
@@ -183,7 +185,7 @@ public:
             }
         }
 
-        return points;
+        return std::make_tuple(points, bounds);;
     }
 };
 
@@ -194,11 +196,11 @@ class Road : public Generator<Road> {
 public:
     Road(const tIndex &seed) : Generator(seed) {}
 
-    static std::string name() {
+    std::string name() {
         return "road";
     }
 
-    tPoints generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
 
         std::string fileName = ROAD_DATA "/USA-road-d.NY.co";
         std::ifstream file(fileName, std::ios::in);
@@ -230,7 +232,7 @@ public:
                 int idx, x, y;
                 if (!(iss >> c >> idx >> x >> y)) { continue; }// error in file
 
-                inPoints[idx-1] = {x, y};
+                inPoints[idx - 1] = {x, y};
 
                 if (x < minPoint[X]) minPoint[X] = x;
                 if (y < minPoint[Y]) minPoint[Y] = y;
@@ -255,7 +257,7 @@ public:
             points.emplace_back(p);
         }
 
-        return points;
+        return std::make_tuple(points, bounds);;
     }
 
 private:
@@ -269,11 +271,11 @@ class Stars : public Generator<Stars> {
 public:
     Stars(const tIndex &seed) : Generator(seed) {}
 
-    static std::string name() {
+    std::string name() {
         return "stars";
     }
 
-    tPoints generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
 
         std::string fileName = STAR_DATA "/gaia_1.points";
         std::ifstream file(fileName, std::ios::in);
@@ -354,9 +356,29 @@ public:
             points.emplace_back(p);
         }
 
-        return points;
+        return std::make_tuple(points, bounds);;
     }
 
 private:
     std::uniform_int_distribution<tIndex> dist;
 };
+
+std::unique_ptr<GeneratorBase> getGen(const char &dist, const tIndex &seed) {
+    // [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]
+
+    switch (dist) {
+        case 'u':
+            return std::make_unique<Uniform>(seed);
+        case 'g':
+            return std::make_unique<Gaussian>(seed);
+        case 'd':
+            return std::make_unique<Grid>(seed);
+        case 'r':
+            return std::make_unique<Road>(seed);
+        case 's':
+            return std::make_unique<Stars>(seed);
+
+        default:
+            return nullptr;
+    }
+}

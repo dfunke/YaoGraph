@@ -36,26 +36,6 @@ const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 5
 
 #define DISTS Gaussian, Uniform, Grid, Road, Stars
 
-std::unique_ptr<GeneratorBase> getGen(const char &dist, const tIndex& seed) {
-    // [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]
-
-    switch (dist) {
-        case 'u':
-            return std::make_unique<Uniform>(seed);
-        case 'g':
-            return std::make_unique<Gaussian>(seed);
-        case 'd':
-            return std::make_unique<Grid>(seed);
-        case 'r':
-            return std::make_unique<Road>(seed);
-        case 's':
-            return std::make_unique<Stars>(seed);
-
-        default:
-            return nullptr;
-    }
-}
-
 std::tuple<tPoints, tBox> readPointsFile(const std::string &fileName) {
     std::ifstream file(fileName, std::ios::in);
     std::string line;
@@ -96,7 +76,10 @@ template<typename Algorithm, typename Distribution, typename... Args>
 void benchmarkImpl(Args... args) {
     std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
 
-    std::cout << "Benchmarking " << Algorithm::name() << " with " << Distribution::name() << " distribution" << std::endl;
+    {
+        Distribution nGen(0);
+        std::cout << "Benchmarking " << Algorithm::name() << " with " << nGen.name() << " distribution" << std::endl;
+    }
 
     // header
     file << "# dist n seed rep t" << std::endl;
@@ -106,12 +89,12 @@ void benchmarkImpl(Args... args) {
         for (tDim rpn = 0; rpn < RepsPerN; ++rpn) {
 
             Distribution gen(Seeds[rpn]);
-            auto points = gen.generate(nPoints, BOUNDS);
+            auto [points, bounds] = gen.generate(nPoints, BOUNDS);
 
             for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
-                auto result = Timer<Algorithm>::time(Cones, points, BOUNDS, args...);
-                file << Distribution::name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
-                std::cout << Distribution::name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                auto result = Timer<Algorithm>::time(Cones, points, bounds, args...);
+                file << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                std::cout << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
             }
         }
     }
@@ -128,25 +111,25 @@ void benchmark(Args... args) {
 void benchmark() {
 
 #ifdef WITH_CGAL
-    benchmark<CGAL_Yao2D<ExactPredicatesInexactConstructions>, DISTS>();
-    benchmark<CGAL_Yao2D<ExactPredicatesExactConstructions>, DISTS>();
+//    benchmark<CGAL_Yao2D<ExactPredicatesInexactConstructions>, DISTS>();
+//    benchmark<CGAL_Yao2D<ExactPredicatesExactConstructions>, DISTS>();
 #endif
 
-    benchmark<NaiveYao<InexactKernel>, DISTS>();
+//    benchmark<NaiveYao<InexactKernel>, DISTS>();
 #ifdef WITH_CGAL
-    benchmark<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>();
-    benchmark<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>();
+//    benchmark<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>();
+//    benchmark<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>();
 #endif
 
-    benchmark<GridYao<InexactKernel>, DISTS>(cellOcc);
+//    benchmark<GridYao<InexactKernel>, DISTS>(cellOcc);
 #ifdef WITH_CGAL
-    benchmark<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(cellOcc);
-    benchmark<GridYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(cellOcc);
+//    benchmark<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(cellOcc);
+//    benchmark<GridYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(cellOcc);
 #endif
 
-    benchmark<SweepLine<InexactKernel>, DISTS>();
+//    benchmark<SweepLine<InexactKernel>, DISTS>();
 #ifdef WITH_CGAL
-    benchmark<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>();
+    benchmark<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>, Road>();
     benchmark<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>();
 #endif
 }
@@ -201,12 +184,12 @@ int main(int argc, char **argv) {
         tIndex seed = 1;
         while (seed != 0) {
             Uniform gen(seed);
-            auto points = gen.generate(oN->value(), BOUNDS);
+            auto [points, bounds] = gen.generate(oN->value(), BOUNDS);
 
             std::cout << "seed: " << seed << " n: " << points.size() << std::endl;
 
             SweepLine<CGALKernel<ExactPredicatesInexactConstructions>> alg;
-            auto res = alg(Cones, points, BOUNDS);
+            auto res = alg(Cones, points, bounds);
 
             seed++;
         }
@@ -220,8 +203,7 @@ int main(int argc, char **argv) {
     tBox bounds;
     if (oN->is_set()) {
         auto gen = getGen(oDist->value(), oSeed->value());
-        points = gen->generate(oN->value(), BOUNDS);
-        bounds = BOUNDS;
+        std::tie(points, bounds) = gen->generate(oN->value(), BOUNDS);
     } else if (oPointsFile->is_set()) {
         std::tie(points, bounds) = readPointsFile(oPointsFile->value());
     } else {

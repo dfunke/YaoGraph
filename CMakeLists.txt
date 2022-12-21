@@ -28,7 +28,8 @@ string(REPLACE "-O2" "-O3" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_REL
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${MARCH} -pedantic -Wall -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${MARCH} -pedantic -Wall -Wextra")
 
-add_executable(GeoGraph main.cpp)
+add_executable(GeoGraph GeoGraph.cpp)
+add_executable(Generator Generator.cpp)
 
 option(WITH_CGAL "Build CGAL algorithms for comparision" OFF)
 if (WITH_CGAL)
@@ -65,6 +66,9 @@ endif ()
 
 set(ROAD_DIR "${PROJECT_SOURCE_DIR}/data" CACHE PATH "Path to road networks")
 add_compile_definitions(ROAD_DATA="${ROAD_DIR}")
+
+set(DATA_DIR "${PROJECT_SOURCE_DIR}/data" CACHE PATH "Path to graph data")
+add_compile_definitions(DATA_DIR="${DATA_DIR}")
 
 set(STAR_DIR "/global_data/funke/Gaia/" CACHE PATH "Path to gaia data")
 add_compile_definitions(STAR_DATA="${STAR_DIR}")
