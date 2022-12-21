@@ -158,6 +158,10 @@ int main(int argc, char **argv) {
     // benchmark
     auto sBenchmark = op.add<popl::Switch>("b", "benchmark", "run benchmark suite");
 
+#ifndef NDEBUG
+    auto sDebug = op.add<popl::Switch>("d", "debug", "find offending instance");
+#endif
+
     // generate points
     auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]", 'u');
     auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
@@ -189,6 +193,26 @@ int main(int argc, char **argv) {
 
         return 0;
     }
+
+#ifndef NDEBUG
+    if (sDebug->is_set()) {
+
+        tIndex seed = 1;
+        while (seed != 0) {
+            Uniform gen(seed);
+            auto points = gen.generate(oN->value(), BOUNDS);
+
+            std::cout << "seed: " << seed << " n: " << points.size() << std::endl;
+
+            SweepLine<CGALKernel<ExactPredicatesInexactConstructions>> alg;
+            auto res = alg(Cones, points, BOUNDS);
+
+            seed++;
+        }
+
+        return 0;
+    }
+#endif
 
     // get points
     tPoints points;
