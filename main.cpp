@@ -196,6 +196,7 @@ int main(int argc, char **argv) {
 
 #ifndef NDEBUG
     if (sDebug->is_set()) {
+        ASSERT(oN->is_set());
 
         tIndex seed = 1;
         while (seed != 0) {
