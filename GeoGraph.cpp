@@ -73,7 +73,7 @@ auto runAlg(const tDim &K, const tPoints &points, const tBox &bounds, Args... ar
 }
 
 template<typename Algorithm, typename Distribution, typename... Args>
-void benchmarkImpl(Args... args) {
+void benchmarkImpl(const tDim &K, Args... args) {
     std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
 
     {
@@ -82,8 +82,8 @@ void benchmarkImpl(Args... args) {
     }
 
     // header
-    file << "# dist n seed rep t" << std::endl;
-    std::cout << "dist n seed rep t" << std::endl;
+    file << "# k dist n seed rep t" << std::endl;
+    std::cout << "k dist n seed rep t" << std::endl;
 
     for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
         for (tDim rpn = 0; rpn < RepsPerN; ++rpn) {
@@ -92,45 +92,45 @@ void benchmarkImpl(Args... args) {
             auto [points, bounds] = gen.generate(nPoints, BOUNDS);
 
             for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
-                auto result = Timer<Algorithm>::time(Cones, points, bounds, args...);
-                file << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
-                std::cout << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                auto result = Timer<Algorithm>::time(K, points, bounds, args...);
+                file << K << " " << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                std::cout << K << " " << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
             }
         }
     }
 }
 
 template<typename Algorithm, typename Distribution, typename... FDists, typename... Args>
-void benchmark(Args... args) {
-    benchmarkImpl<Algorithm, Distribution>(args...);
+void benchmark(const tDim &K, Args... args) {
+    benchmarkImpl<Algorithm, Distribution>(K, args...);
     if constexpr (sizeof...(FDists) > 0) {
-        benchmark<Algorithm, FDists...>(args...);
+        benchmark<Algorithm, FDists...>(K, args...);
     }
 }
 
 void benchmark() {
 
 #ifdef WITH_CGAL
-//    benchmark<CGAL_Yao2D<ExactPredicatesInexactConstructions>, DISTS>();
-//    benchmark<CGAL_Yao2D<ExactPredicatesExactConstructions>, DISTS>();
+    benchmark<CGAL_Yao2D<ExactPredicatesInexactConstructions>, DISTS>(Cones);
+    benchmark<CGAL_Yao2D<ExactPredicatesExactConstructions>, DISTS>(Cones);
 #endif
 
-//    benchmark<NaiveYao<InexactKernel>, DISTS>();
+    benchmark<NaiveYao<InexactKernel>, DISTS>(Cones);
 #ifdef WITH_CGAL
-//    benchmark<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>();
-//    benchmark<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>();
+    benchmark<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(Cones);
+    benchmark<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(Cones);
 #endif
 
-//    benchmark<GridYao<InexactKernel>, DISTS>(cellOcc);
+    benchmark<GridYao<InexactKernel>, DISTS>(Cones, cellOcc);
 #ifdef WITH_CGAL
-//    benchmark<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(cellOcc);
-//    benchmark<GridYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(cellOcc);
+    benchmark<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(Cones, cellOcc);
+    benchmark<GridYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(Cones, cellOcc);
 #endif
 
-//    benchmark<SweepLine<InexactKernel>, DISTS>();
+    benchmark<SweepLine<InexactKernel>, DISTS>(Cones);
 #ifdef WITH_CGAL
-    benchmark<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>, Road>();
-    benchmark<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>();
+    benchmark<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(Cones);
+    benchmark<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(Cones);
 #endif
 }
 
