@@ -152,6 +152,7 @@ public:
             leftRegion = o.leftRegion;
             rightRegion = o.rightRegion;
 
+            ext.reset();
             if (o.ext) {
                 ext = std::make_unique<Segment>(*o.ext);
             }

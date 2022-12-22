@@ -634,7 +634,7 @@ private:
         ASSERT(pos->prev);
         ASSERT(pos->next);
 
-        pos->obj = std::make_unique<T>(obj);
+        *pos->obj = obj;
 
         return pos;
     }
