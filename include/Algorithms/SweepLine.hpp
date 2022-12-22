@@ -334,8 +334,12 @@ private:
                                 extMap.erase(pqR);
                             }
 
+                            // remove rightRay, as leftRay replaces it
+                            // point iterator to right ray to left ray
+
                             sl.erase(rightRay);
                             *leftRay = *r;
+                            rightRay = leftRay;
                         } else {
                             if (leftRay->isExtended()) {
                                 auto pqL = extMap.find(leftRay);
@@ -346,8 +350,12 @@ private:
                                 extMap.erase(pqL);
                             }
 
+                            // remove leftRay, as rightRay replaces it
+                            // point iterator to left ray to right ray
+
                             sl.erase(leftRay);
                             *rightRay = *r;
+                            leftRay = rightRay;
                         }
 
                         LOG(idx << ": "
