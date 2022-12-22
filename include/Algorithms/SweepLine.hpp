@@ -321,6 +321,8 @@ private:
                         ASSERT(leftRay->rightRegion == rightRay->leftRegion);
                         ASSERT(r->direction() == leftRay->direction() && r->direction() == rightRay->direction());
 
+			//TODO handle extensions correctly
+
                         if (left) {
                             if (rightRay->isExtended()) {
                                 auto pqR = extMap.find(rightRay);
