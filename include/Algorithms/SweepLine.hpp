@@ -307,6 +307,10 @@ private:
                     //TODO handle ray
                     tRay *r = std::get_if<tRay>(&*is);
                     if (r) {
+                        if (r->direction() != leftRay->direction()) {
+                            r->invert();
+                        }
+
                         LOG(idx << ": "
                                 << "RI left: " << *leftRay << std::endl);
                         LOG(idx << ": "
@@ -314,15 +318,10 @@ private:
                         LOG(idx << ": "
                                 << "RI IS Ray: " << *r << std::endl);
 
-                        if (r->direction() != leftRay->direction()) {
-                            r->invert();
-                        }
-
                         ASSERT(leftRay->rightRegion == rightRay->leftRegion);
                         ASSERT(r->direction() == leftRay->direction() && r->direction() == rightRay->direction());
 
-                        r->leftRegion = leftRay->leftRegion;
-                        r->rightRegion = rightRay->rightRegion;
+			//TODO handle extensions correctly
 
                         if (left) {
                             if (rightRay->isExtended()) {
@@ -337,8 +336,9 @@ private:
                             // remove rightRay, as leftRay replaces it
                             // point iterator to right ray to left ray
 
+                            leftRay->leftRegion = leftRay->leftRegion;
+                            leftRay->rightRegion = rightRay->rightRegion;
                             sl.erase(rightRay);
-                            *leftRay = *r;
                             rightRay = leftRay;
                         } else {
                             if (leftRay->isExtended()) {
@@ -353,8 +353,9 @@ private:
                             // remove leftRay, as rightRay replaces it
                             // point iterator to left ray to right ray
 
+                            rightRay->leftRegion = leftRay->leftRegion;
+                            rightRay->rightRegion = rightRay->rightRegion;
                             sl.erase(leftRay);
-                            *rightRay = *r;
                             leftRay = rightRay;
                         }
 
@@ -648,6 +649,9 @@ private:
                                 if (!Kernel::approxEQ(rL.origin(), Bs.origin())) {
                                     itBn = sl.replace(itBr, tRay({rL, Bs}));
                                     extMap[itBn] = pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
+                                    LOG(idx << ": "
+                                            << " added deletion point at (" << Bs.origin() << ") key: " << sl.prj(Bs.origin())
+                                            << " for " << *itBn << std::endl);
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.replace(itBr, Bs);
                                 }
@@ -658,6 +662,9 @@ private:
                                 if (!Kernel::approxEQ(rR.origin(), Bs.origin())) {
                                     itBn = sl.replace(itBr, tRay({rR, Bs}));
                                     extMap[itBn] = pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
+                                    LOG(idx << ": "
+                                            << " added deletion point at (" << Bs.origin() << ") key: " << sl.prj(Bs.origin())
+                                            << " for " << *itBn << std::endl);
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.replace(itBr, Bs);
                                 }
