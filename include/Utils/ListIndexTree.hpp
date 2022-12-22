@@ -135,6 +135,9 @@ public:
         using const_reference = const T &;
         using iterator_category = std::bidirectional_iterator_tag;
 
+        using it_pointer = Leaf *;
+        using const_it_pointer = const Leaf *;
+
         Iterator() : leaf_(nullptr) {}
         Iterator(Leaf *leaf) : leaf_(leaf) {}
 
@@ -157,6 +160,14 @@ public:
 
         const_reference operator*() const { return *(leaf_->obj.get()); }
         const_pointer operator->() const { return leaf_->obj.get(); }
+
+        it_pointer addr() {
+            return leaf_;
+        }
+
+        const_it_pointer addr() const {
+            return leaf_;
+        }
     };
 
 public:
@@ -224,10 +235,22 @@ private:
     }
 
     void deleteLeaf(Leaf *p) {
+        p->next = nullptr;
+        p->prev = nullptr;
+        p->parent = nullptr;
+        p->height = 1;
+        p->obj.reset();
+
         mm_leafs.release(p);
     }
 
     void deleteInternalNode(InternalNode *p) {
+        p->left = nullptr;
+        p->right = nullptr;
+        p->parent = nullptr;
+        p->height = 0;
+        p->maxRep = nullptr;
+
         mm_inodes.release(p);
     }
 
@@ -608,6 +631,8 @@ private:
         ASSERT(pos->parent != nullptr);
         ASSERT(pos->isLeaf());
         ASSERT(pos->obj);
+        ASSERT(pos->prev);
+        ASSERT(pos->next);
 
         pos->obj = std::make_unique<T>(obj);
 

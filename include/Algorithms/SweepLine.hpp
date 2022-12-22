@@ -188,8 +188,8 @@ private:
     struct pair_hash {
         template<class IT>
         std::size_t operator()(const std::pair<IT, IT> &p) const {
-            auto h1 = std::hash<typename IT::const_pointer>{}(&*p.first);
-            auto h2 = std::hash<typename IT::const_pointer>{}(&*p.second);
+            auto h1 = std::hash<typename IT::const_it_pointer>{}(p.first.addr());
+            auto h2 = std::hash<typename IT::const_it_pointer>{}(p.second.addr());
 
             // from Boost HashCombine
             return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h2 >> 2));
@@ -199,7 +199,7 @@ private:
     struct it_hash {
         template<class IT>
         std::size_t operator()(const IT &p) const {
-            return std::hash<typename IT::const_pointer>{}(&*p);
+            return std::hash<typename IT::const_it_pointer>{}(p.addr());
         }
     };
 
@@ -263,7 +263,7 @@ private:
             //            pq.pop(); // we need the pq for drawing
 
             LOG(idx << ": "
-                    << cPoint.idx << " (" << cPoint.pos[X] << ", " << cPoint.pos[Y] << "): key: " << cKey << std::endl);
+                    << cPoint.idx << " (" << cPoint.pos << "): key: " << cKey << std::endl);
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
             //basePainter.draw(cPoint.pos, idx);
@@ -302,7 +302,7 @@ private:
                         isMap[std::make_pair(leftRay, rightRay)] = pq.push({sl.prj(*p), Event({*p, leftRay, rightRay})});
                         LOG(idx << ": "
                                 << " added " << (left ? "left" : "right")
-                                << " intersection point at " << *p << " key: " << sl.prj(*p) << std::endl);
+                                << " intersection point at (" << *p << ") key: " << sl.prj(*p) << std::endl);
                     }
                     //TODO handle ray
                     tRay *r = std::get_if<tRay>(&*is);
@@ -670,14 +670,39 @@ private:
                             << "found boundary: " << *itBn << std::endl);
 
                     // insert intersection points into PQ
+
+                    auto saveItBn = itBn;
+                    auto saveItL = itBn;
                     if (itBn != sl.begin()) {
                         auto itL = std::prev(itBn);
+                        saveItL = itL;
                         handleRayIntersection(itL, itBn, true);
                     }
 
                     auto itR = std::next(itBn);
                     if (itR != sl.end()) {
                         handleRayIntersection(itBn, itR, false);
+                    }
+
+                    //check if itBn was modified and re-route intersection points
+                    if (itBn != saveItBn && saveItL != saveItBn) {
+                        // saveItL is different from saveItBn so there was a previous IT
+
+                        // the left neighbor should still be the same with the new itBn
+                        ASSERT(saveItL == std::prev(itBn));
+
+                        auto itIs = isMap.find(std::make_pair(saveItL, saveItBn));
+                        if (itIs != isMap.end()) {
+                            auto oldEvent = pq.get_key(itIs->second);
+                            pq.remove(itIs->second);
+                            isMap.erase(itIs);
+
+                            isMap[std::make_pair(saveItL, itBn)] = pq.push({sl.prj(oldEvent.second.pos),
+                                                                            Event({oldEvent.second.pos, saveItL, itBn})});
+
+                            LOG(idx << ": "
+                                    << " updated intersection point between " << *saveItL << " and " << *itBn << std::endl);
+                        }
                     }
 
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
