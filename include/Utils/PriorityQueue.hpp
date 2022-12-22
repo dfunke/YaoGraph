@@ -108,7 +108,7 @@ public:
         _handle_vec[h] = pos;
     }
 
-    const T &get_key(handle h) {
+    const T &get_key(handle h) const {
         return _heap_element_vec[_handle_vec[h]];
     }
 
@@ -289,7 +289,7 @@ public:
         pq.change_key(h, newvalue);
     }
 
-    const T &get_key(handle h) {
+    const T &get_key(handle h) const {
         return pq.get_key(h);
     }
 
