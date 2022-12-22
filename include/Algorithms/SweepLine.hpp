@@ -648,6 +648,9 @@ private:
                                 if (!Kernel::approxEQ(rL.origin(), Bs.origin())) {
                                     itBn = sl.replace(itBr, tRay({rL, Bs}));
                                     extMap[itBn] = pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
+                                    LOG(idx << ": "
+                                            << " added deletion point at (" << Bs.origin() << ") key: " << sl.prj(Bs.origin())
+                                            << " for " << *itBn << std::endl);
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.replace(itBr, Bs);
                                 }
@@ -658,6 +661,9 @@ private:
                                 if (!Kernel::approxEQ(rR.origin(), Bs.origin())) {
                                     itBn = sl.replace(itBr, tRay({rR, Bs}));
                                     extMap[itBn] = pq.push({sl.prj(Bs.origin()), Event(Bs.origin(), itBn)});
+                                    LOG(idx << ": "
+                                            << " added deletion point at (" << Bs.origin() << ") key: " << sl.prj(Bs.origin())
+                                            << " for " << *itBn << std::endl);
                                 } else {// if they are almost equal immediately use bisector ray
                                     itBn = sl.replace(itBr, Bs);
                                 }
