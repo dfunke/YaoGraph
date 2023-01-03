@@ -145,7 +145,7 @@ public:
             points.emplace_back(p);
         }
 
-        return std::make_tuple(points, bounds);;
+        return std::make_tuple(points, bounds);
     }
 
 private:
@@ -185,7 +185,7 @@ public:
             }
         }
 
-        return std::make_tuple(points, bounds);;
+        return std::make_tuple(points, bounds);
     }
 };
 
@@ -200,16 +200,15 @@ public:
         return "road";
     }
 
-    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> generate(const tIndex n, [[maybe_unused]] const tBox &bounds) override {
 
-        std::string fileName = ROAD_DATA "/USA-road-d.NY.co";
+        std::string fileName = ROAD_DATA "/USA-road-d.USA.co";
+        //std::string fileName = ROAD_DATA "/USA-road-d.NY.co";
         std::ifstream file(fileName, std::ios::in);
         std::string line;
 
         using tIntPoint = std::array<int, 2>;
         std::vector<tIntPoint> inPoints;
-        tIntPoint minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
-        tIntPoint maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
 
         while (std::getline(file, line)) {
             if (line.starts_with('c')) {
@@ -233,31 +232,94 @@ public:
                 if (!(iss >> c >> idx >> x >> y)) { continue; }// error in file
 
                 inPoints[idx - 1] = {x, y};
+            }
+        }
 
-                if (x < minPoint[X]) minPoint[X] = x;
-                if (y < minPoint[Y]) minPoint[Y] = y;
-                if (x > maxPoint[X]) maxPoint[X] = x;
-                if (y > maxPoint[Y]) maxPoint[Y] = y;
+        ASSERT(inPoints.size() > n);
+
+        auto xSort = sort_indices(inPoints, [](const tIntPoint &a, const tIntPoint &b) { return a[X] < b[X]; });
+        auto ySort = sort_indices(inPoints, [](const tIntPoint &a, const tIntPoint &b) { return a[Y] < b[Y]; });
+
+        // sample random point to start with
+        std::array<tIndex, 2> seedPoint = {static_cast<tIndex>(std::floor((.25 + .5 * rand()) * xSort.size())),
+                                           static_cast<tIndex>(std::floor((.25 + .5 * rand()) * ySort.size()))};
+
+        tIFloat windowSize = .0;
+        const tIFloat windowSizeInc = .01;
+        const tIFloat maxWindowSize = .5;
+
+        std::vector<tIndex> pointIdx;
+        pointIdx.reserve(n);
+
+        while (pointIdx.size() < n && windowSize <= maxWindowSize) {
+            pointIdx.clear();//TODO: this can be done smarter
+
+            windowSize += windowSizeInc;
+
+            auto xBegin = xSort.begin();
+            std::advance(xBegin,
+                         static_cast<tIndex>(std::floor(std::max(0.0,
+                                                                 seedPoint[X] - (xSort.size() * windowSize)))));
+
+            auto xEnd = xSort.begin();
+            std::advance(xEnd,
+                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(xSort.size()),
+                                                                 seedPoint[X] + (xSort.size() * windowSize)))));
+
+            std::vector<tIndex> xIdx;
+            std::copy(xBegin, xEnd, std::back_inserter(xIdx));
+            std::sort(xIdx.begin(), xIdx.end());
+
+            if (xIdx.size() < n) {
+                continue;
+            }
+
+            auto yBegin = ySort.begin();
+            std::advance(yBegin,
+                         static_cast<tIndex>(std::floor(std::max(0.0,
+                                                                 seedPoint[Y] - (ySort.size() * windowSize)))));
+
+            auto yEnd = ySort.begin();
+            std::advance(yEnd,
+                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(ySort.size()),
+                                                                 seedPoint[Y] + (ySort.size() * windowSize)))));
+
+            std::vector<tIndex> yIdx;
+            std::copy(yBegin, yEnd, std::back_inserter(yIdx));
+            std::sort(yIdx.begin(), yIdx.end());
+
+            if (yIdx.size() < n) {
+                continue;
+            }
+
+            std::set_intersection(xIdx.begin(), xIdx.end(), yIdx.begin(), yIdx.end(), std::back_inserter(pointIdx));
+
+            if (pointIdx.size() < n) {
+                continue;
             }
         }
 
         tPoints points;
-        points.reserve(n);
+        points.reserve(pointIdx.size());
 
-        auto samples = FisherYatesShuffle(n, inPoints.size());
+        tIFloatVector minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
+        tIFloatVector maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
 
-        for (const auto &i : samples) {
-
+        for (const auto &i : pointIdx) {
             tIFloatVector p;
             for (tDim d = 0; d < D; ++d) {
-                p[d] = bounds.low[d] + (bounds.high[d] - bounds.low[d]) * ((inPoints[i][d] - minPoint[d]) / static_cast<tIFloat>((maxPoint[d] - minPoint[d])));
+                p[d] = inPoints[i][d];
             }
 
-            ASSERT(bounds.contains(p));
+            if (p[X] < minPoint[X]) minPoint[X] = p[X];
+            if (p[Y] < minPoint[Y]) minPoint[Y] = p[Y];
+            if (p[X] > maxPoint[X]) maxPoint[X] = p[X];
+            if (p[Y] > maxPoint[Y]) maxPoint[Y] = p[Y];
+
             points.emplace_back(p);
         }
 
-        return std::make_tuple(points, bounds);;
+        return std::make_tuple(points, tBox{minPoint, maxPoint});
     }
 
 private:
@@ -275,9 +337,10 @@ public:
         return "stars";
     }
 
-    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> generate(const tIndex n, [[maybe_unused]] const tBox &bounds) override {
 
-        std::string fileName = STAR_DATA "/gaia_1.points";
+        std::string fileName = STAR_DATA "/gaia_1331909727.points";
+        //std::string fileName = STAR_DATA "/gaia_1.points";
         std::ifstream file(fileName, std::ios::in);
         std::string line;
 
@@ -295,72 +358,122 @@ public:
             inPoints.push_back({x, y, z});
         }
 
+        ASSERT(inPoints.size() > n);
+
         auto xSort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[X] < b[X]; });
         auto ySort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[Y] < b[Y]; });
         auto zSort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[Z] < b[Z]; });
 
-        // use 25 - 75 quantiles for X and Y to reject outliers
-        double xMin = inPoints[xSort[xSort.size() * .25]][X];
-        double xMax = inPoints[xSort[xSort.size() * .75]][X];
+        // sample random point to start with
+        std::array<tIndex, 3> seedPoint = {static_cast<tIndex>(std::floor((.25 + .5 * rand()) * xSort.size())),
+                                           static_cast<tIndex>(std::floor((.25 + .5 * rand()) * ySort.size())),
+                                           static_cast<tIndex>(std::floor((.25 + .5 * rand()) * zSort.size()))};
 
-        double yMin = inPoints[ySort[xSort.size() * .25]][Y];
-        double yMax = inPoints[ySort[xSort.size() * .75]][Y];
+        tIFloat windowSize = .0;
+        const tIFloat windowSizeInc = .01;
+        const tIFloat maxWindowSize = .5;
 
-        std::vector<tInPoint> slicePoints;
-        slicePoints.reserve(n);
+        std::vector<tIndex> pointIdx;
+        pointIdx.reserve(n);
 
-        tInPoint minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
-        tInPoint maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
+        while (pointIdx.size() < n && windowSize <= maxWindowSize) {
+            pointIdx.clear();//TODO: this can be done smarter
 
-        // start with 45 - 55 quantile for zslice and grow if necessary
-        double zSliceSize = .05;
+            windowSize += windowSizeInc;
 
-        while (slicePoints.size() < n && zSliceSize <= .5) {
-            slicePoints.clear();//TODO: this can be done smarter
+            auto xBegin = xSort.begin();
+            std::advance(xBegin,
+                         static_cast<tIndex>(std::floor(std::max(0.0,
+                                                                 seedPoint[X] - (xSort.size() * windowSize)))));
 
-            auto begin = zSort.begin();
-            std::advance(begin, zSort.size() * (.5 - zSliceSize));
+            auto xEnd = xSort.begin();
+            std::advance(xEnd,
+                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(xSort.size()),
+                                                                 seedPoint[X] + (xSort.size() * windowSize)))));
 
-            auto end = zSort.begin();
-            std::advance(end, zSort.size() * (.5 + zSliceSize));
+            std::vector<tIndex> xIdx;
+            std::copy(xBegin, xEnd, std::back_inserter(xIdx));
+            std::sort(xIdx.begin(), xIdx.end());
 
-            for (auto it = begin; it != end; ++it) {
-                const auto &p = inPoints[*it];
-                if (xMin <= p[X] && p[X] <= xMax && yMin <= p[Y] && p[Y] <= yMax) {
-                    slicePoints.push_back(p);
-
-                    if (p[X] < minPoint[X]) minPoint[X] = p[X];
-                    if (p[Y] < minPoint[Y]) minPoint[Y] = p[Y];
-                    if (p[X] > maxPoint[X]) maxPoint[X] = p[X];
-                    if (p[Y] > maxPoint[Y]) maxPoint[Y] = p[Y];
-                }
+            if (xIdx.size() < n) {
+                continue;
             }
 
-            if (slicePoints.size() < n) {
-                zSliceSize += .05;
+            auto yBegin = ySort.begin();
+            std::advance(yBegin,
+                         static_cast<tIndex>(std::floor(std::max(0.0,
+                                                                 seedPoint[Y] - (ySort.size() * windowSize)))));
+
+            auto yEnd = ySort.begin();
+            std::advance(yEnd,
+                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(ySort.size()),
+                                                                 seedPoint[Y] + (ySort.size() * windowSize)))));
+
+            std::vector<tIndex> yIdx;
+            std::copy(yBegin, yEnd, std::back_inserter(yIdx));
+            std::sort(yIdx.begin(), yIdx.end());
+
+            if (yIdx.size() < n) {
+                continue;
+            }
+
+            std::vector<tIndex> xyIdx;
+            std::set_intersection(xIdx.begin(), xIdx.end(), yIdx.begin(), yIdx.end(), std::back_inserter(xyIdx));
+
+            if (xyIdx.size() < n) {
+                continue;
+            }
+
+            auto zBegin = zSort.begin();
+            std::advance(zBegin,
+                         static_cast<tIndex>(std::floor(std::max(0.0,
+                                                                 seedPoint[Z] - (zSort.size() * windowSize)))));
+
+            auto zEnd = zSort.begin();
+            std::advance(zEnd,
+                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(zSort.size()),
+                                                                 seedPoint[Z] + (zSort.size() * windowSize)))));
+
+            std::vector<tIndex> zIdx;
+            std::copy(zBegin, zEnd, std::back_inserter(zIdx));
+            std::sort(zIdx.begin(), zIdx.end());
+
+            if (zIdx.size() < n) {
+                continue;
+            }
+
+            std::set_intersection(xyIdx.begin(), xyIdx.end(), zIdx.begin(), zIdx.end(), std::back_inserter(pointIdx));
+
+            if (pointIdx.size() < n) {
+                continue;
             }
         }
 
         tPoints points;
-        points.reserve(n);
+        points.reserve(pointIdx.size());
 
-        auto samples = FisherYatesShuffle(n, slicePoints.size());
+        tIFloatVector minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
+        tIFloatVector maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
 
-        for (const auto &i : samples) {
+        for (const auto &i : pointIdx) {
             tIFloatVector p;
             for (tDim d = 0; d < D; ++d) {
-                p[d] = bounds.low[d] + (bounds.high[d] - bounds.low[d]) * ((slicePoints[i][d] - minPoint[d]) / static_cast<tIFloat>((maxPoint[d] - minPoint[d])));
+                p[d] = inPoints[i][d];
             }
 
-            ASSERT(bounds.contains(p));
+            if (p[X] < minPoint[X]) minPoint[X] = p[X];
+            if (p[Y] < minPoint[Y]) minPoint[Y] = p[Y];
+            if (p[X] > maxPoint[X]) maxPoint[X] = p[X];
+            if (p[Y] > maxPoint[Y]) maxPoint[Y] = p[Y];
+
             points.emplace_back(p);
         }
 
-        return std::make_tuple(points, bounds);;
+        return std::make_tuple(points, tBox{minPoint, maxPoint});
     }
 
 private:
-    std::uniform_int_distribution<tIndex> dist;
+    std::uniform_real_distribution<tIFloat> dist;
 };
 
 std::unique_ptr<GeneratorBase> getGen(const char &dist, const tIndex &seed) {
