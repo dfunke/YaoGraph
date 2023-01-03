@@ -24,7 +24,7 @@ void generate(const char &dist, const tIndex &n, const tIndex &seed, const tBox 
 
     auto gen = getGen(dist, seed);
 
-    std::cout << "Generating " << gen.name() << " with " << n << " points" << std::endl;
+    std::cout << "Generating " << gen->name() << " with " << n << " points" << std::endl;
 
     auto [points, oBounds] = gen->generate(n, iBounds);
 
