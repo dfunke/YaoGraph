@@ -27,6 +27,7 @@ void generate(const char &dist, const tIndex &n, const tIndex &seed, const tBox 
     std::cout << "Generating " << gen->name() << " with " << n << " points" << std::endl;
 
     auto [points, oBounds] = gen->generate(n, iBounds);
+    ASSERT(points.size() >= n);
 
     std::stringstream dir;
     dir << DATA_DIR << "/" << gen->name();
