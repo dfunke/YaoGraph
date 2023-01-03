@@ -75,6 +75,91 @@ protected:
         return idx;
     }
 
+    template<typename T, tIndex D2>
+    std::tuple<tPoints, tBox> extract_points(const tIndex &n, const std::vector<std::array<T, D2>> &inPoints) {
+        ASSERT(inPoints.size() > n);
+
+        std::array<std::vector<tIndex>, D2> coordSort;
+
+        for (tDim d = 0; d < D2; ++d) {
+            coordSort[d] = sort_indices(inPoints, [d](const std::array<T, D2> &a, const std::array<T, D2> &b) { return a[d] < b[d]; });
+        }
+
+        // sample random point to start with
+        std::array<tIndex, D2> seedPoint;
+        for (tDim d = 0; d < D2; ++d) {
+            seedPoint[d] = static_cast<tIndex>(std::floor((.25 + .5 * rand()) * coordSort[d].size()));
+        }
+
+        tIFloat windowSize = .0;
+        const tIFloat windowSizeInc = .01;
+        const tIFloat maxWindowSize = .5;
+
+        std::vector<tIndex> pointIdx;
+
+        while (pointIdx.size() < n && windowSize <= maxWindowSize) {
+            pointIdx.clear();//TODO: this can be done smarter
+
+            windowSize += windowSizeInc;
+
+            std::array<std::vector<tIndex>, D2> windowIdx;
+
+            for (tDim d = 0; d < D2; ++d) {
+
+                auto begin = coordSort[d].begin();
+                std::advance(begin,
+                             static_cast<tIndex>(std::floor(std::max(0.0,
+                                                                     seedPoint[X] - (coordSort[d].size() * windowSize)))));
+
+                auto end = coordSort[d].begin();
+                std::advance(end,
+                             static_cast<tIndex>(std::floor(std::min(static_cast<double>(coordSort[d].size()),
+                                                                     seedPoint[X] + (coordSort[d].size() * windowSize)))));
+
+                std::copy(begin, end, std::back_inserter(windowIdx[d]));
+                std::sort(windowIdx[d].begin(), windowIdx[d].end());
+
+                if (windowIdx[d].size() < n) {
+                    continue;
+                }
+            }
+
+            std::array<std::vector<tIndex>, D2> windowIdxIS;
+            windowIdxIS[0] = windowIdx[0];
+
+            for (tDim d = 1; d < D2; ++d) {
+                std::set_intersection(windowIdxIS[d - 1].begin(), windowIdxIS[d - 1].end(), windowIdx[d].begin(), windowIdx[d].end(), std::back_inserter(windowIdxIS[d]));
+            }
+
+            pointIdx = windowIdxIS[D2 - 1];
+            if (pointIdx.size() < n) {
+                continue;
+            }
+        }
+
+        tPoints points;
+        points.reserve(pointIdx.size());
+
+        tIFloatVector minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
+        tIFloatVector maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
+
+        for (const auto &i : pointIdx) {
+            tIFloatVector p;
+            for (tDim d = 0; d < D; ++d) {
+                p[d] = inPoints[i][d];
+            }
+
+            if (p[X] < minPoint[X]) minPoint[X] = p[X];
+            if (p[Y] < minPoint[Y]) minPoint[Y] = p[Y];
+            if (p[X] > maxPoint[X]) maxPoint[X] = p[X];
+            if (p[Y] > maxPoint[Y]) maxPoint[Y] = p[Y];
+
+            points.emplace_back(p);
+        }
+
+        return std::make_tuple(points, tBox{minPoint, maxPoint});
+    }
+
 private:
     std::mt19937 gen;
 };
@@ -235,91 +320,7 @@ public:
             }
         }
 
-        ASSERT(inPoints.size() > n);
-
-        auto xSort = sort_indices(inPoints, [](const tIntPoint &a, const tIntPoint &b) { return a[X] < b[X]; });
-        auto ySort = sort_indices(inPoints, [](const tIntPoint &a, const tIntPoint &b) { return a[Y] < b[Y]; });
-
-        // sample random point to start with
-        std::array<tIndex, 2> seedPoint = {static_cast<tIndex>(std::floor((.25 + .5 * rand()) * xSort.size())),
-                                           static_cast<tIndex>(std::floor((.25 + .5 * rand()) * ySort.size()))};
-
-        tIFloat windowSize = .0;
-        const tIFloat windowSizeInc = .01;
-        const tIFloat maxWindowSize = .5;
-
-        std::vector<tIndex> pointIdx;
-        pointIdx.reserve(n);
-
-        while (pointIdx.size() < n && windowSize <= maxWindowSize) {
-            pointIdx.clear();//TODO: this can be done smarter
-
-            windowSize += windowSizeInc;
-
-            auto xBegin = xSort.begin();
-            std::advance(xBegin,
-                         static_cast<tIndex>(std::floor(std::max(0.0,
-                                                                 seedPoint[X] - (xSort.size() * windowSize)))));
-
-            auto xEnd = xSort.begin();
-            std::advance(xEnd,
-                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(xSort.size()),
-                                                                 seedPoint[X] + (xSort.size() * windowSize)))));
-
-            std::vector<tIndex> xIdx;
-            std::copy(xBegin, xEnd, std::back_inserter(xIdx));
-            std::sort(xIdx.begin(), xIdx.end());
-
-            if (xIdx.size() < n) {
-                continue;
-            }
-
-            auto yBegin = ySort.begin();
-            std::advance(yBegin,
-                         static_cast<tIndex>(std::floor(std::max(0.0,
-                                                                 seedPoint[Y] - (ySort.size() * windowSize)))));
-
-            auto yEnd = ySort.begin();
-            std::advance(yEnd,
-                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(ySort.size()),
-                                                                 seedPoint[Y] + (ySort.size() * windowSize)))));
-
-            std::vector<tIndex> yIdx;
-            std::copy(yBegin, yEnd, std::back_inserter(yIdx));
-            std::sort(yIdx.begin(), yIdx.end());
-
-            if (yIdx.size() < n) {
-                continue;
-            }
-
-            std::set_intersection(xIdx.begin(), xIdx.end(), yIdx.begin(), yIdx.end(), std::back_inserter(pointIdx));
-
-            if (pointIdx.size() < n) {
-                continue;
-            }
-        }
-
-        tPoints points;
-        points.reserve(pointIdx.size());
-
-        tIFloatVector minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
-        tIFloatVector maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
-
-        for (const auto &i : pointIdx) {
-            tIFloatVector p;
-            for (tDim d = 0; d < D; ++d) {
-                p[d] = inPoints[i][d];
-            }
-
-            if (p[X] < minPoint[X]) minPoint[X] = p[X];
-            if (p[Y] < minPoint[Y]) minPoint[Y] = p[Y];
-            if (p[X] > maxPoint[X]) maxPoint[X] = p[X];
-            if (p[Y] > maxPoint[Y]) maxPoint[Y] = p[Y];
-
-            points.emplace_back(p);
-        }
-
-        return std::make_tuple(points, tBox{minPoint, maxPoint});
+        return extract_points(n, inPoints);
     }
 
 private:
@@ -358,118 +359,7 @@ public:
             inPoints.push_back({x, y, z});
         }
 
-        ASSERT(inPoints.size() > n);
-
-        auto xSort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[X] < b[X]; });
-        auto ySort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[Y] < b[Y]; });
-        auto zSort = sort_indices(inPoints, [](const tInPoint &a, const tInPoint &b) { return a[Z] < b[Z]; });
-
-        // sample random point to start with
-        std::array<tIndex, 3> seedPoint = {static_cast<tIndex>(std::floor((.25 + .5 * rand()) * xSort.size())),
-                                           static_cast<tIndex>(std::floor((.25 + .5 * rand()) * ySort.size())),
-                                           static_cast<tIndex>(std::floor((.25 + .5 * rand()) * zSort.size()))};
-
-        tIFloat windowSize = .0;
-        const tIFloat windowSizeInc = .01;
-        const tIFloat maxWindowSize = .5;
-
-        std::vector<tIndex> pointIdx;
-        pointIdx.reserve(n);
-
-        while (pointIdx.size() < n && windowSize <= maxWindowSize) {
-            pointIdx.clear();//TODO: this can be done smarter
-
-            windowSize += windowSizeInc;
-
-            auto xBegin = xSort.begin();
-            std::advance(xBegin,
-                         static_cast<tIndex>(std::floor(std::max(0.0,
-                                                                 seedPoint[X] - (xSort.size() * windowSize)))));
-
-            auto xEnd = xSort.begin();
-            std::advance(xEnd,
-                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(xSort.size()),
-                                                                 seedPoint[X] + (xSort.size() * windowSize)))));
-
-            std::vector<tIndex> xIdx;
-            std::copy(xBegin, xEnd, std::back_inserter(xIdx));
-            std::sort(xIdx.begin(), xIdx.end());
-
-            if (xIdx.size() < n) {
-                continue;
-            }
-
-            auto yBegin = ySort.begin();
-            std::advance(yBegin,
-                         static_cast<tIndex>(std::floor(std::max(0.0,
-                                                                 seedPoint[Y] - (ySort.size() * windowSize)))));
-
-            auto yEnd = ySort.begin();
-            std::advance(yEnd,
-                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(ySort.size()),
-                                                                 seedPoint[Y] + (ySort.size() * windowSize)))));
-
-            std::vector<tIndex> yIdx;
-            std::copy(yBegin, yEnd, std::back_inserter(yIdx));
-            std::sort(yIdx.begin(), yIdx.end());
-
-            if (yIdx.size() < n) {
-                continue;
-            }
-
-            std::vector<tIndex> xyIdx;
-            std::set_intersection(xIdx.begin(), xIdx.end(), yIdx.begin(), yIdx.end(), std::back_inserter(xyIdx));
-
-            if (xyIdx.size() < n) {
-                continue;
-            }
-
-            auto zBegin = zSort.begin();
-            std::advance(zBegin,
-                         static_cast<tIndex>(std::floor(std::max(0.0,
-                                                                 seedPoint[Z] - (zSort.size() * windowSize)))));
-
-            auto zEnd = zSort.begin();
-            std::advance(zEnd,
-                         static_cast<tIndex>(std::floor(std::min(static_cast<double>(zSort.size()),
-                                                                 seedPoint[Z] + (zSort.size() * windowSize)))));
-
-            std::vector<tIndex> zIdx;
-            std::copy(zBegin, zEnd, std::back_inserter(zIdx));
-            std::sort(zIdx.begin(), zIdx.end());
-
-            if (zIdx.size() < n) {
-                continue;
-            }
-
-            std::set_intersection(xyIdx.begin(), xyIdx.end(), zIdx.begin(), zIdx.end(), std::back_inserter(pointIdx));
-
-            if (pointIdx.size() < n) {
-                continue;
-            }
-        }
-
-        tPoints points;
-        points.reserve(pointIdx.size());
-
-        tIFloatVector minPoint = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
-        tIFloatVector maxPoint = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
-
-        for (const auto &i : pointIdx) {
-            tIFloatVector p;
-            for (tDim d = 0; d < D; ++d) {
-                p[d] = inPoints[i][d];
-            }
-
-            if (p[X] < minPoint[X]) minPoint[X] = p[X];
-            if (p[Y] < minPoint[Y]) minPoint[Y] = p[Y];
-            if (p[X] > maxPoint[X]) maxPoint[X] = p[X];
-            if (p[Y] > maxPoint[Y]) maxPoint[Y] = p[Y];
-
-            points.emplace_back(p);
-        }
-
-        return std::make_tuple(points, tBox{minPoint, maxPoint});
+        return extract_points(n, inPoints);
     }
 
 private:
