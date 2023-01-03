@@ -93,8 +93,8 @@ void benchmarkImpl(const tDim &K, Args... args) {
 
             for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
                 auto result = Timer<Algorithm>::time(K, points, bounds, args...);
-                file << K << " " << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
-                std::cout << K << " " << gen.name() << " " << nPoints << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                file << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                std::cout << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
             }
         }
     }
