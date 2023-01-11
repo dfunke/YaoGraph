@@ -117,7 +117,7 @@ void benchmarkCones(const tIndex &nPoints, Args... args) {
         Uniform gen(Seeds[rpn]);
         auto [points, bounds] = gen.generate(nPoints, BOUNDS);
 
-        for (tDim K = minCones; K < maxCones; K += 2) {
+        for (tDim K = minCones; K <= maxCones; K += 2) {
             for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
                 auto result = Timer<Algorithm>::time(K, points, bounds, args...);
                 file << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
