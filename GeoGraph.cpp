@@ -28,6 +28,8 @@ constexpr tBox BOUNDS{{0, 0},
 constexpr tIndex minN = 1e3;
 constexpr tIndex maxN = 1e5;
 constexpr tDim Cones = 6;
+constexpr tDim minCones = 2;
+constexpr tDim maxCones = 12;
 constexpr tIndex cellOcc = 1e2;
 constexpr tDim RepsPerI = 3;
 constexpr tDim RepsPerN = 3;
@@ -100,6 +102,31 @@ void benchmarkImpl(const tDim &K, Args... args) {
     }
 }
 
+template<typename Algorithm, typename... Args>
+void benchmarkCones(const tIndex &nPoints, Args... args) {
+    std::ofstream file("benchmark_cones_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
+
+    std::cout << "Benchmarking " << Algorithm::name() << std::endl;
+
+    // header
+    file << "# k dist n seed rep t" << std::endl;
+    std::cout << "k dist n seed rep t" << std::endl;
+
+    for (tDim rpn = 0; rpn < RepsPerN; ++rpn) {
+
+        Uniform gen(Seeds[rpn]);
+        auto [points, bounds] = gen.generate(nPoints, BOUNDS);
+
+        for (tDim K = minCones; K < maxCones; K += 2) {
+            for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
+                auto result = Timer<Algorithm>::time(K, points, bounds, args...);
+                file << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+                std::cout << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
+            }
+        }
+    }
+}
+
 template<typename Algorithm, typename Distribution, typename... FDists, typename... Args>
 void benchmark(const tDim &K, Args... args) {
     benchmarkImpl<Algorithm, Distribution>(K, args...);
@@ -131,6 +158,20 @@ void benchmark() {
 #ifdef WITH_CGAL
     benchmark<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(Cones);
     benchmark<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(Cones);
+#endif
+
+    // Benchmark Cones
+
+    benchmarkCones<GridYao<InexactKernel>>(minN, cellOcc);
+#ifdef WITH_CGAL
+    benchmarkCones<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>>(minN, cellOcc);
+    benchmarkCones<GridYao<CGALKernel<ExactPredicatesExactConstructions>>>(minN, cellOcc);
+#endif
+
+    benchmarkCones<SweepLine<InexactKernel>>(minN);
+#ifdef WITH_CGAL
+    benchmarkCones<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>>(minN);
+    benchmarkCones<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>>(minN);
 #endif
 }
 
