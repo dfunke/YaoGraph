@@ -87,7 +87,7 @@ public:
     Uniform(const tIndex &seed) : Generator(seed),
                                   dist(0, std::nextafter(1, std::numeric_limits<tIFloat>::max())) {}
 
-    std::string name() {
+    std::string name() override {
         return "uni";
     }
 
@@ -121,7 +121,7 @@ public:
     Gaussian(const tIndex &seed) : Generator(seed),
                                    dist(0, .25) {}
 
-    std::string name() {
+    std::string name() override {
         return "gaussian";
     }
 
@@ -159,7 +159,7 @@ class Grid : public Generator<Grid> {
 public:
     Grid(const tIndex &seed) : Generator(seed) {}
 
-    std::string name() {
+    std::string name() override {
         return "grid";
     }
 
@@ -196,7 +196,7 @@ class Road : public Generator<Road> {
 public:
     Road(const tIndex &seed) : Generator(seed) {}
 
-    std::string name() {
+    std::string name() override {
         return "road";
     }
 
@@ -333,7 +333,7 @@ class Stars : public Generator<Stars> {
 public:
     Stars(const tIndex &seed) : Generator(seed) {}
 
-    std::string name() {
+    std::string name() override {
         return "stars";
     }
 
