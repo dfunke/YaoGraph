@@ -6,7 +6,8 @@ import pandas as pd
 import matplotlib.pylab as plt
 import seaborn as sns
 
-reFilename = re.compile("benchmark_([a-zA-Z0-9]+)_([a-zA-Z]+).csv")
+reRuntimeFilename = re.compile("benchmark_([a-zA-Z0-9]+)_([a-zA-Z]+).csv")
+reConesFilename = re.compile("benchmark_cones_([a-zA-Z0-9]+)_([a-zA-Z]+).csv")
 isRunningInPyCharm = "PYCHARM_HOSTED" in os.environ
 
 DIR = '/home/funke/devel/geograph/benchmark/data'
@@ -123,7 +124,7 @@ if os.path.exists(upDataFile):
 
 llData = []
 for f in os.listdir(DIR):
-    match = reFilename.match(f)
+    match = reRuntimeFilename.match(f)
     if match:
         # get header from first commented line
         with open(os.path.join(DIR, f), 'r') as file:
@@ -330,3 +331,39 @@ for dist in gData['dist'].unique():
              verticalalignment='bottom',
              transform=plt.gcf().transFigure)
     saveFig("%i_%s_runtime_sweepline_grid_noExactCon.%s" % (pltGroup, dist, EXT))
+
+######################################################################################################
+# %% Runtime over cones plots - read data
+
+llData = []
+for f in os.listdir(DIR):
+    match = reConesFilename.match(f)
+    if match:
+        # get header from first commented line
+        with open(os.path.join(DIR, f), 'r') as file:
+            header = file.readline()
+
+        header = header[1:].strip().split()
+
+        lData = pd.read_csv(os.path.join(DIR, f), sep=' ', comment='#', names=header)
+        lData['algorithm'] = match.group(1)
+        lData['kernel'] = match.group(2)
+        llData.append(lData)
+
+gData = pd.concat(llData)
+gData.set_index(['algorithm', 'kernel', 'dist', 'n', 'seed', 'rep'], inplace=True)
+gData.reset_index(inplace=True)
+
+gData['tpn'] = gData['t'] / gData['n']
+gData['tpk'] = gData['t'] / gData['k']
+
+######################################################################################################
+# %% Runtime over cones plots - overview plot
+
+pltGroup = 70
+sns.lineplot(data=gData, x='k', y='tpk', style='algorithm', hue='kernel', dashes=AlgorithmDash,
+             markers=AlgorithmMarkers,
+             palette=KernelPalette)
+# plt.xscale('log')
+# plt.yscale('log', base=2)
+saveFig("%i_runtime_cones.%s" % (pltGroup, EXT))
