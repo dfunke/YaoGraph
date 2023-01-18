@@ -100,11 +100,28 @@ public:
         cr->fill();
     }
 
+    void drawTri(const tIFloatVector &point) {
+        cr->move_to(translatePoint(point[0], 0) - 5, translatePoint(point[1], 1) - 5);
+        cr->line_to(translatePoint(point[0], 0) + 5, translatePoint(point[1], 1) - 5);
+        cr->line_to(translatePoint(point[0], 0), translatePoint(point[1], 1) + 5);
+        cr->line_to(translatePoint(point[0], 0) - 5, translatePoint(point[1], 1) - 5);
+        cr->fill();
+    }
+
 #ifdef WITH_CGAL
     template<typename K>
     void drawSquare(const CGAL::Point_2<K> &point) {
         cr->rectangle(translatePoint(CGAL::to_double(point[0]), 0) - 5,
                       translatePoint(CGAL::to_double(point[1]), 1) - 5, 10, 10);
+        cr->fill();
+    }
+
+    template<typename K>
+    void drawTri(const CGAL::Point_2<K> &point) {
+        cr->move_to(translatePoint(CGAL::to_double(point[0]), 0) - 5, translatePoint(CGAL::to_double(point[1]), 1) - 5);
+        cr->line_to(translatePoint(CGAL::to_double(point[0]), 0) + 5, translatePoint(CGAL::to_double(point[1]), 1) - 5);
+        cr->line_to(translatePoint(CGAL::to_double(point[0]), 0), translatePoint(CGAL::to_double(point[1]), 1) + 5);
+        cr->line_to(translatePoint(CGAL::to_double(point[0]), 0) - 5, translatePoint(CGAL::to_double(point[1]), 1) - 5);
         cr->fill();
     }
 #endif

@@ -203,6 +203,9 @@ int main(int argc, char **argv) {
     // output
     auto oOutFile = op.add<popl::Value<std::string>>("o", "outfile", "file for graph output");
     auto sStdOut = op.add<popl::Switch>("p", "stdout", "write graph to stdout");
+#ifdef WITH_CAIRO
+    auto oImageOut = op.add<popl::Value<std::string>>("i", "image", "write image of Yao graph to specified file");
+#endif
 
     op.parse(argc, argv);
 
@@ -251,6 +254,13 @@ int main(int argc, char **argv) {
         std::cout << "Either specify input point file or point generation option" << std::endl;
         return 0;
     }
+
+#ifdef WITH_CAIRO
+    if (oImageOut->is_set()) {
+        points = GeneratorBase::rescalePoints(points, bounds, BOUNDS);
+        bounds = BOUNDS;
+    }
+#endif
 
     // run algorithm
     tYaoGraph graph(points.size(), oK->value());
@@ -305,4 +315,14 @@ int main(int argc, char **argv) {
     if (sStdOut->is_set()) {
         std::cout << graph << std::endl;
     }
+
+#ifdef WITH_CAIRO
+    if (oImageOut->is_set()) {
+        Painter painter(bounds, 1000);
+        painter.draw(points, false);
+        painter.save(oImageOut->value() + ".points");
+        painter.draw(graph, points);
+        painter.save(oImageOut->value() + ".graph");
+    }
+#endif
 }

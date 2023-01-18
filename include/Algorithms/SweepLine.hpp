@@ -271,19 +271,25 @@ private:
             Painter stepPainter(basePainter);
 
             stepPainter.setColor(RED);
-            stepPainter.draw(cPoint.pos, idx, false);
+            if (cPoint.type == Event::Type::Input) {
+                stepPainter.draw(cPoint.pos, idx, false);
+            } else if(cPoint.type == Event::Type::Intersection){
+                stepPainter.drawSquare(cPoint.pos);
+            } else if(cPoint.type == Event::Type::Deletion){
+                stepPainter.drawTri(cPoint.pos);
+	    }
 
             stepPainter.setColor(BLUE);
             sl.draw(cPoint.pos, stepPainter);
 
             stepPainter.setColor(ORANGE);
             for (const auto &is : isMap) {
-                stepPainter.draw(pq.get_key(is.second).second.pos, 0, false);
+                stepPainter.drawSquare(pq.get_key(is.second).second.pos);
             }
 
             stepPainter.setColor(PINK);
             for (const auto &ext : extMap) {
-                stepPainter.draw(pq.get_key(ext.second).second.pos, 0, false);
+                stepPainter.drawTri(pq.get_key(ext.second).second.pos);
             }
 
             std::ostringstream stepFilename;
@@ -415,7 +421,8 @@ private:
                                 << " edge added: (" << cPoint.idx << ", " << itBr->leftRegion << ") w: " << Kernel::distance2(cPoint.pos, Kernel::mkPoint(iPoints[itBr->leftRegion])) << std::endl);
 
 #ifdef WITH_CAIRO
-                        basePainter.drawLine(itBr->origin(), cPoint.pos);
+                        basePainter.setColor(BLACK);
+                        basePainter.drawLine(Kernel::mkPoint(iPoints[itBr->leftRegion]), cPoint.pos);
 #endif
                     }
 
@@ -579,12 +586,12 @@ private:
 #if defined(WITH_CAIRO) && defined(PAINT_STEPS)
                     if (pBsL) {
                         stepPainter.setColor(RED);
-                        stepPainter.draw(*pBsL, 0);
+                        stepPainter.drawSquare(*pBsL);
                     }
 
                     if (pBsR) {
                         stepPainter.setColor(RED);
-                        stepPainter.draw(*pBsR, 1);
+                        stepPainter.drawSquare(*pBsR);
                     }
 #endif
 
@@ -607,9 +614,12 @@ private:
                     }
 
 #ifdef WITH_CAIRO
+                    basePainter.setColor(BLACK);
+                    basePainter.setDash();
                     basePainter.drawSquare(cPoint.pos);
                     basePainter.drawLine(itBl->origin(), cPoint.pos);
                     basePainter.drawLine(itBr->origin(), cPoint.pos);
+                    basePainter.unsetDash();
 #endif
 
                     // remove old Rays from list
@@ -736,7 +746,11 @@ private:
                     ASSERT(chk);
 
 #ifdef WITH_CAIRO
+                    basePainter.setColor(BLACK);
+                    basePainter.setDash();
                     basePainter.drawLine(itB->origin(), itB->extOrigin());
+                    basePainter.drawTri(cPoint.pos);
+                    basePainter.unsetDash();
 #endif
 
                     LOG(idx << ": "

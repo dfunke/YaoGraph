@@ -21,6 +21,25 @@ public:
     virtual ~GeneratorBase() = default;
 
     virtual std::string name() = 0;
+
+public:
+    static tPoints rescalePoints(const tPoints &inPoints, const tBox &oldBounds, const tBox &newBounds) {
+        tPoints outPoints;
+        outPoints.reserve(inPoints.size());
+
+        for (const auto &i : inPoints) {
+
+            tIFloatVector p;
+            for (tDim d = 0; d < D; ++d) {
+                p[d] = newBounds.low[d] + (newBounds.high[d] - newBounds.low[d]) * ((i[d] - oldBounds.low[d]) / static_cast<tIFloat>((oldBounds.high[d] - oldBounds.low[d])));
+            }
+
+            ASSERT(newBounds.contains(p));
+            outPoints.emplace_back(p);
+        }
+
+        return outPoints;
+    }
 };
 
 template<typename Dist>
@@ -75,8 +94,8 @@ protected:
         return idx;
     }
 
-    template<typename T, tIndex D2>
-    std::tuple<tPoints, tBox> extract_points(const tIndex &n, const std::vector<std::array<T, D2>> &inPoints) {
+    template<typename T, tIndex D2, typename Trans>
+    std::tuple<tPoints, tBox> extract_points(const tIndex &n, const std::vector<std::array<T, D2>> &inPoints, Trans &trans) {
         ASSERT(inPoints.size() > n);
 
         std::array<std::vector<tIndex>, D2> coordSort;
@@ -146,7 +165,7 @@ protected:
         for (const auto &i : pointIdx) {
             tIFloatVector p;
             for (tDim d = 0; d < D; ++d) {
-                p[d] = inPoints[i][d];
+                p[d] = trans(inPoints[i][d]);
             }
 
             if (p[X] < minPoint[X]) minPoint[X] = p[X];
@@ -320,7 +339,11 @@ public:
             }
         }
 
-        return extract_points(n, inPoints);
+        auto trans = [](const int i) {
+            return i / 1e6;
+        };
+
+        return extract_points(n, inPoints, trans);
     }
 
 private:
@@ -359,7 +382,11 @@ public:
             inPoints.push_back({x, y, z});
         }
 
-        return extract_points(n, inPoints);
+        auto trans = [](const double i) {
+            return i;
+        };
+
+        return extract_points(n, inPoints, trans);
     }
 
 private:
