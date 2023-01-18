@@ -223,7 +223,10 @@ pltGroup = 40
 ax = sns.lineplot(data=gData, x='n', y='tpn', style='algorithm', hue='kernel', dashes=AlgorithmDash,
              markers=AlgorithmMarkers,
              palette=KernelPalette)
-unsetLegend(ax)
+w, h = plt.gcf().get_size_inches()
+plt.gcf().set_size_inches(1.5*w, h)
+plt.legend(loc='upper left', bbox_to_anchor=(1.1, 1.1))
+setLegend(ax)
 plt.xscale('log')
 plt.yscale('log', base=2)
 plt.xlabel(r'$n$')
@@ -233,7 +236,10 @@ saveFig('%i_runtime.%s' % (pltGroup, EXT))
 ax = sns.lineplot(data=gData, x='n', y='speedup', style='kernel', hue='algorithm', dashes=KernelDash,
              markers=KernelMarkers,
              palette=AlgorithmPalette)
-unsetLegend(ax)
+w, h = plt.gcf().get_size_inches()
+plt.gcf().set_size_inches(1.5*w, h)
+plt.legend(loc='upper left', bbox_to_anchor=(1.1, 1.1))
+setLegend(ax)
 plt.xscale('log')
 plt.yscale('log', base=2)
 plt.xlabel(r'$n$')
