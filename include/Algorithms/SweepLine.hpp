@@ -47,6 +47,10 @@ class SweepLine {
         tDirection slDirection;
         tRays slRays;
 
+#ifdef WITH_STATS
+        tIndex m_size = 0;
+#endif
+
         SweeplineDS(const tDirection slDir_)
             : slDirection(slDir_) {}
 
@@ -55,20 +59,35 @@ class SweepLine {
         tRayHandle end() { return slRays.end(); }
 
         auto insert(tRayHandle &pos, const tRay &ray) {
+#ifdef WITH_STATS
+            m_size++;
+#endif
             return slRays.insert(pos, ray);
         }
 
         auto insert_pair(tRayHandle &pos, const tRay &left, const tRay &right) {
+#ifdef WITH_STATS
+            m_size += 2;
+#endif
             return slRays.insert_pair(pos, left, right);
         }
 
         auto erase(tRayHandle &pos) {
+#ifdef WITH_STATS
+            m_size--;
+#endif
             return slRays.erase(pos);
         }
 
         auto replace(tRayHandle &pos, const tRay &ray) {
             return slRays.replace(pos, ray);
         }
+
+#ifdef WITH_STATS
+        auto size() const {
+            return m_size;
+        }
+#endif
 
         tEFloat prj(const tPoint &p) {
             return slDirection.prj(p);
@@ -256,7 +275,26 @@ private:
         LOG("Processing cone " << k << " (" << lRay.angle() << ", " << rRay.angle() << ") - sweepline " << slDir.angle() << std::endl);
 
         tIndex idx = 0;
+#ifdef WITH_STATS
+        tIndex ipProcessed = 0;
+        tIndex isProcessed = 0;
+        tIndex delProcessed = 0;
+
+        tIndex maxIpInQueue = iPoints.size();
+        tIndex maxIsInQueue = 0;
+        tIndex maxDelInQueue = 0;
+        tIndex maxSlSize = 0;
+
+        std::cerr << "# dist n k steps ipPro isPro delPro maxIpQ maxIsQ maxDelQ maxSlSize" << std::endl;
+#endif
+
         while (!pq.empty()) {
+
+#ifdef WITH_STATS
+            if (maxIsInQueue < isMap.size()) maxIsInQueue = isMap.size();
+            if (maxDelInQueue < extMap.size()) maxDelInQueue = extMap.size();
+            if (maxSlSize < sl.size()) maxSlSize = sl.size();
+#endif
 
             auto cKey = pq.top().first;
             auto cPoint = pq.top().second;
@@ -463,6 +501,9 @@ private:
                         handleRayIntersection(itBrn, itBr, false);
                     }
 
+#ifdef WITH_STATS
+                    ipProcessed++;
+#endif
                     break;
                 }
 
@@ -726,6 +767,9 @@ private:
                     stepPainter.save(stepFilename.str());
 #endif
 
+#ifdef WITH_STATS
+                    isProcessed++;
+#endif
                     break;
                 }
 
@@ -763,7 +807,9 @@ private:
                     LOG(idx << " new ray: " << *itB << std::endl);
 
                     ASSERT(!itB->isExtended());
-
+#ifdef WITH_STATS
+                    delProcessed++;
+#endif
                     break;
                 }
             }
@@ -772,6 +818,10 @@ private:
 
             LOG(std::endl);
         }
+
+#ifdef WITH_STATS
+        std::cerr << iPoints.getDistName() << " " << iPoints.size() << " " << k << " " << idx << " " << ipProcessed << " " << isProcessed << " " << delProcessed << " " << maxIpInQueue << " " << maxIsInQueue << " " << maxDelInQueue << " " << maxSlSize << std::endl;
+#endif
 
 #ifdef WITH_CAIRO
         basePainter.save("img_k" + std::to_string(k));
