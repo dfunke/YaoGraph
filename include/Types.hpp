@@ -20,7 +20,21 @@ constexpr int SEED = 1986;
 
 using tIFloatVector = std::array<tIFloat, D>;
 using tIndexVector = std::array<tIndex, D>;
-using tPoints = std::vector<tIFloatVector>;
+
+class tPoints : public std::vector<tIFloatVector> {
+public:
+    void setDistName(const std::string &name) {
+        _distName = name;
+    }
+
+    std::string getDistName() const {
+        return _distName;
+    }
+
+private:
+    std::string _distName;
+};
+
 using tIndexSet = std::unordered_set<tIndex>;
 
 enum tOrientedSide {

@@ -16,11 +16,19 @@
 
 class GeneratorBase {
 public:
-    virtual std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) = 0;
+    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds){
+        auto[p, b] = _generate(n, bounds);
+        p.setDistName(name());
+
+        return std::make_tuple(p,b);
+    }
 
     virtual ~GeneratorBase() = default;
 
     virtual std::string name() = 0;
+
+protected:
+    virtual std::tuple<tPoints, tBox> _generate(const tIndex n, const tBox &bounds) = 0;
 
 public:
     static tPoints rescalePoints(const tPoints &inPoints, const tBox &oldBounds, const tBox &newBounds) {
@@ -195,7 +203,7 @@ public:
         return "uni";
     }
 
-    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> _generate(const tIndex n, const tBox &bounds) override {
         tPoints points;
         points.reserve(n);
 
@@ -229,7 +237,7 @@ public:
         return "gaussian";
     }
 
-    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> _generate(const tIndex n, const tBox &bounds) override {
         tPoints points;
         points.reserve(n);
 
@@ -267,7 +275,7 @@ public:
         return "grid";
     }
 
-    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) override {
+    std::tuple<tPoints, tBox> _generate(const tIndex n, const tBox &bounds) override {
         tPoints points;
         points.reserve(n);
 
@@ -304,7 +312,7 @@ public:
         return "road";
     }
 
-    std::tuple<tPoints, tBox> generate(const tIndex n, [[maybe_unused]] const tBox &bounds) override {
+    std::tuple<tPoints, tBox> _generate(const tIndex n, [[maybe_unused]] const tBox &bounds) override {
 
         std::string fileName = ROAD_DATA "/USA-road-d.USA.co";
         //std::string fileName = ROAD_DATA "/USA-road-d.NY.co";
@@ -361,7 +369,7 @@ public:
         return "stars";
     }
 
-    std::tuple<tPoints, tBox> generate(const tIndex n, [[maybe_unused]] const tBox &bounds) override {
+    std::tuple<tPoints, tBox> _generate(const tIndex n, [[maybe_unused]] const tBox &bounds) override {
 
         std::string fileName = STAR_DATA "/gaia_1331909727.points";
         //std::string fileName = STAR_DATA "/gaia_1.points";
