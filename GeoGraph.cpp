@@ -207,6 +207,9 @@ int main(int argc, char **argv) {
     auto oImageOut = op.add<popl::Value<std::string>>("i", "image", "write image of Yao graph to specified file");
 #endif
 
+    //verify
+    auto sVerify = op.add<popl::Switch>("v", "verify", "verify graph (-v grid-based, -v -v naive yao (slow))");
+
     op.parse(argc, argv);
 
     if (sHelp->is_set()) {
@@ -325,4 +328,73 @@ int main(int argc, char **argv) {
         painter.save(oImageOut->value() + ".graph");
     }
 #endif
+
+    if (sVerify->is_set()) {
+        tYaoGraph exp(points.size(), oK->value());
+
+        if (sVerify->count() == 1) {
+            switch (oKern->value()) {
+                case 'i':
+                    exp = runAlg<GridYao<InexactKernel>>(oK->value(), points, bounds, oCellOcc->value());
+                    break;
+                case 'p':
+                    exp = runAlg<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
+                    break;
+                case 'c':
+                    exp = runAlg<GridYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
+                    break;
+            }
+        } else if (sVerify->count() == 2) {
+            switch (oKern->value()) {
+                case 'i':
+                    exp = runAlg<NaiveYao<InexactKernel>>(oK->value(), points, bounds);
+                    break;
+                case 'p':
+                    exp = runAlg<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds);
+                    break;
+                case 'c':
+                    exp = runAlg<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds);
+                    break;
+            }
+        }
+
+        auto [valid, invalidVertices] = checkGraph(graph, exp);
+
+#ifdef WITH_CAIRO
+        if (!valid) {
+            Painter basePainter(bounds, 1000);
+            basePainter.draw(points, true);
+            basePainter.draw(exp, points);
+
+            for (auto idx : invalidVertices) {
+
+                Painter painter(basePainter);
+
+                for (tDim k = 0; k < oK->value(); ++k) {
+                    if (exp[idx].neighbor[k] != graph[idx].neighbor[k]) {
+
+                        if (exp[idx].neighbor[k] != INF_IDX) {
+                            painter.setColor(0, 1, 0);
+                            painter.draw(points[exp[idx].neighbor[k]], exp[idx].neighbor[k], true);
+                        }
+
+                        if (graph[idx].neighbor[k] != INF_IDX) {
+                            painter.setColor(1, 0, 0);
+                            painter.draw(points[graph[idx].neighbor[k]], graph[idx].neighbor[k], true);
+                        }
+                    }
+                }
+
+                painter.setColor(1, 0, 0);
+                painter.draw(idx, graph[idx], points);
+                painter.setColor(0, 0, 1);
+                painter.drawCones(points[idx], oK->value());
+
+                painter.save("invalidVertices_" + std::to_string(idx));
+            }
+        }
+#endif// ifdef WITH_CAIRO
+
+        return !valid;
+    }
 }
