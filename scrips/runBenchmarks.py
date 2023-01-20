@@ -110,8 +110,8 @@ for dDir in os.listdir(DATA_DIR):
         lArgs.infile = pFile
 
         lArgs.dist = DIST_NAME2CHAR[match.group(1)]
-        lArgs.n = match.group(2)
-        lArgs.seed = match.group(3)
+        lArgs.n = int(match.group(2))
+        lArgs.seed = int(match.group(3))
         lArgs.cellOcc = args.cellOcc
         lArgs.outfile = None
         lArgs.stdout = None
