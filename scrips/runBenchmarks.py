@@ -99,7 +99,7 @@ else:
 
 for dDir in os.listdir(DATA_DIR):
 
-    if not DIST_NAME2CHAR[dDir] in args.dist:
+    if not dDir in DIST_NAME2CHAR or not DIST_NAME2CHAR[dDir] in args.dist:
         continue
 
     for pFile in os.listdir(os.path.join(DATA_DIR, dDir)):
