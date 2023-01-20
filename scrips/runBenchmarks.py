@@ -107,7 +107,7 @@ for dDir in os.listdir(DATA_DIR):
 
         lArgs = argparse.Namespace
 
-        lArgs.infile = pFile
+        lArgs.infile = os.path.join(DATA_DIR, dDir, pFile)
 
         lArgs.dist = DIST_NAME2CHAR[match.group(1)]
         lArgs.n = int(match.group(2))
