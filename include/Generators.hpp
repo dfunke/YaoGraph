@@ -16,16 +16,18 @@
 
 class GeneratorBase {
 public:
-    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds){
-        auto[p, b] = _generate(n, bounds);
+    std::tuple<tPoints, tBox> generate(const tIndex n, const tBox &bounds) {
+        auto [p, b] = _generate(n, bounds);
         p.setDistName(name());
+        p.setSeed(seed());
 
-        return std::make_tuple(p,b);
+        return std::make_tuple(p, b);
     }
 
     virtual ~GeneratorBase() = default;
 
-    virtual std::string name() = 0;
+    virtual std::string name() const = 0;
+    virtual tIndex seed() const = 0;
 
 protected:
     virtual std::tuple<tPoints, tBox> _generate(const tIndex n, const tBox &bounds) = 0;
@@ -54,7 +56,7 @@ template<typename Dist>
 class Generator : public GeneratorBase {
 
 public:
-    Generator(const tIndex &seed) : gen(seed) {}
+    Generator(const tIndex &seed) : gen(seed), _seed(seed) {}
 
 protected:
     auto rand() {
@@ -187,8 +189,14 @@ protected:
         return std::make_tuple(points, tBox{minPoint, maxPoint});
     }
 
+public:
+    tIndex seed() const override {
+        return _seed;
+    }
+
 private:
     std::mt19937 gen;
+    tIndex _seed;
 };
 
 class Uniform : public Generator<Uniform> {
@@ -199,7 +207,7 @@ public:
     Uniform(const tIndex &seed) : Generator(seed),
                                   dist(0, std::nextafter(1, std::numeric_limits<tIFloat>::max())) {}
 
-    std::string name() override {
+    std::string name() const override {
         return "uni";
     }
 
@@ -233,7 +241,7 @@ public:
     Gaussian(const tIndex &seed) : Generator(seed),
                                    dist(0, .25) {}
 
-    std::string name() override {
+    std::string name() const override {
         return "gaussian";
     }
 
@@ -271,7 +279,7 @@ class Grid : public Generator<Grid> {
 public:
     Grid(const tIndex &seed) : Generator(seed) {}
 
-    std::string name() override {
+    std::string name() const override {
         return "grid";
     }
 
@@ -308,7 +316,7 @@ class Road : public Generator<Road> {
 public:
     Road(const tIndex &seed) : Generator(seed) {}
 
-    std::string name() override {
+    std::string name() const override {
         return "road";
     }
 
@@ -365,7 +373,7 @@ class Stars : public Generator<Stars> {
 public:
     Stars(const tIndex &seed) : Generator(seed) {}
 
-    std::string name() override {
+    std::string name() const override {
         return "stars";
     }
 
@@ -415,6 +423,26 @@ std::unique_ptr<GeneratorBase> getGen(const char &dist, const tIndex &seed) {
             return std::make_unique<Road>(seed);
         case 's':
             return std::make_unique<Stars>(seed);
+
+        default:
+            return nullptr;
+    }
+}
+
+std::string getGenName(const char &dist) {
+    // [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]
+
+    switch (dist) {
+        case 'u':
+            return "uni";
+        case 'g':
+            return "gaussian";
+        case 'd':
+            return "grid";
+        case 'r':
+            return "road";
+        case 's':
+            return "stars";
 
         default:
             return nullptr;

@@ -40,6 +40,7 @@ public:
             boost::make_transform_iterator(points.end(), transform),
             g);
 
-        return g;
+        return tYaoGraph(points.size(), K);
+        //return g;
     }
 };

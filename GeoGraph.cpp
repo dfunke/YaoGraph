@@ -25,18 +25,10 @@
 // constants
 constexpr tBox BOUNDS{{0, 0},
                       {1, 1}};
-constexpr tIndex minN = 1e3;
-constexpr tIndex maxN = 1e5;
-constexpr tDim Cones = 6;
-constexpr tDim minCones = 2;
-constexpr tDim maxCones = 12;
 constexpr tIndex cellOcc = 1e2;
-constexpr tDim RepsPerI = 3;
-constexpr tDim RepsPerN = 3;
+constexpr tDim Reps = 1;
 
 const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 59135, 60315};
-
-#define DISTS Gaussian, Uniform, Grid, Road, Stars
 
 std::tuple<tPoints, tBox> readPointsFile(const std::string &fileName) {
     std::ifstream file(fileName, std::ios::in);
@@ -47,9 +39,35 @@ std::tuple<tPoints, tBox> readPointsFile(const std::string &fileName) {
     tIFloatVector maxPoint = {std::numeric_limits<tIFloat>::min(), std::numeric_limits<tIFloat>::min()};
 
     while (std::getline(file, line)) {
-        // vertex line
-        // X Y
 
+        if (line.starts_with("# n")) {
+            // number of points line
+            // # n XXX
+            auto lastSpace = line.find_last_of(' ');
+            tIndex pointsInFile = std::stoul(line.substr(lastSpace + 1));
+            points.reserve(pointsInFile);
+
+            continue;
+        }
+
+        if (line.starts_with("# b")) {
+            // bounding box line
+            // # b minX minY maxX maxY
+            tIFloat minX, minY, maxX, maxY;
+            std::stringstream iss(line.substr(3));
+
+            if (!(iss >> minX >> minY >> maxX >> maxY)) { continue; }// error in file
+
+            minPoint[X] = minX;
+            minPoint[Y] = minY;
+            maxPoint[X] = maxX;
+            maxPoint[Y] = maxY;
+
+            continue;
+        }
+
+        //  vertex line
+        // X Y
         std::istringstream iss(line);
         tIFloat x, y;
         if (!(iss >> x >> y)) { continue; }// error in file
@@ -65,114 +83,44 @@ std::tuple<tPoints, tBox> readPointsFile(const std::string &fileName) {
     return std::make_tuple(points, tBox{minPoint, maxPoint});
 }
 
+bool gBenchmarkMode = false;
+
 template<typename Algorithm, typename... Args>
 auto runAlg(const tDim &K, const tPoints &points, const tBox &bounds, Args... args) {
-    std::cout << "Generating Yao graph of " << points.size() << " points with " << Algorithm::name() << std::endl;
-    auto result = Timer<Algorithm>::time(K, points, bounds, args...);
-    std::cout << "Time: " << std::get<0>(result) << "ms" << std::endl;
 
-    return std::get<1>(result);
-}
+    std::ofstream file;
+    if (gBenchmarkMode) {
+        file = std::ofstream("benchmark_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
 
-template<typename Algorithm, typename Distribution, typename... Args>
-void benchmarkImpl(const tDim &K, Args... args) {
-    std::ofstream file("benchmark_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
+        std::cout << "Benchmarking " << Algorithm::name() << " with " << points.getDistName() << " distribution" << std::endl;
 
-    {
-        Distribution nGen(0);
-        std::cout << "Benchmarking " << Algorithm::name() << " with " << nGen.name() << " distribution" << std::endl;
+        // header
+        file << "# k dist n seed rep t" << std::endl;
+        std::cout << "k dist n seed rep t" << std::endl;
     }
 
-    // header
-    file << "# k dist n seed rep t" << std::endl;
-    std::cout << "k dist n seed rep t" << std::endl;
+    tYaoGraph graph(points.size(), K);
 
-    for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
-        for (tDim rpn = 0; rpn < RepsPerN; ++rpn) {
+    tDim lReps = gBenchmarkMode ? Reps : 1;
+    for (tDim rpi = 0; rpi < lReps; ++rpi) {
 
-            Distribution gen(Seeds[rpn]);
-            auto [points, bounds] = gen.generate(nPoints, BOUNDS);
-
-            for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
-                auto result = Timer<Algorithm>::time(K, points, bounds, args...);
-                file << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
-                std::cout << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
-            }
+        if (!gBenchmarkMode) {
+            std::cout << "Generating Yao graph of " << points.size() << " points with " << Algorithm::name() << std::endl;
         }
-    }
-}
 
-template<typename Algorithm, typename... Args>
-void benchmarkCones(const tIndex &nPoints, Args... args) {
-    std::ofstream file("benchmark_cones_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
+        auto result = Timer<Algorithm>::time(K, points, bounds, args...);
 
-    std::cout << "Benchmarking " << Algorithm::name() << std::endl;
-
-    // header
-    file << "# k dist n seed rep t" << std::endl;
-    std::cout << "k dist n seed rep t" << std::endl;
-
-    for (tDim rpn = 0; rpn < RepsPerN; ++rpn) {
-
-        Uniform gen(Seeds[rpn]);
-        auto [points, bounds] = gen.generate(nPoints, BOUNDS);
-
-        for (tDim K = minCones; K <= maxCones; K += 2) {
-            for (tDim rpi = 0; rpi < RepsPerI; ++rpi) {
-                auto result = Timer<Algorithm>::time(K, points, bounds, args...);
-                file << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
-                std::cout << K << " " << gen.name() << " " << points.size() << " " << Seeds[rpn] << " " << rpi << " " << std::get<0>(result) << std::endl;
-            }
+        if (gBenchmarkMode) {
+            file << K << " " << points.getDistName() << " " << points.size() << " " << points.getSeed() << " " << rpi << " " << std::get<0>(result) << std::endl;
+            std::cout << K << " " << points.getDistName() << " " << points.size() << " " << points.getSeed() << " " << rpi << " " << std::get<0>(result) << std::endl;
+        } else {
+            std::cout << "Time: " << std::get<0>(result) << "ms" << std::endl;
         }
+
+        graph = std::get<1>(result);
     }
-}
 
-template<typename Algorithm, typename Distribution, typename... FDists, typename... Args>
-void benchmark(const tDim &K, Args... args) {
-    benchmarkImpl<Algorithm, Distribution>(K, args...);
-    if constexpr (sizeof...(FDists) > 0) {
-        benchmark<Algorithm, FDists...>(K, args...);
-    }
-}
-
-void benchmark() {
-
-#ifdef WITH_CGAL
-    benchmark<CGAL_Yao2D<ExactPredicatesInexactConstructions>, DISTS>(Cones);
-    benchmark<CGAL_Yao2D<ExactPredicatesExactConstructions>, DISTS>(Cones);
-#endif
-
-    benchmark<NaiveYao<InexactKernel>, DISTS>(Cones);
-#ifdef WITH_CGAL
-    benchmark<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(Cones);
-    benchmark<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(Cones);
-#endif
-
-    benchmark<GridYao<InexactKernel>, DISTS>(Cones, cellOcc);
-#ifdef WITH_CGAL
-    benchmark<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(Cones, cellOcc);
-    benchmark<GridYao<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(Cones, cellOcc);
-#endif
-
-    benchmark<SweepLine<InexactKernel>, DISTS>(Cones);
-#ifdef WITH_CGAL
-    benchmark<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>, DISTS>(Cones);
-    benchmark<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>, DISTS>(Cones);
-#endif
-
-    // Benchmark Cones
-
-    benchmarkCones<GridYao<InexactKernel>>(minN, cellOcc);
-#ifdef WITH_CGAL
-    benchmarkCones<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>>(minN, cellOcc);
-    benchmarkCones<GridYao<CGALKernel<ExactPredicatesExactConstructions>>>(minN, cellOcc);
-#endif
-
-    benchmarkCones<SweepLine<InexactKernel>>(minN);
-#ifdef WITH_CGAL
-    benchmarkCones<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>>(minN);
-    benchmarkCones<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>>(minN);
-#endif
+    return graph;
 }
 
 int main(int argc, char **argv) {
@@ -181,10 +129,6 @@ int main(int argc, char **argv) {
 
     // benchmark
     auto sBenchmark = op.add<popl::Switch>("b", "benchmark", "run benchmark suite");
-
-#ifndef NDEBUG
-    auto sDebug = op.add<popl::Switch>("x", "debug", "find offending instance");
-#endif
 
     // generate points
     auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]", 'u');
@@ -195,7 +139,7 @@ int main(int argc, char **argv) {
     auto oPointsFile = op.add<popl::Value<std::string>>("f", "infile", "file with points");
 
     // algorithm to use
-    auto oAlg = op.add<popl::Value<char>>("a", "alg", "algorithm to use [_s_weepline, _g_rid, _n_aive]", 's');
+    auto oAlg = op.add<popl::Value<char>>("a", "alg", "algorithm to use [_s_weepline, _g_rid, _n_aive, _c_gal]", 's');
     auto oKern = op.add<popl::Value<char>>("c", "kernel", "kernel to use [_i_nexact, CGALExact_p_redicatesInexactConstructions, CGALExactpredicatesInexact_c_onstructions]", 'i');
     auto oK = op.add<popl::Value<tDim>>("k", "cones", "number of cones, default 6", 6);
     auto oCellOcc = op.add<popl::Value<tIndex>>("g", "cellOcc", "number of points per cell (grid algorithm)", cellOcc);
@@ -219,31 +163,8 @@ int main(int argc, char **argv) {
     }
 
     if (sBenchmark->is_set()) {
-        benchmark();
-
-        return 0;
+        gBenchmarkMode = true;
     }
-
-#ifndef NDEBUG
-    if (sDebug->is_set()) {
-        ASSERT(oN->is_set());
-
-        tIndex seed = 1;
-        while (seed != 0) {
-            Uniform gen(seed);
-            auto [points, bounds] = gen.generate(oN->value(), BOUNDS);
-
-            std::cout << "seed: " << seed << " n: " << points.size() << std::endl;
-
-            SweepLine<CGALKernel<ExactPredicatesInexactConstructions>> alg;
-            auto res = alg(Cones, points, bounds);
-
-            seed++;
-        }
-
-        return 0;
-    }
-#endif
 
     // get points
     tPoints points;
@@ -253,6 +174,14 @@ int main(int argc, char **argv) {
         std::tie(points, bounds) = gen->generate(oN->value(), BOUNDS);
     } else if (oPointsFile->is_set()) {
         std::tie(points, bounds) = readPointsFile(oPointsFile->value());
+
+        if (oDist->is_set()) {
+            points.setDistName(getGenName(oDist->value()));
+        }
+
+        if (oSeed->is_set()) {
+            points.setSeed(oSeed->value());
+        }
     } else {
         std::cout << "Either specify input point file or point generation option" << std::endl;
         return 0;
@@ -273,12 +202,14 @@ int main(int argc, char **argv) {
                 case 'i':
                     graph = runAlg<SweepLine<InexactKernel>>(oK->value(), points, bounds);
                     break;
+#ifdef WITH_CGAL
                 case 'p':
                     graph = runAlg<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds);
                     break;
                 case 'c':
                     graph = runAlg<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds);
                     break;
+#endif
             }
 
             break;
@@ -287,12 +218,14 @@ int main(int argc, char **argv) {
                 case 'i':
                     graph = runAlg<GridYao<InexactKernel>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
+#ifdef WITH_CGAL
                 case 'p':
                     graph = runAlg<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
                 case 'c':
                     graph = runAlg<GridYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
+#endif
             }
 
             break;
@@ -301,13 +234,27 @@ int main(int argc, char **argv) {
                 case 'i':
                     graph = runAlg<NaiveYao<InexactKernel>>(oK->value(), points, bounds);
                     break;
+#ifdef WITH_CGAL
                 case 'p':
                     graph = runAlg<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds);
                     break;
                 case 'c':
                     graph = runAlg<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds);
                     break;
+#endif
             }
+#ifdef WITH_CGAL
+            break;
+        case 'c':
+            switch (oKern->value()) {
+                case 'p':
+                    runAlg<CGAL_Yao2D<ExactPredicatesInexactConstructions>>(oK->value(), points, bounds);
+                    break;
+                case 'c':
+                    runAlg<CGAL_Yao2D<ExactPredicatesExactConstructions>>(oK->value(), points, bounds);
+                    break;
+            }
+#endif
     }
 
     if (oOutFile->is_set()) {

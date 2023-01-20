@@ -31,8 +31,17 @@ public:
         return _distName;
     }
 
+    void setSeed(const tIndex &seed) {
+        _seed = seed;
+    }
+
+    tIndex getSeed() const {
+        return _seed;
+    }
+
 private:
     std::string _distName;
+    tIndex _seed;
 };
 
 using tIndexSet = std::unordered_set<tIndex>;
