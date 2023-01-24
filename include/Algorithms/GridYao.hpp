@@ -49,7 +49,7 @@ private:
         tIndexVector getIndexVector(const tKPoint &p) const {
             tIndexVector idx;
             for (tDim d = 0; d < idx.size(); ++d) {
-                idx[d] = std::floor(Kernel::to_float_exact(p[d] / cellSize[d]));//TODO exact?
+                idx[d] = std::floor(Kernel::to_float_exact((p[d] - bounds.low[d]) / cellSize[d]));//TODO exact?
 
                 if (idx[d] == numCellsPerDim) [[unlikely]] {// if point is exactly on boundary
                     idx[d]--;
