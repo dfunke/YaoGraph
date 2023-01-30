@@ -58,7 +58,7 @@ public:
     }
 
 private:
-    std::uniform_int_distribution<tIndex> dist;
+    std::uniform_real_distribution<tIFloat> dist;
 
     using tFilePoint = std::array<double, 2>;
     std::vector<tFilePoint> filePoints;
