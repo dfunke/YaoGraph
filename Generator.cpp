@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
     auto sHelp = op.add<popl::Switch>("h", "help", "produce help message");
 
     // generate points
-    auto sAllDists = op.add<popl::Switch>("-a", "--all", "generate all available distributions");
+    auto sAllDists = op.add<popl::Switch>("a", "--all", "generate all available distributions");
     auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
     auto oMinN = op.add<popl::Value<tIndex>>("", "minN", "minimum number of points to generate", minN);
     auto oMaxN = op.add<popl::Value<tIndex>>("", "maxN", "maxium number of points to generate", maxN);
