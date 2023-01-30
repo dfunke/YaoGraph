@@ -6,6 +6,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "Utils/ASSERT.hpp"
+
 using tIFloat = double;// Inexact Float
 using tDim = unsigned short;
 using tIndex = std::size_t;

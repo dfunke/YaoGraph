@@ -5,7 +5,7 @@
 
 #include "Utils/ASSERT.hpp"
 
-#include "Generators.hpp"
+#include "Generators/Generators.hpp"
 #include "Types.hpp"
 #include "Utils/Timer.hpp"
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
     auto sBenchmark = op.add<popl::Switch>("b", "benchmark", "run benchmark suite");
 
     // generate points
-    auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar]", 'u');
+    auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar, _c_ircle, _b_ubbles]", 'u');
     auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
     auto oSeed = op.add<popl::Value<tIndex>>("s", "seed", "seed for RNG", Seeds[0]);
 

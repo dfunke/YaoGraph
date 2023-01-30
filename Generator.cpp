@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
     auto sHelp = op.add<popl::Switch>("h", "help", "produce help message");
 
     // generate points
-    auto oDist = op.add<popl::Value<char>>("", "", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar, _c_ircle, _b_ubbles]");
+    //auto oDist = op.add<popl::Value<char>>("", "", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar, _c_ircle, _b_ubbles]");
     auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
     auto oMinN = op.add<popl::Value<tIndex>>("", "minN", "minimum number of points to generate", minN);
     auto oMaxN = op.add<popl::Value<tIndex>>("", "maxN", "maxium number of points to generate", maxN);
@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
 
     if (sHelp->is_set()) {
         std::cout << op << "\n";
+        std::cout << "list of distributions to generate [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar, _c_ircle, _b_ubbles]" << std::endl;
 
         return 0;
     }
@@ -78,9 +79,9 @@ int main(int argc, char **argv) {
     }
 
     std::vector<char> dists;
-    if (oDist->is_set()) {
-        for (uint i = 0; i < oDist->count(); ++i) {
-            dists.push_back(oDist->value(i));
+    if (op.non_option_args().size()) {
+        for (uint i = 0; i < op.non_option_args().size(); ++i) {
+            dists.push_back(op.non_option_args()[i][0]);
         }
     } else {
         std::cout << "Distribution must be specified" << std::endl;
@@ -93,6 +94,11 @@ int main(int argc, char **argv) {
 
     for (auto g : dists) {
         auto gen = getGen(g, 0);
+
+        if (!gen) {
+            std::cout << "Invalid distribution specified: " << g << std::endl;
+            continue;
+        }
 
         for (auto s : seeds) {
             for (tIndex nPoints = oMinN->value(); nPoints <= oMaxN->value(); nPoints += 3 * pow(10, floor(log10(nPoints)))) {

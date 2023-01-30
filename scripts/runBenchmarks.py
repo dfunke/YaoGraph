@@ -13,11 +13,11 @@ EXEC = os.path.join(BUILD_DIR, 'GeoGraph')
 
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 
-DIST_NAME2CHAR = {'uni': 'u', 'gaussian': 'g', 'grid': 'd', 'road': 'r', 'stars': 's'}
-DIST_CHAR2CHAR = {'u': 'uni', 'g': 'gaussian', 'd': 'grid', 'r': 'road', 's': 'stars'}
+DIST_NAME2CHAR = {'uni': 'u', 'gaussian': 'g', 'grid': 'd', 'road': 'r', 'stars': 's', 'circle': 'c', 'bubbles': 'b'}
+DIST_CHAR2CHAR = {'u': 'uni', 'g': 'gaussian', 'd': 'grid', 'r': 'road', 's': 'stars', 'c': 'circle', 'b': 'bubbles'}
 SEEDS = [8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 59135, 60315]
 
-DISTS = ['u', 'g', 'd', 'r', 's']
+DISTS = ['u', 'g', 'd', 'r', 's', 'c', 'b']
 ALGS = ['s', 'g', 'n', 'c']
 KERNS = ['i', 'c', 'p']
 
