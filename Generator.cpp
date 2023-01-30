@@ -2,9 +2,11 @@
 #include <fstream>
 #include <iostream>
 
+#include "contrib/popl.hpp"
+
 #include "Utils/ASSERT.hpp"
 
-#include "Generators.hpp"
+#include "Generators/Generators.hpp"
 #include "Types.hpp"
 
 // constants
@@ -18,24 +20,22 @@ constexpr tDim RepsPerI = 3;
 constexpr tDim RepsPerN = 3;
 
 const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 59135, 60315};
-const char Dists[] = {'u', 'g', 'd', 'r', 's'};
+const char Dists[] = {'u', 'g', 'd', 'r', 's', 'c', 'b'};
 
-void generate(const char &dist, const tIndex &n, const tIndex &seed, const tBox &iBounds) {
+void generate(GeneratorBase &gen, const tIndex &n, const tBox &iBounds) {
 
-    auto gen = getGen(dist, seed);
+    std::cout << "Generating " << gen.name() << " with " << n << " points" << std::endl;
 
-    std::cout << "Generating " << gen->name() << " with " << n << " points" << std::endl;
-
-    auto [points, oBounds] = gen->generate(n, iBounds);
+    auto [points, oBounds] = gen.generate(n, iBounds);
     ASSERT(points.size() >= n);
 
     std::stringstream dir;
-    dir << DATA_DIR << "/" << gen->name();
+    dir << DATA_DIR << "/" << gen.name();
 
     std::filesystem::path p(dir.str());
     std::filesystem::create_directories(p);
 
-    std::ofstream file(p.append("points_" + gen->name() + "_" + std::to_string(n) + "_" + std::to_string(seed) + ".csv"), std::ios::out | std::ios::trunc);
+    std::ofstream file(p.append("points_" + gen.name() + "_" + std::to_string(n) + "_" + std::to_string(gen.seed()) + ".csv"), std::ios::out | std::ios::trunc);
 
     // header
     file << "# n " << points.size() << std::endl;
@@ -47,10 +47,57 @@ void generate(const char &dist, const tIndex &n, const tIndex &seed, const tBox 
 }
 
 int main(int argc, char **argv) {
-    for (auto g : Dists) {
-        for (auto s : Seeds) {
-            for (tIndex nPoints = minN; nPoints <= maxN; nPoints += 3 * pow(10, floor(log10(nPoints)))) {
-                generate(g, nPoints, s, BOUNDS);
+
+    popl::OptionParser op("Point Generator");
+    auto sHelp = op.add<popl::Switch>("h", "help", "produce help message");
+
+    // generate points
+    auto oDist = op.add<popl::Value<char>>("", "", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar, _c_ircle, _b_ubbles]");
+    auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
+    auto oMinN = op.add<popl::Value<tIndex>>("", "minN", "minimum number of points to generate", minN);
+    auto oMaxN = op.add<popl::Value<tIndex>>("", "maxN", "maxium number of points to generate", maxN);
+    auto oSeed = op.add<popl::Value<tIndex>>("s", "seed", "seed for RNG", Seeds[0]);
+    auto oInst = op.add<popl::Value<tIndex>>("i", "inst", "number of instances");
+
+    op.parse(argc, argv);
+
+    if (sHelp->is_set()) {
+        std::cout << op << "\n";
+
+        return 0;
+    }
+
+    std::vector<tIndex> seeds;
+    if (oInst->is_set()) {
+        // if oInst is set, oSeed is ignored
+        for (uint i = 0; i < oInst->value(); ++i) {
+            seeds.push_back(Seeds[i]);
+        }
+    } else {
+        seeds.push_back(oSeed->value());
+    }
+
+    std::vector<char> dists;
+    if (oDist->is_set()) {
+        for (uint i = 0; i < oDist->count(); ++i) {
+            dists.push_back(oDist->value(i));
+        }
+    } else {
+        std::cout << "Distribution must be specified" << std::endl;
+    }
+
+    if (oN->is_set()) {
+        oMinN->set_value(oN->value());
+        oMaxN->set_value(oN->value());
+    }
+
+    for (auto g : dists) {
+        auto gen = getGen(g, 0);
+
+        for (auto s : seeds) {
+            for (tIndex nPoints = oMinN->value(); nPoints <= oMaxN->value(); nPoints += 3 * pow(10, floor(log10(nPoints)))) {
+                gen->setSeed(s);
+                generate(*gen, nPoints, BOUNDS);
             }
         }
     }

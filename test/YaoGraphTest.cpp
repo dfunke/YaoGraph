@@ -9,7 +9,7 @@
 #include "Algorithms/GridYao.hpp"
 #include "Algorithms/NaiveYao.hpp"
 #include "Algorithms/SweepLine.hpp"
-#include "Generators.hpp"
+#include "Generators/Generators.hpp"
 
 #include "Kernels/CGALKernel.hpp"
 #include "Kernels/InexactKernel.hpp"

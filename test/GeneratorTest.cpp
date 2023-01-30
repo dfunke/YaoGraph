@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "Generators/Generators.hpp"
 #include "Utils/ASSERT.hpp"
-#include "Generators.hpp"
 
 constexpr tBox GeneratorTestBOUNDS{{0, 0},
                       {1, 1}};
