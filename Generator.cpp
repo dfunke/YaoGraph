@@ -79,13 +79,13 @@ int main(int argc, char **argv) {
     }
 
     std::vector<char> dists;
-    if (!sAllDists->is_set() && op.non_option_args().size()) {
-        for (uint i = 0; i < op.non_option_args().size(); ++i) {
-            dists.push_back(op.non_option_args()[i][0]);
-        }
-    } else if (sAllDists->is_set()) {
+    if (sAllDists->is_set()) {
         for (auto d : Dists) {
             dists.push_back(d);
+        }
+    } else if (op.non_option_args().size()) {
+        for (uint i = 0; i < op.non_option_args().size(); ++i) {
+            dists.push_back(op.non_option_args()[i][0]);
         }
     } else {
         std::cout << "Distribution must be specified" << std::endl;
