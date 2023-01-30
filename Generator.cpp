@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
     auto sHelp = op.add<popl::Switch>("h", "help", "produce help message");
 
     // generate points
-    //auto oDist = op.add<popl::Value<char>>("", "", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar, _c_ircle, _b_ubbles]");
+    auto sAllDists = op.add<popl::Switch>("-a", "--all", "generate all available distributions");
     auto oN = op.add<popl::Value<tIndex>>("n", "n", "number of points to generate");
     auto oMinN = op.add<popl::Value<tIndex>>("", "minN", "minimum number of points to generate", minN);
     auto oMaxN = op.add<popl::Value<tIndex>>("", "maxN", "maxium number of points to generate", maxN);
@@ -79,9 +79,13 @@ int main(int argc, char **argv) {
     }
 
     std::vector<char> dists;
-    if (op.non_option_args().size()) {
+    if (!sAllDists->is_set() && op.non_option_args().size()) {
         for (uint i = 0; i < op.non_option_args().size(); ++i) {
             dists.push_back(op.non_option_args()[i][0]);
+        }
+    } else if (sAllDists->is_set()) {
+        for (auto d : Dists) {
+            dists.push_back(d);
         }
     } else {
         std::cout << "Distribution must be specified" << std::endl;
