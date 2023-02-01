@@ -4,9 +4,6 @@
 
 #pragma once
 
-#include "Kernels/CGALKernel.hpp"
-#include "Kernels/InexactKernel.hpp"
-#include "Predicates.hpp"
 #include "Types.hpp"
 
 template<typename Kernel>

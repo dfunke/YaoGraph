@@ -10,6 +10,7 @@
 #include <queue>
 #include <sstream>
 #include <unordered_map>
+#include <variant>
 
 #include "Predicates.hpp"
 #include "Types.hpp"
@@ -17,11 +18,6 @@
 #include "Utils/PriorityQueue.hpp"
 
 #include "Utils/Logging.hpp"
-
-#include "Kernels/InexactKernel.hpp"
-#ifdef WITH_CGAL
-#include "Kernels/CGALKernel.hpp"
-#endif
 
 #include "contrib/robin_hood.h"
 

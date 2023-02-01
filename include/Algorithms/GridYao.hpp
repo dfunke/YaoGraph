@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "Kernels/InexactKernel.hpp"
 #include "Predicates.hpp"
 #include "Types.hpp"
 

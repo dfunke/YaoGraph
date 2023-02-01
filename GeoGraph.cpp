@@ -13,14 +13,17 @@
 #include "Algorithms/NaiveYao.hpp"
 #include "Algorithms/SweepLine.hpp"
 
-#ifdef WITH_CAIRO
-#include "Painter.hpp"
-#endif
+#include "Kernels/InexactKernel.hpp"
 
 #ifdef WITH_CGAL
 #include "Algorithms/CGAL_Yao.hpp"
 #include "Kernels/CGALKernel.hpp"
 #endif
+
+#ifdef WITH_CAIRO
+#include "Painter.hpp"
+#endif
+
 
 // constants
 constexpr tBox BOUNDS{{0, 0},
@@ -243,8 +246,8 @@ int main(int argc, char **argv) {
                     break;
 #endif
             }
-#ifdef WITH_CGAL
             break;
+#ifdef WITH_CGAL
         case 'c':
             switch (oKern->value()) {
                 case 'p':
@@ -284,24 +287,28 @@ int main(int argc, char **argv) {
                 case 'i':
                     exp = runAlg<GridYao<InexactKernel>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
+#ifdef WITH_CGAL
                 case 'p':
                     exp = runAlg<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
                 case 'c':
                     exp = runAlg<GridYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
+#endif
             }
         } else if (sVerify->count() == 2) {
             switch (oKern->value()) {
                 case 'i':
                     exp = runAlg<NaiveYao<InexactKernel>>(oK->value(), points, bounds);
                     break;
+#ifdef WITH_CGAL
                 case 'p':
                     exp = runAlg<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds);
                     break;
                 case 'c':
                     exp = runAlg<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds);
                     break;
+#endif
             }
         }
 
