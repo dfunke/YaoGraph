@@ -1,6 +1,13 @@
 #!/usr/bin/python3
 import re
 
+try:
+    import natsort
+    fileSorter = natsort.natsorted
+except ImportError as e:
+    print("python natsort library not installed -- falling back to standard sort")
+    fileSorter = sorted
+
 from GeoGraph import *
 
 parser = argparse.ArgumentParser()
@@ -36,12 +43,12 @@ if args.conesMin and args.conesMax:
 else:
     args.cones = [args.cones]
 
-for dDir in os.listdir(DATA_DIR):
+for dDir in fileSorter(os.listdir(DATA_DIR)):
 
     if not dDir in DIST_NAME2CHAR or not DIST_NAME2CHAR[dDir] in args.dist:
         continue
 
-    for pFile in os.listdir(os.path.join(DATA_DIR, dDir)):
+    for pFile in fileSorter(os.listdir(os.path.join(DATA_DIR, dDir))):
         match = rePointFilename.match(pFile)
 
         lArgs = argparse.Namespace
