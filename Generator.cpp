@@ -24,7 +24,7 @@ const char Dists[] = {'u', 'g', 'd', 'r', 's', 'c', 'b'};
 
 void generate(GeneratorBase &gen, const tIndex &n, const tBox &iBounds) {
 
-    std::cout << "Generating " << gen.name() << " with " << n << " points and seed " << gen.seed() << std::endl;
+    std::cout << "Generating " << gen.name() << " with " << n << " points and seed " << gen.seed() << ": " << std::flush;
 
     auto [points, oBounds] = gen.generate(n, iBounds);
     ASSERT(points.size() >= n);
@@ -44,6 +44,8 @@ void generate(GeneratorBase &gen, const tIndex &n, const tBox &iBounds) {
     for (auto &p : points) {
         file << p[X] << " " << p[Y] << std::endl;
     }
+
+    std::cout << points.size() << "generated" << std::endl;
 }
 
 int main(int argc, char **argv) {
