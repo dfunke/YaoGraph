@@ -90,5 +90,5 @@ for dDir in fileSorter(os.listdir(DATA_DIR)):
 
                     if rc == -signal.SIGTERM:
                         print("Time Out")
-                    else:
+                    elif rc != 0:
                         print("Failed")
