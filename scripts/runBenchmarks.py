@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import re
+import signal
 
 try:
     import natsort
@@ -80,8 +81,14 @@ for dDir in fileSorter(os.listdir(DATA_DIR)):
                     lArgs.kernel = kern
                     lArgs.cones = con
 
-                    out, err = run_algorithm(lArgs)
+                    out, err, rc = run_algorithm(lArgs)
+
                     print(out)
 
                     if err:
                         print(err)
+
+                    if rc == -signal.SIGTERM:
+                        print("Time Out")
+                    else:
+                        print("Failed")

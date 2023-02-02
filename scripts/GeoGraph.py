@@ -58,4 +58,4 @@ def run_algorithm(args: argparse.Namespace):
     out, err = proc.communicate()
     t.cancel()
 
-    return out, err
+    return out, err, proc.returncode
