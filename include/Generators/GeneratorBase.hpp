@@ -159,7 +159,7 @@ protected:
 
             pointIdx = windowIdxIS[D2 - 1];
 
-            if (pointIdx.size() > 1.25 * n) {
+            if (pointIdx.size() > 1.05 * n) {
                 windowSize -= windowSizeInc;
                 windowSizeInc /= 2;
                 pointIdx.clear();
