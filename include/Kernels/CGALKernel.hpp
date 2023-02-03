@@ -20,19 +20,23 @@ using ExactPredicatesInexactConstructions = CGAL::Exact_predicates_inexact_const
 using ExactPredicatesExactConstructions = CGAL::Exact_predicates_exact_constructions_kernel;
 
 template<typename K>
-struct KernelName;
+struct KernelName {
+    static std::string name() {
+        return K::name();
+    }
+};
 
 template<>
 struct KernelName<ExactPredicatesExactConstructions> {
     static std::string name() {
-        return "ExactPredExactCon";
+        return "CGALExactPredExactCon";
     }
 };
 
 template<>
 struct KernelName<ExactPredicatesInexactConstructions> {
     static std::string name() {
-        return "ExactPredInexactCon";
+        return "CGALExactPredInexactCon";
     }
 };
 
@@ -48,7 +52,7 @@ public:
     using Line = CGAL::Line_2<K>;
 
     static std::string name() {
-        return "CGAL" + KernelName<K>::name();
+        return KernelName<K>::name();
     }
 
     class Direction {

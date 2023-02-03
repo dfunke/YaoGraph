@@ -88,19 +88,8 @@ std::tuple<tPoints, tBox> readPointsFile(const std::string &fileName) {
 
 bool gBenchmarkMode = false;
 
-template<typename Algorithm, typename... Args>
+template<template<typename> typename Algorithm, typename Kernel, typename... Args>
 auto runAlg(const tDim &K, const tPoints &points, const tBox &bounds, Args... args) {
-
-    std::ofstream file;
-    if (gBenchmarkMode) {
-        file = std::ofstream("benchmark_" + Algorithm::name() + ".csv", std::ios::out | std::ios::app);
-
-        std::cout << "Benchmarking " << Algorithm::name() << " with " << points.getDistName() << " distribution" << std::endl;
-
-        // header
-        file << "# k dist n seed rep t" << std::endl;
-        std::cout << "k dist n seed rep t" << std::endl;
-    }
 
     tYaoGraph graph(points.size(), K);
 
@@ -108,14 +97,22 @@ auto runAlg(const tDim &K, const tPoints &points, const tBox &bounds, Args... ar
     for (tDim rpi = 0; rpi < lReps; ++rpi) {
 
         if (!gBenchmarkMode) {
-            std::cout << "Generating Yao graph of " << points.size() << " points with " << Algorithm::name() << std::endl;
+            std::cout << "Generating Yao graph of " << points.size() << " points with " << Algorithm<Kernel>::name() << std::endl;
         }
 
-        auto result = Timer<Algorithm>::time(K, points, bounds, args...);
+        auto result = Timer<Algorithm<Kernel>>::time(K, points, bounds, args...);
 
         if (gBenchmarkMode) {
-            file << K << " " << points.getDistName() << " " << points.size() << " " << points.getSeed() << " " << rpi << " " << std::get<0>(result) << std::endl;
-            std::cout << K << " " << points.getDistName() << " " << points.size() << " " << points.getSeed() << " " << rpi << " " << std::get<0>(result) << std::endl;
+            std::cout << "RESULT"
+                      << " algorithm=" << Algorithm<Kernel>::name()
+                      << " kernel=" << KernelName<Kernel>::name()
+                      << " k=" << K
+                      << " dist=" << points.getDistName()
+                      << " n=" << points.size()
+                      << " seed=" << points.getSeed()
+                      << " rep=" << rpi
+                      << " t" << std::get<0>(result)
+                      << std::endl;
         } else {
             std::cout << "Time: " << std::get<0>(result) << "ms" << std::endl;
         }
@@ -203,14 +200,14 @@ int main(int argc, char **argv) {
         case 's':
             switch (oKern->value()) {
                 case 'i':
-                    graph = runAlg<SweepLine<InexactKernel>>(oK->value(), points, bounds);
+                    graph = runAlg<SweepLine, InexactKernel>(oK->value(), points, bounds);
                     break;
 #ifdef WITH_CGAL
                 case 'p':
-                    graph = runAlg<SweepLine<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds);
+                    graph = runAlg<SweepLine, CGALKernel<ExactPredicatesInexactConstructions>>(oK->value(), points, bounds);
                     break;
                 case 'c':
-                    graph = runAlg<SweepLine<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds);
+                    graph = runAlg<SweepLine, CGALKernel<ExactPredicatesExactConstructions>>(oK->value(), points, bounds);
                     break;
 #endif
             }
@@ -219,14 +216,14 @@ int main(int argc, char **argv) {
         case 'g':
             switch (oKern->value()) {
                 case 'i':
-                    graph = runAlg<GridYao<InexactKernel>>(oK->value(), points, bounds, oCellOcc->value());
+                    graph = runAlg<GridYao, InexactKernel>(oK->value(), points, bounds, oCellOcc->value());
                     break;
 #ifdef WITH_CGAL
                 case 'p':
-                    graph = runAlg<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
+                    graph = runAlg<GridYao, CGALKernel<ExactPredicatesInexactConstructions>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
                 case 'c':
-                    graph = runAlg<GridYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
+                    graph = runAlg<GridYao, CGALKernel<ExactPredicatesExactConstructions>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
 #endif
             }
@@ -235,14 +232,14 @@ int main(int argc, char **argv) {
         case 'n':
             switch (oKern->value()) {
                 case 'i':
-                    graph = runAlg<NaiveYao<InexactKernel>>(oK->value(), points, bounds);
+                    graph = runAlg<NaiveYao, InexactKernel>(oK->value(), points, bounds);
                     break;
 #ifdef WITH_CGAL
                 case 'p':
-                    graph = runAlg<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds);
+                    graph = runAlg<NaiveYao, CGALKernel<ExactPredicatesInexactConstructions>>(oK->value(), points, bounds);
                     break;
                 case 'c':
-                    graph = runAlg<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds);
+                    graph = runAlg<NaiveYao, CGALKernel<ExactPredicatesExactConstructions>>(oK->value(), points, bounds);
                     break;
 #endif
             }
@@ -251,10 +248,10 @@ int main(int argc, char **argv) {
         case 'c':
             switch (oKern->value()) {
                 case 'p':
-                    runAlg<CGAL_Yao2D<ExactPredicatesInexactConstructions>>(oK->value(), points, bounds);
+                    runAlg<CGAL_Yao2D, ExactPredicatesInexactConstructions>(oK->value(), points, bounds);
                     break;
                 case 'c':
-                    runAlg<CGAL_Yao2D<ExactPredicatesExactConstructions>>(oK->value(), points, bounds);
+                    runAlg<CGAL_Yao2D, ExactPredicatesExactConstructions>(oK->value(), points, bounds);
                     break;
             }
 #endif
@@ -285,28 +282,28 @@ int main(int argc, char **argv) {
         if (sVerify->count() == 1) {
             switch (oKern->value()) {
                 case 'i':
-                    exp = runAlg<GridYao<InexactKernel>>(oK->value(), points, bounds, oCellOcc->value());
+                    exp = runAlg<GridYao, InexactKernel>(oK->value(), points, bounds, oCellOcc->value());
                     break;
 #ifdef WITH_CGAL
                 case 'p':
-                    exp = runAlg<GridYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
+                    exp = runAlg<GridYao, CGALKernel<ExactPredicatesInexactConstructions>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
                 case 'c':
-                    exp = runAlg<GridYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds, oCellOcc->value());
+                    exp = runAlg<GridYao, CGALKernel<ExactPredicatesExactConstructions>>(oK->value(), points, bounds, oCellOcc->value());
                     break;
 #endif
             }
         } else if (sVerify->count() == 2) {
             switch (oKern->value()) {
                 case 'i':
-                    exp = runAlg<NaiveYao<InexactKernel>>(oK->value(), points, bounds);
+                    exp = runAlg<NaiveYao, InexactKernel>(oK->value(), points, bounds);
                     break;
 #ifdef WITH_CGAL
                 case 'p':
-                    exp = runAlg<NaiveYao<CGALKernel<ExactPredicatesInexactConstructions>>>(oK->value(), points, bounds);
+                    exp = runAlg<NaiveYao, CGALKernel<ExactPredicatesInexactConstructions>>(oK->value(), points, bounds);
                     break;
                 case 'c':
-                    exp = runAlg<NaiveYao<CGALKernel<ExactPredicatesExactConstructions>>>(oK->value(), points, bounds);
+                    exp = runAlg<NaiveYao, CGALKernel<ExactPredicatesExactConstructions>>(oK->value(), points, bounds);
                     break;
 #endif
             }

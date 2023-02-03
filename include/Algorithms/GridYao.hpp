@@ -96,7 +96,7 @@ private:
 
 public:
     static std::string name() {
-        return "GridYao_" + Kernel::name();
+        return "GridYao";
     }
 
     auto operator()(const tDim &K, const tPoints &iPoints, const tBox &bounds, const tIndex &cellOcc) const {

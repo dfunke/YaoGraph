@@ -11,7 +11,7 @@ class NaiveYao {
 
 public:
     static std::string name() {
-        return "NaiveYao_" + Kernel::name();
+        return "NaiveYao";
     }
 
     auto operator()(const tDim &K, const tPoints &iPoints, [[maybe_unused]] const tBox &bounds) const {

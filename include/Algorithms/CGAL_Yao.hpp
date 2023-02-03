@@ -23,7 +23,7 @@ public:
     using Yao = CGAL::Construct_yao_graph_2<K, Graph>;
 
     static std::string name() {
-        return "CGALYao_CGAL" + KernelName<K>::name();
+        return "CGALYao";
     }
 
 public:

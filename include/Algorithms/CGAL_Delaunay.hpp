@@ -16,6 +16,10 @@ public:
     using DT = CGAL::Delaunay_triangulation_2<K>;
     using Point = DT::Point;
 
+    static std::string name() {
+        return "CGALDelaunay";
+    }
+
 public:
     auto operator()(const tPoints &points) {
 

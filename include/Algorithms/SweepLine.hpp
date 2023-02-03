@@ -182,7 +182,7 @@ class SweepLine {
 
 public:
     static std::string name() {
-        return "Sweepline_" + Kernel::name();
+        return "Sweepline";
     }
 
     auto operator()(const tDim &K, const tPoints &points, const tBox &bounds) const {

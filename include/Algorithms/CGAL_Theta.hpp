@@ -23,7 +23,7 @@ public:
     using Theta = CGAL::Construct_theta_graph_2<K, Graph>;
 
     static std::string name() {
-        return "CGALTheta_CGAL" + KernelName<K>::name();
+        return "CGALTheta";
     }
 
 public:
