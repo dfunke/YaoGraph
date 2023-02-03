@@ -262,7 +262,7 @@ private:
         [[maybe_unused]] constexpr std::array<float, 3> ORANGE = {.8, .4, 0};
         [[maybe_unused]] constexpr std::array<float, 3> PINK = {.7, .3, .7};
 
-        Painter basePainter(iBounds, 1000);
+        Painter basePainter(iBounds);
         basePainter.setColor(BLACK);
         basePainter.draw(iPoints, true);
 #endif
@@ -307,11 +307,11 @@ private:
             stepPainter.setColor(RED);
             if (cPoint.type == Event::Type::Input) {
                 stepPainter.draw(cPoint.pos, idx, false);
-            } else if(cPoint.type == Event::Type::Intersection){
+            } else if (cPoint.type == Event::Type::Intersection) {
                 stepPainter.drawSquare(cPoint.pos);
-            } else if(cPoint.type == Event::Type::Deletion){
+            } else if (cPoint.type == Event::Type::Deletion) {
                 stepPainter.drawTri(cPoint.pos);
-	    }
+            }
 
             stepPainter.setColor(BLUE);
             sl.draw(cPoint.pos, stepPainter);

@@ -23,13 +23,18 @@
 class Painter {
 
 public:
-    Painter(const tBox &_bounds, uint _resolution) {
+    Painter(const tBox &_bounds, const uint & width = 1000) {
         bounds = _bounds;
 
         for (uint d = 0; d < 2; ++d) {
             img.low[d] = 0;// image starts at 0
-            img.high[d] = img.low[d] + (bounds.high[d] - bounds.low[d]) * _resolution;
+            img.high[d] = img.low[d] + (bounds.high[d] - bounds.low[d]);
         }
+
+        bool maxD = img.high[0] < img.high[1];
+        double aspectRatio = img.high[maxD] / img.high[!maxD];
+        img.high[maxD] = width;
+        img.high[!maxD] = width * aspectRatio;
 
         cs = Cairo::ImageSurface::create(MY_CAIRO_FORMAT, imgDim(0), imgDim(1));
         cr = Cairo::Context::create(cs);

@@ -271,7 +271,7 @@ int main(int argc, char **argv) {
 
 #ifdef WITH_CAIRO
     if (oImageOut->is_set()) {
-        Painter painter(bounds, 1000);
+        Painter painter(bounds);
         painter.draw(points, false);
         painter.save(oImageOut->value() + ".points");
         painter.draw(graph, points);
@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
 
 #ifdef WITH_CAIRO
         if (!valid) {
-            Painter basePainter(bounds, 1000);
+            Painter basePainter(bounds);
             basePainter.draw(points, true);
             basePainter.draw(exp, points);
 

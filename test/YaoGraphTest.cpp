@@ -46,7 +46,7 @@ bool performTest(Args... args) {
 
 #ifdef WITH_CAIRO
     if (!valid) {
-        Painter basePainter(YaoTestBOUNDS, 1000);
+        Painter basePainter(YaoTestBOUNDS);
         basePainter.draw(points, true);
         basePainter.draw(exp, points);
 
