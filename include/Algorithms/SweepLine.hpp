@@ -280,8 +280,6 @@ private:
         tIndex maxIsInQueue = 0;
         tIndex maxDelInQueue = 0;
         tIndex maxSlSize = 0;
-
-        std::cerr << "# dist n k steps ipPro isPro delPro maxIpQ maxIsQ maxDelQ maxSlSize" << std::endl;
 #endif
 
         while (!pq.empty()) {
@@ -816,7 +814,21 @@ private:
         }
 
 #ifdef WITH_STATS
-        std::cerr << iPoints.getDistName() << " " << iPoints.size() << " " << k << " " << idx << " " << ipProcessed << " " << isProcessed << " " << delProcessed << " " << maxIpInQueue << " " << maxIsInQueue << " " << maxDelInQueue << " " << maxSlSize << std::endl;
+        std::cout << "STATS"
+                  << " algorithm=" << name()
+                  << " kernel=" << Kernel::name()
+                  << " dist=" << iPoints.getDistName()
+                  << " n=" << iPoints.size()
+                  << " k=" << k
+                  << " steps=" << idx
+                  << " ipPro=" << ipProcessed
+                  << " isPro=" << isProcessed
+                  << " delPro=" << delProcessed
+                  << " maxIpQ=" << maxIpInQueue
+                  << " maxIsQ=" << maxIsInQueue
+                  << " maxDelQ=" << maxDelInQueue
+                  << " maxSlSize=" << maxSlSize
+                  << std::endl;
 #endif
 
 #ifdef WITH_CAIRO

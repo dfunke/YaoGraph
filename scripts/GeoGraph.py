@@ -46,7 +46,7 @@ def run_algorithm(args: argparse.Namespace):
         params.extend(["--stdout"])
 
     if args.benchmark:
-        params.extend(["--benchmark"])
+        params.extend(["--benchmark"], args.benchmark)
 
     proc = subprocess.Popen(params, stdout=subprocess.PIPE, universal_newlines=True, preexec_fn=os.setsid)
 

@@ -29,7 +29,7 @@
 constexpr tBox BOUNDS{{0, 0},
                       {1, 1}};
 constexpr tIndex cellOcc = 1e2;
-constexpr tDim Reps = 1;
+tDim Reps = 1;
 
 const tIndex Seeds[] = {8158, 14030, 18545, 20099, 24065, 35700, 37197, 38132, 59135, 60315};
 
@@ -93,8 +93,7 @@ auto runAlg(const tDim &K, const tPoints &points, const tBox &bounds, Args... ar
 
     tYaoGraph graph(points.size(), K);
 
-    tDim lReps = gBenchmarkMode ? Reps : 1;
-    for (tDim rpi = 0; rpi < lReps; ++rpi) {
+    for (tDim rpi = 0; rpi < Reps; ++rpi) {
 
         if (!gBenchmarkMode) {
             std::cout << "Generating Yao graph of " << points.size() << " points with " << Algorithm<Kernel>::name() << std::endl;
@@ -128,7 +127,7 @@ int main(int argc, char **argv) {
     auto sHelp = op.add<popl::Switch>("h", "help", "produce help message");
 
     // benchmark
-    auto sBenchmark = op.add<popl::Switch>("b", "benchmark", "run benchmark suite");
+    auto oBenchmark = op.add<popl::Value<int>>("b", "benchmark", "run algorithm i times", 1);
 
     // generate points
     auto oDist = op.add<popl::Value<char>>("d", "dist", "point distribution [_u_ni, _g_aussian, gri_d_, _r_oad, _s_tar, _c_ircle, _b_ubbles]", 'u');
@@ -162,8 +161,9 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    if (sBenchmark->is_set()) {
+    if (oBenchmark->is_set()) {
         gBenchmarkMode = true;
+        Reps = oBenchmark->value();
     }
 
     // get points

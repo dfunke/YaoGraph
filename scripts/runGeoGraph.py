@@ -3,8 +3,6 @@
 from GeoGraph import *
 
 parser = argparse.ArgumentParser()
-# benchmark
-parser.add_argument("-b", "--benchmark", help="run benchmark suite", action='store_true')
 
 # generate points
 parser.add_argument("-d", "--dist",
