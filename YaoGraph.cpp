@@ -96,7 +96,8 @@ auto runAlg(const tDim &K, const tPoints &points, const tBox &bounds, Args... ar
     for (tDim rpi = 0; rpi < Reps; ++rpi) {
 
         if (!gBenchmarkMode) {
-            std::cout << "Generating Yao graph of " << points.size() << " points with " << Algorithm<Kernel>::name() << std::endl;
+            std::cout << "Generating Yao graph of " << points.size() << " points with "
+                      << Algorithm<Kernel>::name() << " with " << KernelName<Kernel>::name() << " kernel" << std::endl;
         }
 
         auto result = Timer<Algorithm<Kernel>>::time(K, points, bounds, args...);
@@ -110,7 +111,7 @@ auto runAlg(const tDim &K, const tPoints &points, const tBox &bounds, Args... ar
                       << " n=" << points.size()
                       << " seed=" << points.getSeed()
                       << " rep=" << rpi
-                      << " t" << std::get<0>(result)
+                      << " t=" << std::get<0>(result)
                       << std::endl;
         } else {
             std::cout << "Time: " << std::get<0>(result) << "ms" << std::endl;
