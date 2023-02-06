@@ -11,7 +11,7 @@ except ImportError as e:
     print("python natsort library not installed -- falling back to standard sort")
     fileSorter = sorted
 
-from GeoGraph import *
+from YaoGraph import *
 
 
 class tee:
@@ -58,7 +58,7 @@ parser.add_argument("-g", "--cellOcc", help="number of points per cell (grid alg
 
 # execution
 parser.add_argument("-t", "--timelimit", help="time limit for algorithm", type=int, default=1800)  # 30 Minutes
-parser.add_argument("", "--stats", help="collect statistics", type=bool, default=False)
+parser.add_argument("--stats", help="collect statistics", action='store_true')
 
 args = parser.parse_args()
 
@@ -96,6 +96,7 @@ for dDir in fileSorter(os.listdir(DATA_DIR)):
         lArgs.outfile = None
         lArgs.stdout = None
         lArgs.benchmark = args.its
+        lArgs.stats = args.stats
         lArgs.timelimit = args.timelimit
 
         if args.nMin and lArgs.n < args.nMin:

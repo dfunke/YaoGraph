@@ -6,7 +6,7 @@ from threading import Timer
 
 BASE_DIR = '/home/funke/devel/geograph'
 BUILD_DIR = os.path.join(BASE_DIR, 'build')
-EXEC = os.path.join(BUILD_DIR, 'GeoGraph')
+EXEC = os.path.join(BUILD_DIR, 'YaoGraph')
 
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 
@@ -46,7 +46,10 @@ def run_algorithm(args: argparse.Namespace):
         params.extend(["--stdout"])
 
     if args.benchmark:
-        params.extend(["--benchmark"], args.benchmark)
+        params.extend(["--benchmark", str(args.benchmark)])
+
+    if args.stats:
+        params.extend(["--stats"])
 
     proc = subprocess.Popen(params, stdout=subprocess.PIPE, universal_newlines=True, preexec_fn=os.setsid)
 

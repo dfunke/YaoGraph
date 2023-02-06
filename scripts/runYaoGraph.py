@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from GeoGraph import *
+from YaoGraph import *
 
 parser = argparse.ArgumentParser()
 

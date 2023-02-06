@@ -152,6 +152,7 @@ int main(int argc, char **argv) {
 
     //verify
     auto sVerify = op.add<popl::Switch>("v", "verify", "verify graph (-v grid-based, -v -v naive yao (slow))");
+    auto sStats = op.add<popl::Switch>("", "stats", "collect execution statistics (requires WITH_STATS compile flag)");
 
     op.parse(argc, argv);
 
@@ -164,6 +165,13 @@ int main(int argc, char **argv) {
     if (oBenchmark->is_set()) {
         gBenchmarkMode = true;
         Reps = oBenchmark->value();
+    }
+
+    if (sStats->is_set()) {
+#ifndef WITH_STATS
+        std::cout << "Please compile with WITH_STATS option enabled" << std::endl;
+        return 4;
+#endif
     }
 
     // get points

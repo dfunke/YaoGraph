@@ -1,0 +1,37 @@
+# k dist n seed rep t
+6 gaussian 1000 8158 0 698
+6 gaussian 1000 14030 0 698
+6 gaussian 1000 18545 0 696
+6 gaussian 1000 20099 0 699
+6 gaussian 1000 24065 0 697
+6 gaussian 4000 8158 0 2852
+6 gaussian 4000 14030 0 2852
+6 gaussian 4000 18545 0 2858
+6 gaussian 4000 20099 0 2870
+# k dist n seed rep t
+6 gaussian 1000 8158 0 697
+6 gaussian 1000 14030 0 698
+6 gaussian 1000 18545 0 696
+6 gaussian 1000 20099 0 699
+6 gaussian 1000 24065 0 694
+6 gaussian 4000 8158 0 2850
+6 gaussian 4000 14030 0 2872
+# k dist n seed rep t
+6 gaussian 1000 8158 0 749
+6 gaussian 1000 14030 0 714
+6 gaussian 1000 18545 0 727
+6 gaussian 1000 20099 0 727
+6 gaussian 1000 24065 0 717
+6 gaussian 4000 8158 0 3067
+6 gaussian 4000 14030 0 3122
+# k dist n seed rep t
+6 gaussian 1000 8158 0 727
+6 gaussian 1000 14030 0 703
+6 gaussian 1000 18545 0 703
+6 gaussian 1000 20099 0 735
+6 gaussian 1000 24065 0 706
+6 gaussian 4000 8158 0 2871
+6 gaussian 4000 14030 0 2863
+6 gaussian 4000 18545 0 2867
+6 gaussian 4000 20099 0 2861
+6 gaussian 4000 24065 0 2996
