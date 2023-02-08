@@ -4,7 +4,7 @@ import signal
 import subprocess
 from threading import Timer
 
-BASE_DIR = '/home/funke/devel/geograph'
+BASE_DIR = os.path.realpath(os.path.dirname(__file__))
 BUILD_DIR = os.path.join(BASE_DIR, 'build')
 EXEC = os.path.join(BUILD_DIR, 'YaoGraph')
 
