@@ -52,8 +52,13 @@ LegendLabels = {
 }
 
 
-def setLegend(ax: mpl.axes.Axes):
-    L = ax.get_legend()
+def setLegend(o):
+
+    if isinstance(o, mpl.axes.Axes):
+        L = o.get_legend()
+
+    if isinstance(o, mpl.legend.Legend):
+        L = o
 
     if (L.get_title() and L.get_title().get_text() != ''):
         L.set_title(LegendLabels[L.get_title().get_text()])
@@ -338,53 +343,42 @@ for kernel in gData['kernel'].unique():
     #          transform=plt.gcf().transFigure)
     saveFig('%i_%s_runtime.%s' % (pltGroup, kernel, EXT))
 
-    fig, axs = plt.subplots(ncols=2, sharex=True, sharey=True)
+    fig, axs = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True)
 
-    sns.lineplot(data=fData[fData['dist'].isin(['gaussian', 'grid', 'uni'])], x='dN', y='tpn', style='algorithm', hue='dist', dashes=AlgorithmDash,
-                      markers=AlgorithmMarkers,
-                      palette=DistPalette,
-                      markersize=8,
-                      ax=axs[0])
+    # DISTS = sorted(fData['dist'].unique())
+    DISTS = ['uni', 'gaussian', 'grid', 'road', 'stars', 'circle']
 
-    axs[0].set_xlabel(r'$n$')
-    axs[0].set_ylabel(r'$\nicefrac{t}{n}$ [ms]')
+    for i, dist in enumerate(DISTS):
+        sns.lineplot(data=fData[fData['dist'] == dist], x='dN', y='tpn', style='algorithm', hue='dist', dashes=AlgorithmDash,
+                          markers=AlgorithmMarkers,
+                          palette=DistPalette,
+                          markersize=8,
+                          ax=fig.axes[i])
 
-    lH0, lL0 = (axs[0].get_legend_handles_labels())
+        fig.axes[i].set_title(LegendLabels[dist])
+        fig.axes[i].set_xlabel(r'$n$')
+        fig.axes[i].set_ylabel(r'$\nicefrac{t}{n}$ [ms]')
+        fig.axes[i].set_xscale('log')
+        fig.axes[i].set_yscale('log', base=10)
 
-    sns.lineplot(data=fData[fData['dist'].isin(['road', 'stars', 'circle'])], x='dN', y='tpn', style='algorithm', hue='dist', dashes=AlgorithmDash,
-                      markers=AlgorithmMarkers,
-                      palette=DistPalette,
-                      markersize=8,
-                      ax=axs[1])
+        l, h = fig.axes[i].get_ylim()
+        fig.axes[i].plot(Ns, TLpN, c='gray')
+        fig.axes[i].set_ylim(l, h)
 
-    lH1, lL1 = axs[1].get_legend_handles_labels()
-
-    unsetLegend(axs[0])
-    unsetLegend(axs[1])
-
-    lH1.insert(1, lH0[1])
-    lL1.insert(1, lL0[1])
-
-    lH1.insert(2, lH0[2])
-    lL1.insert(2, lL0[2])
-
-    lH1.insert(3, lH0[3])
-    lL1.insert(3, lL0[3])
+        unsetLegend(fig.axes[i])
 
     w, h = fig.get_size_inches()
-    fig.set_size_inches(2.5 * w, 1.2 * h)
-    plt.legend(lH1, lL1, loc='upper left', bbox_to_anchor=(1.0, 1.05))
-    setLegend(axs[1])
+    fig.set_size_inches(3 * w, 2.2 * h)
 
-    plt.xscale('log')
-    plt.yscale('log', base=10)
+    h, l = fig.axes[0].get_legend_handles_labels()
 
-    l, h = axs[1].get_ylim()
-    axs[1].plot(Ns, TLpN, c='gray')
-    axs[0].plot(Ns, TLpN, c='gray')
-    axs[1].set_ylim(l, h)
+    h = h[2:]
+    l = l[2:]
 
-    axs[1].set_xlabel(r'$n$')
+    L = plt.figlegend(h, l, loc='center right')
+    setLegend(L)
+
+
     # plt.ylabel(r'$\nicefrac{t}{n}$ [ms]')
     # plt.text(figTextX, figTextY, 'Kernel: %s' % (LegendLabels[kernel]),
     #          horizontalalignment='right',
