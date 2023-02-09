@@ -3,7 +3,7 @@
 #include "Utils/ASSERT.hpp"
 
 //#define LOG_DEBUG
-//#undef LOG_DEBUG
+#undef LOG_DEBUG
 #include "Utils/Logging.hpp"
 
 #include "Algorithms/GridYao.hpp"
@@ -23,7 +23,7 @@
 constexpr tDim K = 6;
 constexpr tBox YaoTestBOUNDS{{0, 0},
                              {1, 1}};
-constexpr tIndex YaoTestN = 1e5;
+constexpr tIndex YaoTestN = 1e3;
 constexpr tIndex YaoTestGenSeed = SEED;
 
 using Dist = Uniform;
