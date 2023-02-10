@@ -53,7 +53,6 @@ LegendLabels = {
 
 
 def setLegend(o):
-
     if isinstance(o, mpl.axes.Axes):
         L = o.get_legend()
 
@@ -164,7 +163,7 @@ if os.path.exists(statsDataFile):
     lStats = gStats[gStats['dist'] != 'bubbles']
 
     ax = sns.lineplot(data=lStats, x='dN', y='stepsPN', hue='dist', style='dist', markers=True,
-                 palette=DistPalette)
+                      palette=DistPalette)
     # plt.legend(loc='lower center', ncol=2, bbox_to_anchor=(0.5, 0.8))
     unsetLegend(ax)
     plt.xscale('log')
@@ -173,7 +172,7 @@ if os.path.exists(statsDataFile):
     saveFig('%i_pq_events_processed.%s' % (pltGroup, EXT))
 
     ax = sns.lineplot(data=lStats, x='dN', y='maxIsDelQSqrt', hue='dist', style='dist', markers=True,
-                 palette=DistPalette)
+                      palette=DistPalette)
     # plt.legend(loc='lower center', ncol=2, bbox_to_anchor=(0.5, 0.8))
     plt.legend(ncol=2)
     setLegend(ax)
@@ -183,7 +182,7 @@ if os.path.exists(statsDataFile):
     saveFig('%i_pq_events_inQueue_noInput.%s' % (pltGroup, EXT))
 
     ax = sns.lineplot(data=lStats, x='dN', y='maxSlSizePN', hue='dist', style='dist', markers=True,
-                 palette=DistPalette)
+                      palette=DistPalette)
     # plt.legend(loc='upper left', ncol=2, bbox_to_anchor=(0, 1.15))
     # plt.legend(ncol=2)
     unsetLegend(ax)
@@ -322,14 +321,30 @@ for kernel in gData['kernel'].unique():
     # filter data by dist
     fData = gData[(gData['kernel'] == kernel) & (gData['dist'] != 'bubbles')]
 
-    ax = sns.lineplot(data=fData, x='dN', y='tpn', style='algorithm', hue='algorithm',
+    plt.close()
+
+    fDataNoCG = fData[~((fData['dist'] == 'circle') & (fData['algorithm'] == 'GridYao'))]
+    ax = sns.lineplot(data=fDataNoCG, x='dN', y='tpn', style='algorithm', hue='algorithm',
                       dashes=AlgorithmDash,
                       markers=AlgorithmMarkers,
                       palette=AlgorithmPalette,
                       markersize=8)
+
+    fDataCG = fData[((fData['dist'] == 'circle') & (fData['algorithm'] == 'GridYao'))]
+    ax.scatter(fDataCG['dN'], fDataCG['tpn'], color='g', marker=7,
+               s=6 ** 2, zorder=10)
+
+    ax.vlines(x=fDataCG['dN'].unique(),
+              ymin=fDataNoCG[fDataNoCG['algorithm'] == 'GridYao'].groupby('dN').agg('mean')['tpn'],
+              ymax=fDataCG.groupby('dN').agg('mean')['tpn'],
+              colors='g', linestyles='--')
+
+    ax.legend(loc='upper left')
     setLegend(ax)
     plt.xscale('log')
     plt.yscale('log', base=10)
+
+    # plt.xlim(1e3, 1e5)
 
     l, h = plt.ylim()
     plt.plot(Ns, TLpN, c='gray')
