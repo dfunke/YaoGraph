@@ -24,7 +24,7 @@ constexpr tDim K = 6;
 constexpr tBox YaoTestBOUNDS{{0, 0},
                              {1, 1}};
 constexpr tIndex YaoTestN = 1e3;
-constexpr tIndex YaoTestGenSeed = SEED;
+constexpr tIndex YaoTestGenSeed = 1990;
 
 using Dist = Uniform;
 

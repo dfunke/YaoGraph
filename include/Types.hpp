@@ -18,7 +18,6 @@ constexpr tDim Z = 2;
 constexpr tIndex INF_IDX = tIndex(-1);
 
 constexpr tDim D = 2;
-constexpr int SEED = 1986;
 
 using tIFloatVector = std::array<tIFloat, D>;
 using tIndexVector = std::array<tIndex, D>;
