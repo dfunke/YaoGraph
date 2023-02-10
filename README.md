@@ -15,13 +15,20 @@ cmake ../
 make
 ```
 
-To use CGAL's predicate turn on the `WITH_CGAL` CMake option
+To use CGAL's kernels for predicates and constructions turn on the `WITH_CGAL` CMake option
 
 ```shell
 mkdir build && cd build
 cmake -DWITH_CMAKE=ON ../
 make
 ```
+
+Further CMake options are:
+- `WITH_CAIRO` to draw images of the generated Yao graphs
+- `WITH_STATS` to collect statistics during the sweepline execution (performance penalty)
+- `WITH_TESTS` compile gtest-Suite
+- `ROAD_DIR` directory containing DIMACS road networks (see below)
+- `STAR_DIR` directory containing Gaia star catalogue (see below)
 
 ## Usage
 
