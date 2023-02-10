@@ -1,0 +1,9 @@
+.idea
+cmake-build*
+build
+.DS_Store
+data
+data_bak
+benchmark
+__pycache__
+
