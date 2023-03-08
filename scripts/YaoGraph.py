@@ -1,14 +1,14 @@
 import argparse
 import os
+import pathlib
 import signal
 import subprocess
 from threading import Timer
 
-BASE_DIR = os.path.realpath(os.path.dirname(__file__))
-BUILD_DIR = os.path.join(BASE_DIR, 'build')
-EXEC = os.path.join(BUILD_DIR, 'YaoGraph')
-
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+BASE_DIR = pathlib.Path(os.path.realpath(os.path.dirname(__file__))).parent.absolute()
+BUILD_DIR = BASE_DIR / 'build'
+EXEC = BUILD_DIR / 'YaoGraph'
+DATA_DIR = BASE_DIR / 'data'
 
 DIST_NAME2CHAR = {'uni': 'u', 'gaussian': 'g', 'grid': 'd', 'road': 'r', 'stars': 's', 'circle': 'c', 'bubbles': 'b'}
 DIST_CHAR2CHAR = {'u': 'uni', 'g': 'gaussian', 'd': 'grid', 'r': 'road', 's': 'stars', 'c': 'circle', 'b': 'bubbles'}
