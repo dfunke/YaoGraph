@@ -19,7 +19,7 @@ To use CGAL's kernels for predicates and constructions turn on the `WITH_CGAL` C
 
 ```shell
 mkdir build && cd build
-cmake -DWITH_CMAKE=ON ../
+cmake -DWITH_CGAL=ON ../
 make
 ```
 
