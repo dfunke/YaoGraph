@@ -19,13 +19,6 @@
 using ExactPredicatesInexactConstructions = CGAL::Exact_predicates_inexact_constructions_kernel;
 using ExactPredicatesExactConstructions = CGAL::Exact_predicates_exact_constructions_kernel;
 
-template<typename K>
-struct KernelName {
-    static std::string name() {
-        return K::name();
-    }
-};
-
 template<>
 struct KernelName<ExactPredicatesExactConstructions> {
     static std::string name() {
