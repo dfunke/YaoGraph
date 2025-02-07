@@ -106,3 +106,10 @@ struct tYaoVertex {
 struct tYaoGraph : public std::vector<tYaoVertex> {
     tYaoGraph(const tIndex &n, const tDim &k) : std::vector<tYaoVertex>(n, tYaoVertex(k)) {}
 };
+
+template<typename K>
+struct KernelName {
+    static std::string name() {
+        return K::name();
+    }
+};
